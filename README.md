@@ -41,6 +41,59 @@ pnpm build
 pnpm dev
 ```
 
+## Windows 启动
+
+```powershell
+cd C:\Users\32042\Desktop\vibe coding项目\growth-tree-os
+pnpm install
+pnpm dev
+```
+
+常用检查：
+
+```powershell
+pnpm typecheck
+pnpm build
+```
+
+## macOS 启动
+
+```bash
+mkdir -p ~/Developer
+cd ~/Developer
+git clone git@github.com:littleice114514/growth-tree-os.git
+cd growth-tree-os
+pnpm install
+pnpm dev
+```
+
+如果 MacBook 没有配置 GitHub SSH，可以使用：
+
+```bash
+git clone https://github.com/littleice114514/growth-tree-os.git
+```
+
+## GitHub 双设备协同
+
+```bash
+git status
+git pull
+git checkout -b mac/wealth-dashboard-check
+git add .
+git commit -m "chore: verify mac setup and wealth dashboard"
+git push -u origin mac/wealth-dashboard-check
+```
+
+协同规则：
+
+- GitHub 是唯一代码源，不用 LocalSend 传整个项目文件夹。
+- 两台设备不要同时直接改 `main`。
+- 每次开始开发前先 `git pull`。
+- 每次完成一个小功能就 commit。
+- `.env`、SQLite、本地运行数据、依赖和构建产物不提交。
+
+MacBook 详细接力说明见 `docs/handoff/MACBOOK_SETUP.md`。
+
 ## Smoke 命令
 
 ```bash
@@ -78,6 +131,7 @@ C:\Users\<用户名>\AppData\Roaming\growth-tree-os\...
 - 支持新建节点或绑定已有节点
 - 支持将结构更新写入 SQLite 并刷新成长树
 - 支持查看节点时间信息与最近证据
+- 支持 Wealth Dashboard V1，以自由度、未来钱消耗、节省池和投资池为核心展示财富状态
 
 ## 本轮明确不做
 

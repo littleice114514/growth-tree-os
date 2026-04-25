@@ -9,7 +9,7 @@ import type {
   WeeklyReviewSummary
 } from '@shared/contracts'
 
-export type WorkspaceView = 'tree' | 'reminders' | 'weeklyReview' | 'obsidianGraph'
+export type WorkspaceView = 'tree' | 'wealth' | 'reminders' | 'weeklyReview' | 'obsidianGraph'
 export type RightPanelMode = 'node' | 'review'
 
 export type HoverCardState = {

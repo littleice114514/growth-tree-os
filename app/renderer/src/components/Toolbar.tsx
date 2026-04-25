@@ -1,6 +1,23 @@
 import { useMemo } from 'react'
 import { useWorkspaceStore } from '@/app/store'
 import { useThemeMode } from '@/app/theme'
+import type { WorkspaceView } from '@/types/ui'
+
+const workspaceViews: Array<[WorkspaceView, string]> = [
+  ['tree', '成长树'],
+  ['wealth', '财富'],
+  ['obsidianGraph', '图谱 V1'],
+  ['reminders', '提醒'],
+  ['weeklyReview', '周回看']
+]
+
+const workspaceTitles: Record<WorkspaceView, string> = {
+  tree: '成长树主视图',
+  wealth: '财富操作系统',
+  obsidianGraph: '图谱 V1',
+  reminders: '提醒工作台',
+  weeklyReview: '周回看'
+}
 
 export function Toolbar() {
   const { themeMode, toggleTheme } = useThemeMode()
@@ -30,23 +47,18 @@ export function Toolbar() {
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--text-muted)]">growth tree os</div>
           <div className="mt-1 flex items-center gap-2">
-            <h1 className="text-lg font-semibold text-[color:var(--text-primary)]">成长树主视图</h1>
+            <h1 className="text-lg font-semibold text-[color:var(--text-primary)]">{workspaceTitles[currentView]}</h1>
             <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[11px] text-accent-green">
               Desktop / Local-first
             </span>
           </div>
         </div>
         <nav className="flex items-center rounded-2xl border border-[color:var(--input-border)] bg-[var(--control-bg)] p-1">
-          {[
-            ['tree', '成长树'],
-            ['obsidianGraph', '图谱 V1'],
-            ['reminders', '提醒'],
-            ['weeklyReview', '周回看']
-          ].map(([id, label]) => (
+          {workspaceViews.map(([id, label]) => (
             <button
               key={id}
               type="button"
-              onClick={() => void setCurrentView(id as 'tree' | 'obsidianGraph' | 'reminders' | 'weeklyReview')}
+              onClick={() => void setCurrentView(id)}
               className={
                 currentView === id
                   ? 'rounded-xl border border-[color:var(--node-selected-border)] bg-[var(--control-hover)] px-3 py-1.5 text-sm text-[color:var(--text-primary)] shadow-[var(--shadow-node-neighbor)]'

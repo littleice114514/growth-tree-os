@@ -46,3 +46,11 @@
 - 本轮只处理 GitHub push 被大文件拒绝后的同步卫生问题，不改业务逻辑、不改 UI、不重构。
 - `node_modules/` 已从 Git 追踪中移除并加入 `.gitignore`，本地目录不删除。
 - 构建产物、环境文件、本地数据库、运行时数据和 TypeScript 构建缓存已加入忽略规则，避免 Windows / Mac 双设备同步时提交本地私有或平台相关文件。
+
+## 2026-04-25 Wealth Dashboard / 双设备协同基线
+
+- 本轮将最高优先级切到 Windows / GitHub / MacBook 协同和 Wealth Dashboard V1，不出 APK，不处理 Android 构建。
+- Wealth V1 先落在 renderer/shared 层：共享算法在 `app/shared/wealth.ts`，页面入口在 `app/renderer/src/features/wealth/WealthDashboard.tsx`。
+- Wealth 页面已经接入主导航，作为 `财富` 视图展示今日财富状态、账户变化、额度燃烧、未来钱判断、投资池、持续流血、睡后收入和双轨标准。
+- 当前 Wealth V1 使用本地示例数据，不接支付宝、微信、银行卡、BTC、股票或外部实时价格 API。
+- 协同底座补齐 `.env.example`、README 的 Windows/macOS 启动说明，以及 `docs/handoff/MACBOOK_SETUP.md` MacBook 接力卡。

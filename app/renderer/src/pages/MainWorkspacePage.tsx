@@ -10,6 +10,7 @@ import { ExtractionDrawer } from '@/features/extraction/ExtractionDrawer'
 import { ReminderPanel } from '@/features/reminders/ReminderPanel'
 import { WeeklyReviewPanel } from '@/features/review/WeeklyReviewPanel'
 import { ObsidianGraphView } from '@/features/obsidian-graph/ObsidianGraphView'
+import { WealthDashboard } from '@/features/wealth/WealthDashboard'
 
 export function MainWorkspacePage() {
   const isReviewComposerOpen = useWorkspaceStore((state) => state.isReviewComposerOpen)
@@ -87,6 +88,7 @@ export function MainWorkspacePage() {
             </div>
           </main>
         ) : null}
+        {currentView === 'wealth' ? <WealthDashboard /> : null}
         {currentView === 'obsidianGraph' ? <ObsidianGraphView /> : null}
         {currentView === 'weeklyReview' ? (
           <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_340px] gap-4">
