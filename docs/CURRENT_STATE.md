@@ -54,3 +54,10 @@
 - Wealth 页面已经接入主导航，作为 `财富` 视图展示今日财富状态、账户变化、额度燃烧、未来钱判断、投资池、持续流血、睡后收入和双轨标准。
 - 当前 Wealth V1 使用本地示例数据，不接支付宝、微信、银行卡、BTC、股票或外部实时价格 API。
 - 协同底座补齐 `.env.example`、README 的 Windows/macOS 启动说明，以及 `docs/handoff/MACBOOK_SETUP.md` MacBook 接力卡。
+
+## 2026-04-25 Wealth 语义记录流
+
+- Wealth 已从静态展示推进到可语义化记录：支持现实收入、睡后收入、系统收入、稳定理财、真实支出、持续出血、体验出血、资产变化 8 类记录。
+- 记录保存位置为 renderer `localStorage`，key 为 `growth-tree-os:wealth-records:v1`，本轮不新增 SQLite/IPC。
+- Wealth Dashboard 会从 records 汇总 Income / Expenses / Assets / Evaluation，并复用 `calculateDailyWealthSnapshot()` 计算今日状态、未来钱、可投资结余、自由度净变化和评分。
+- 支持新增记录、最近记录回看、删除记录、刷新后保留；后续可把 `localStorage` 存储迁移到主进程 SQLite。

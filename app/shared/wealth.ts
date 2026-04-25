@@ -5,6 +5,78 @@ export type WealthStatus =
   | 'future_money_burning'
   | 'system_risk'
 
+export type WealthRecordType =
+  | 'real_income'
+  | 'passive_income'
+  | 'system_income'
+  | 'stable_finance'
+  | 'real_expense'
+  | 'ongoing_cost'
+  | 'experience_cost'
+  | 'asset_change'
+
+export type WealthRecord = {
+  id: string
+  date: string
+  type: WealthRecordType
+  amount: number
+  title?: string
+  category?: string
+  source?: string
+  note?: string
+  meta?: {
+    cycle?: 'daily' | 'weekly' | 'monthly' | 'yearly'
+    isRigid?: boolean
+    cancelDifficulty?: number
+    stabilityScore?: number
+    laborDependencyScore?: number
+    systemType?: 'content' | 'software' | 'automation' | 'project' | 'other' | string
+    financeType?: 'interest' | 'dividend' | 'fund' | 'crypto' | 'stock' | 'other' | string
+    necessity?: 'necessary' | 'optional'
+    trigger?: string
+    isDopamineLeak?: boolean
+    assetType?: 'cash' | 'saving' | 'investment' | 'crypto' | 'device' | 'other' | string
+    direction?: 'increase' | 'decrease'
+  }
+  createdAt: string
+  updatedAt: string
+}
+
+type WealthRecordCycle = NonNullable<WealthRecord['meta']>['cycle']
+
+export type WealthBaseConfig = {
+  date: string
+  openingBalance: number
+  dailySafeLine: number
+  monthlyRemainingDisposable?: number
+  remainingDaysInMonth?: number
+  savingPoolBefore: number
+  realityStandard: number
+  deservedStandard: number
+  consecutiveOverdraftDays?: number
+}
+
+export type WealthRecordSummary = {
+  records: WealthRecord[]
+  todaysRecords: WealthRecord[]
+  totalIncome: number
+  totalExpense: number
+  realIncome: number
+  passiveIncome: number
+  systemIncome: number
+  stableFinance: number
+  realExpense: number
+  ongoingCost: number
+  experienceCost: number
+  assetDelta: number
+  monthlyOngoingPressure: number
+  supportCoverage: number
+  laborDependency: number
+  monthlyGap: number
+  freedomDelta: number
+  assetBuckets: Record<string, number>
+}
+
 export type DailyWealthSnapshot = {
   date: string
 
@@ -73,6 +145,28 @@ export const wealthStatusLabels: Record<WealthStatus, string> = {
   system_risk: '系统风险'
 }
 
+export const wealthRecordTypeLabels: Record<WealthRecordType, string> = {
+  real_income: '现实收入',
+  passive_income: '睡后收入',
+  system_income: '系统收入',
+  stable_finance: '稳定理财',
+  real_expense: '真实支出',
+  ongoing_cost: '持续出血',
+  experience_cost: '体验出血',
+  asset_change: '资产变化'
+}
+
+export const wealthRecordTypeDescriptions: Record<WealthRecordType, string> = {
+  real_income: '这笔收入来自现实劳动，例如兼职、工资、接单、临时收入。',
+  passive_income: '这笔收入是否不依赖你当下实时劳动？如果是，它会提高自由度。',
+  system_income: '记录内容、自动化、软件、项目、系统带来的收入。',
+  stable_finance: '记录利息、分红、定投收益、稳定回流。本轮只做手动记录。',
+  real_expense: '记录日常必要支出，会影响每日额度和超支判断。',
+  ongoing_cost: '这不是一次性花钱，而是一个会持续吸血的承诺。',
+  experience_cost: '这笔消费是恢复性的，还是失控性的？',
+  asset_change: '手动记录现金、储蓄、投资、数字资产、设备等资产变化。'
+}
+
 export function calculateDailyWealthSnapshot(input: DailyWealthSnapshotInput): DailyWealthSnapshot {
   const totalIncome =
     input.realIncomeToday + input.passiveIncomeToday + input.systemIncomeToday + input.stableFinanceToday
@@ -123,6 +217,110 @@ export function calculateDailyWealthSnapshot(input: DailyWealthSnapshotInput): D
     diagnosis: buildDiagnosis(status, accountDelta, investableSurplus, futureMoneyUsed, freedomDelta),
     priorityAction: buildPriorityAction(status, todayOverspend, futureMoneyUsed, savingPoolAfter)
   }
+}
+
+export function summarizeWealthRecords(records: WealthRecord[], date: string, config: WealthBaseConfig): WealthRecordSummary {
+  const todaysRecords = records.filter((record) => record.date === date)
+  const totalByType = (type: WealthRecordType) =>
+    todaysRecords.filter((record) => record.type === type).reduce((sum, record) => sum + record.amount, 0)
+
+  const realIncome = totalByType('real_income')
+  const passiveIncome = totalByType('passive_income')
+  const systemIncome = totalByType('system_income')
+  const stableFinance = totalByType('stable_finance')
+  const realExpense = totalByType('real_expense')
+  const ongoingCost = totalByType('ongoing_cost')
+  const experienceCost = totalByType('experience_cost')
+  const assetDelta = todaysRecords
+    .filter((record) => record.type === 'asset_change')
+    .reduce((sum, record) => sum + (record.meta?.direction === 'decrease' ? -record.amount : record.amount), 0)
+  const totalIncome = realIncome + passiveIncome + systemIncome + stableFinance
+  const totalExpense = realExpense + ongoingCost + experienceCost
+  const supportCoverage = (passiveIncome + systemIncome + stableFinance) / Math.max(realExpense + ongoingCost, 1)
+  const laborDependency = realIncome / Math.max(totalIncome, 1)
+  const monthlyGap = config.realityStandard - config.deservedStandard
+  const freedomDelta = passiveIncome + systemIncome + stableFinance - ongoingCost - experienceCost
+  const monthlyOngoingPressure = todaysRecords
+    .filter((record) => record.type === 'ongoing_cost')
+    .reduce((sum, record) => sum + toMonthlyAmount(record.amount, record.meta?.cycle), 0)
+  const assetBuckets = buildAssetBuckets(records)
+
+  return {
+    records,
+    todaysRecords,
+    totalIncome,
+    totalExpense,
+    realIncome,
+    passiveIncome,
+    systemIncome,
+    stableFinance,
+    realExpense,
+    ongoingCost,
+    experienceCost,
+    assetDelta,
+    monthlyOngoingPressure,
+    supportCoverage,
+    laborDependency,
+    monthlyGap,
+    freedomDelta,
+    assetBuckets
+  }
+}
+
+export function buildDailyWealthInputFromRecords(
+  records: WealthRecord[],
+  config: WealthBaseConfig
+): DailyWealthSnapshotInput {
+  const summary = summarizeWealthRecords(records, config.date, config)
+  const closingBalance = config.openingBalance + summary.assetDelta + summary.totalIncome - summary.totalExpense
+
+  return {
+    date: config.date,
+    openingBalance: config.openingBalance,
+    closingBalance,
+    realIncomeToday: summary.realIncome,
+    passiveIncomeToday: summary.passiveIncome,
+    systemIncomeToday: summary.systemIncome,
+    stableFinanceToday: summary.stableFinance,
+    realExpensesToday: summary.realExpense,
+    ongoingCostToday: summary.ongoingCost,
+    experienceCostToday: summary.experienceCost,
+    emergencyCostToday: 0,
+    dailySafeLine: config.dailySafeLine,
+    monthlyRemainingDisposable: config.monthlyRemainingDisposable,
+    remainingDaysInMonth: config.remainingDaysInMonth,
+    savingPoolBefore: config.savingPoolBefore,
+    realityStandard: config.realityStandard,
+    deservedStandard: config.deservedStandard,
+    monthlyGap: summary.monthlyGap,
+    laborDependency: summary.laborDependency,
+    supportCoverage: summary.supportCoverage,
+    consecutiveOverdraftDays: config.consecutiveOverdraftDays
+  }
+}
+
+function toMonthlyAmount(amount: number, cycle: WealthRecordCycle): number {
+  if (cycle === 'daily') {
+    return amount * 30
+  }
+  if (cycle === 'weekly') {
+    return amount * 4
+  }
+  if (cycle === 'yearly') {
+    return amount / 12
+  }
+  return amount
+}
+
+function buildAssetBuckets(records: WealthRecord[]): Record<string, number> {
+  return records
+    .filter((record) => record.type === 'asset_change')
+    .reduce<Record<string, number>>((buckets, record) => {
+      const assetType = record.meta?.assetType ?? 'other'
+      const signedAmount = record.meta?.direction === 'decrease' ? -record.amount : record.amount
+      buckets[assetType] = (buckets[assetType] ?? 0) + signedAmount
+      return buckets
+    }, {})
 }
 
 function resolveDynamicDailyAllowance(input: DailyWealthSnapshotInput): number {
