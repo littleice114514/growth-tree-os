@@ -1,0 +1,261 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: rgb(var(--color-base-100));
+  background: var(--app-root-background);
+  font-family:
+    'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+:root,
+:root[data-theme='dark'] {
+  --color-base-950: 8 10 13;
+  --color-base-900: 17 22 29;
+  --color-base-850: 21 28 36;
+  --color-base-800: 26 34 45;
+  --color-base-700: 39 50 65;
+  --color-base-600: 69 86 106;
+  --color-base-500: 93 115 141;
+  --color-base-400: 133 150 169;
+  --color-base-300: 170 182 196;
+  --color-base-200: 210 218 228;
+  --color-base-100: 237 242 247;
+  --color-accent-cyan: 125 211 252;
+  --color-accent-green: 134 239 172;
+  --color-accent-amber: 251 191 36;
+  --color-accent-rose: 251 113 133;
+  --app-root-background:
+    radial-gradient(circle at 52% 14%, rgba(125, 211, 252, 0.1), transparent 28%),
+    radial-gradient(circle at 18% 26%, rgba(139, 92, 246, 0.07), transparent 24%),
+    linear-gradient(180deg, #07090d 0%, #0b0f15 48%, #07090d 100%);
+  --app-body-background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px),
+    radial-gradient(circle at 50% 35%, rgba(125, 211, 252, 0.055), transparent 34%),
+    #07090d;
+  --app-body-background-size: 32px 32px, 32px 32px, 100% 100%, 100% 100%;
+  --app-bg: #07090d;
+  --panel-bg: rgba(8, 10, 13, 0.62);
+  --panel-bg-strong: rgba(8, 10, 13, 0.86);
+  --panel-border: rgba(237, 242, 247, 0.08);
+  --text-primary: #edf2f7;
+  --text-secondary: #aab6c4;
+  --text-muted: #5d738d;
+  --input-bg: rgba(237, 242, 247, 0.035);
+  --input-border: rgba(237, 242, 247, 0.09);
+  --button-bg: #edf2f7;
+  --button-text: #080a0d;
+  --button-hover: rgb(var(--color-accent-cyan));
+  --control-bg: rgba(237, 242, 247, 0.035);
+  --control-hover: rgba(125, 211, 252, 0.08);
+  --graph-bg: rgba(8, 10, 13, 0.44);
+  --graph-overlay-bg: rgba(8, 10, 13, 0.72);
+  --graph-grid: rgba(125, 211, 252, 0.16);
+  --node-fill: rgba(12, 18, 26, 0.9);
+  --node-mainline-fill: linear-gradient(180deg, rgba(125, 211, 252, 0.24), rgba(125, 211, 252, 0.075));
+  --node-border: rgba(237, 242, 247, 0.13);
+  --node-text: #edf2f7;
+  --node-selected-fill: rgba(13, 28, 40, 0.98);
+  --node-selected-border: rgba(125, 211, 252, 0.75);
+  --node-neighbor-border: rgba(237, 242, 247, 0.24);
+  --node-muted-opacity: 0.16;
+  --edge-default: #6f86a0;
+  --edge-emphasis: #7dd3fc;
+  --edge-muted: #334455;
+  --minimap-mask: rgba(7, 9, 13, 0.58);
+  --minimap-node: #334a5f;
+  --inspector-section-bg: rgba(237, 242, 247, 0.035);
+  --overlay-bg: rgba(8, 10, 13, 0.92);
+  --status-new: #7dd3fc;
+  --status-growing: #fbbf24;
+  --status-stable: #86efac;
+  --status-dormant: #94a3b8;
+  --status-review: #fb7185;
+  --status-restarted: #f0abfc;
+  --shadow-panel: 0 24px 60px rgba(0, 0, 0, 0.28);
+  --shadow-node-selected: 0 0 0 1px rgba(125, 211, 252, 0.38), 0 0 34px rgba(125, 211, 252, 0.3), 0 18px 36px rgba(0, 0, 0, 0.32);
+  --shadow-node-neighbor: 0 0 20px rgba(125, 211, 252, 0.16), 0 12px 28px rgba(0, 0, 0, 0.24);
+  --shadow-node: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+:root[data-theme='light'] {
+  --color-base-950: 248 250 252;
+  --color-base-900: 242 246 250;
+  --color-base-850: 234 240 246;
+  --color-base-800: 224 232 240;
+  --color-base-700: 203 213 225;
+  --color-base-600: 148 163 184;
+  --color-base-500: 100 116 139;
+  --color-base-400: 71 85 105;
+  --color-base-300: 51 65 85;
+  --color-base-200: 30 41 59;
+  --color-base-100: 15 23 42;
+  --color-accent-cyan: 8 145 178;
+  --color-accent-green: 22 163 74;
+  --color-accent-amber: 180 83 9;
+  --color-accent-rose: 225 29 72;
+  --app-root-background:
+    radial-gradient(circle at 48% 12%, rgba(8, 145, 178, 0.13), transparent 30%),
+    radial-gradient(circle at 18% 24%, rgba(99, 102, 241, 0.08), transparent 24%),
+    linear-gradient(180deg, #f8fafc 0%, #eef4f8 54%, #f7fafc 100%);
+  --app-body-background:
+    linear-gradient(rgba(15, 23, 42, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.028) 1px, transparent 1px),
+    radial-gradient(circle at 50% 35%, rgba(8, 145, 178, 0.08), transparent 34%),
+    #f8fafc;
+  --app-body-background-size: 32px 32px, 32px 32px, 100% 100%, 100% 100%;
+  --app-bg: #f8fafc;
+  --panel-bg: rgba(255, 255, 255, 0.76);
+  --panel-bg-strong: rgba(255, 255, 255, 0.94);
+  --panel-border: rgba(15, 23, 42, 0.12);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --input-bg: rgba(255, 255, 255, 0.78);
+  --input-border: rgba(15, 23, 42, 0.14);
+  --button-bg: #0f172a;
+  --button-text: #f8fafc;
+  --button-hover: #0891b2;
+  --control-bg: rgba(15, 23, 42, 0.045);
+  --control-hover: rgba(8, 145, 178, 0.1);
+  --graph-bg: rgba(248, 250, 252, 0.72);
+  --graph-overlay-bg: rgba(255, 255, 255, 0.78);
+  --graph-grid: rgba(8, 145, 178, 0.2);
+  --node-fill: rgba(255, 255, 255, 0.94);
+  --node-mainline-fill: linear-gradient(180deg, rgba(8, 145, 178, 0.18), rgba(255, 255, 255, 0.82));
+  --node-border: rgba(15, 23, 42, 0.16);
+  --node-text: #0f172a;
+  --node-selected-fill: rgba(236, 253, 255, 0.98);
+  --node-selected-border: rgba(8, 145, 178, 0.78);
+  --node-neighbor-border: rgba(15, 23, 42, 0.24);
+  --node-muted-opacity: 0.28;
+  --edge-default: #64748b;
+  --edge-emphasis: #0891b2;
+  --edge-muted: #cbd5e1;
+  --minimap-mask: rgba(248, 250, 252, 0.55);
+  --minimap-node: #94a3b8;
+  --inspector-section-bg: rgba(255, 255, 255, 0.72);
+  --overlay-bg: rgba(255, 255, 255, 0.96);
+  --status-new: #0284c7;
+  --status-growing: #b45309;
+  --status-stable: #15803d;
+  --status-dormant: #64748b;
+  --status-review: #e11d48;
+  --status-restarted: #a21caf;
+  --shadow-panel: 0 24px 60px rgba(15, 23, 42, 0.12);
+  --shadow-node-selected: 0 0 0 1px rgba(8, 145, 178, 0.32), 0 0 28px rgba(8, 145, 178, 0.18), 0 16px 34px rgba(15, 23, 42, 0.14);
+  --shadow-node-neighbor: 0 0 18px rgba(8, 145, 178, 0.12), 0 12px 28px rgba(15, 23, 42, 0.11);
+  --shadow-node: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
+  background: var(--app-body-background);
+  background-size: var(--app-body-background-size);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+.react-flow {
+  background: transparent;
+}
+
+.react-flow__pane {
+  cursor: grab;
+}
+
+.react-flow__pane:active {
+  cursor: grabbing;
+}
+
+.react-flow__node {
+  color: inherit;
+}
+
+.react-flow__edge-path,
+.react-flow__connection-path {
+  filter: drop-shadow(0 0 5px rgb(var(--color-accent-cyan) / 0.08));
+}
+
+.react-flow__controls {
+  overflow: hidden;
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  background: var(--overlay-bg);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(16px);
+}
+
+.react-flow__controls-button {
+  width: 30px;
+  height: 30px;
+  border-bottom: 1px solid var(--panel-border);
+  background: var(--control-bg);
+  color: var(--text-secondary);
+}
+
+.react-flow__controls-button:hover {
+  background: var(--control-hover);
+  color: var(--text-primary);
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor;
+}
+
+.react-flow__minimap {
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  background: var(--overlay-bg);
+  box-shadow: var(--shadow-panel);
+  backdrop-filter: blur(14px);
+}
+
+::selection {
+  background: rgb(var(--color-accent-cyan) / 0.28);
+  color: rgb(var(--color-base-100));
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: rgb(var(--color-base-500) / 0.5);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-base-300) / 0.62);
+  background-clip: content-box;
+}

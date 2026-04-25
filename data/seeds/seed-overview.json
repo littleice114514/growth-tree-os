@@ -1,0 +1,11 @@
+{
+  "mainlines": 6,
+  "exampleNodesPerMainline": 2,
+  "seedReviews": 2,
+  "stableNodes": 4,
+  "growingNodes": 5,
+  "reviewNodes": 1,
+  "dormantNodes": 2,
+  "repeatProblemNodes": 1,
+  "note": "首启时自动写入主线、示例节点、示例复盘、证据和可触发提醒/回看的时间数据。"
+}

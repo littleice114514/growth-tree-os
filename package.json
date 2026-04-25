@@ -1,0 +1,50 @@
+{
+  "name": "growth-tree-os",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first desktop growth tree workspace.",
+  "main": "./out/main/index.js",
+  "author": "OpenAI Codex",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p app/renderer/tsconfig.json",
+    "smoke": "pnpm typecheck && pnpm build"
+  },
+  "build": {
+    "appId": "com.local.growth-tree-os",
+    "productName": "growth-tree-os",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "resources/**/*",
+      "package.json"
+    ]
+  },
+  "dependencies": {
+    "@xyflow/react": "^12.8.5",
+    "clsx": "^2.1.1",
+    "dayjs": "^1.11.13",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-force-graph-2d": "^1.29.1",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.11.29",
+    "@types/node": "^22.15.3",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.4.1",
+    "autoprefixer": "^10.4.21",
+    "electron": "^35.2.0",
+    "electron-vite": "^3.1.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}
