@@ -61,3 +61,10 @@
 - 记录保存位置为 renderer `localStorage`，key 为 `growth-tree-os:wealth-records:v1`，本轮不新增 SQLite/IPC。
 - Wealth Dashboard 会从 records 汇总 Income / Expenses / Assets / Evaluation，并复用 `calculateDailyWealthSnapshot()` 计算今日状态、未来钱、可投资结余、自由度净变化和评分。
 - 支持新增记录、最近记录回看、删除记录、刷新后保留；后续可把 `localStorage` 存储迁移到主进程 SQLite。
+
+## 2026-04-25 Time Debt 桌面端 V1
+
+- Time Debt 已作为 `时间负债` 入口接入顶部导航，页面入口为 `app/renderer/src/features/time-debt/TimeDebtDashboard.tsx`。
+- 共享数据结构与计算层在 `app/shared/timeDebt.ts`，覆盖 TimeDebtLog、WorkTimeStandard、ProjectCategory、TimeDebtParams、DailyTimeDebtStats、TimeDebtDiagnosis。
+- 本轮保存位置为 renderer `localStorage`：`growth-tree-os:time-debt-logs:v1`、`growth-tree-os:time-debt-standards:v1`、`growth-tree-os:time-debt-params:v1`。
+- Time Debt V1 支持新增时间日志、删除日志、日度统计、负债参数配置、工作时间标准配置和仪表盘诊断；暂不接 SQLite/IPC、移动端或 AI 解释链。

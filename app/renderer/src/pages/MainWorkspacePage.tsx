@@ -11,6 +11,7 @@ import { ReminderPanel } from '@/features/reminders/ReminderPanel'
 import { WeeklyReviewPanel } from '@/features/review/WeeklyReviewPanel'
 import { ObsidianGraphView } from '@/features/obsidian-graph/ObsidianGraphView'
 import { WealthDashboard } from '@/features/wealth/WealthDashboard'
+import { TimeDebtDashboard } from '@/features/time-debt/TimeDebtDashboard'
 
 export function MainWorkspacePage() {
   const isReviewComposerOpen = useWorkspaceStore((state) => state.isReviewComposerOpen)
@@ -89,6 +90,7 @@ export function MainWorkspacePage() {
           </main>
         ) : null}
         {currentView === 'wealth' ? <WealthDashboard /> : null}
+        {currentView === 'timeDebt' ? <TimeDebtDashboard /> : null}
         {currentView === 'obsidianGraph' ? <ObsidianGraphView /> : null}
         {currentView === 'weeklyReview' ? (
           <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_340px] gap-4">

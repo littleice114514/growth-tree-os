@@ -136,3 +136,58 @@ renderer localStorage: growth-tree-os:wealth-records:v1
 ```
 
 本轮不接外部账户、银行卡、支付宝、微信、股票或 BTC 实时行情。
+
+## 11. Time Debt 模块同步说明
+
+Windows 已新增 Time Debt module baseline。
+
+MacBook 拉取最新代码：
+
+```bash
+cd ~/Developer/growth-tree-os
+git fetch origin
+git pull
+pnpm install
+pnpm dev
+```
+
+检查：
+
+- 是否能进入 Time Debt / 时间负债。
+- 是否能看到 Overview / 总览。
+- 是否能进入 Logs / 时间日志。
+- 是否能新增时间日志。
+- 是否能看到 Daily Stats / 日度统计。
+- 是否能看到 Dashboard / Diagnosis / 仪表盘诊断。
+- 刷新后日志是否保留。
+
+固定测试日志：
+
+```text
+标题：优化单词突围完整词库，校对 1700 后缀
+一级分类：工作
+二级项目：单词突围考研版
+开始时间：2026-03-30 14:00
+结束时间：2026-03-30 15:10
+工作量：295
+工作量单位：个
+状态分：7
+AI 赋能比例：0
+维度：时间管理
+```
+
+预期：
+
+- 持续时长为 70 min。
+- 效率约为 0.24 min / 个。
+- 状态加权为 490。
+- AI 化加权为 0。
+
+当前保存位置：
+
+```text
+renderer localStorage:
+- growth-tree-os:time-debt-logs:v1
+- growth-tree-os:time-debt-standards:v1
+- growth-tree-os:time-debt-params:v1
+```

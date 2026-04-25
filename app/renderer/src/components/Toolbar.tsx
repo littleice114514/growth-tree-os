@@ -6,6 +6,7 @@ import type { WorkspaceView } from '@/types/ui'
 const workspaceViews: Array<[WorkspaceView, string]> = [
   ['tree', '成长树'],
   ['wealth', '财富'],
+  ['timeDebt', '时间负债'],
   ['obsidianGraph', '图谱 V1'],
   ['reminders', '提醒'],
   ['weeklyReview', '周回看']
@@ -14,6 +15,7 @@ const workspaceViews: Array<[WorkspaceView, string]> = [
 const workspaceTitles: Record<WorkspaceView, string> = {
   tree: '成长树主视图',
   wealth: '财富操作系统',
+  timeDebt: '时间负债',
   obsidianGraph: '图谱 V1',
   reminders: '提醒工作台',
   weeklyReview: '周回看'

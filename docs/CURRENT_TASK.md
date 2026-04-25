@@ -2,20 +2,20 @@
 
 ## 本轮唯一目标
 
-补齐 Wealth 语义记录流，并继续保持 Windows / GitHub / MacBook 协同底座。
+接入 Time Debt 时间负债模块，并继续保持 Windows / GitHub / MacBook 协同底座。
 
 本轮不出 APK，不处理 Android 构建，不接外部金融 API。
 
 ## 当前默认主线
 
-当前默认主线 = PC / 桌面端 Wealth 语义记录 + 双设备 GitHub 协同优先。
+当前默认主线 = PC / 桌面端 Time Debt V1 + 双设备 GitHub 协同优先。
 
 优先关注：
 
 1. Windows 本地可启动
-2. Wealth 可以新增财富记录
-3. 不同记录类型进入 Income / Expenses / Assets / Evaluation 统计
-4. 刷新后 records 不丢
+2. Time Debt 可以进入并新增时间日志
+3. 日志进入 Daily Stats / Overview / Dashboard 统计和诊断
+4. 刷新后 Time Debt logs 不丢
 5. GitHub main 分支可同步，MacBook 可 pull 验证
 
 ## 本轮不做
@@ -32,6 +32,9 @@
 - Wealth 算法：`app/shared/wealth.ts`
 - Wealth 页面：`app/renderer/src/features/wealth/WealthDashboard.tsx`
 - Wealth 本地存储：`app/renderer/src/features/wealth/wealthStorage.ts`
+- Time Debt 计算层：`app/shared/timeDebt.ts`
+- Time Debt 页面：`app/renderer/src/features/time-debt/TimeDebtDashboard.tsx`
+- Time Debt 本地存储：`app/renderer/src/features/time-debt/timeDebtStorage.ts`
 - 主视图接入：`app/renderer/src/pages/MainWorkspacePage.tsx`
 - 导航接入：`app/renderer/src/components/Toolbar.tsx`
 - 视图类型：`app/renderer/src/types/ui.ts`
@@ -41,9 +44,9 @@
 
 ## 下一步唯一优先事项
 
-下一轮优先让 MacBook 按 `docs/handoff/MACBOOK_SETUP.md` pull、install、dev 跑通，并验证 Wealth 语义记录是否同步。
+下一轮优先让 MacBook 按 `docs/handoff/MACBOOK_SETUP.md` pull、install、dev 跑通，并验证 Time Debt 模块是否同步。
 
-MacBook 验证完成后，再评估是否把 Wealth records 从 renderer `localStorage` 迁移到主进程 SQLite。
+MacBook 验证完成后，再评估是否把 Wealth / Time Debt 的 renderer `localStorage` 迁移到主进程 SQLite。
 
 ## 验收标准
 
@@ -51,8 +54,8 @@ MacBook 验证完成后，再评估是否把 Wealth records 从 renderer `localS
 - `pnpm typecheck` 通过。
 - `pnpm build` 通过。
 - `pnpm dev` 能拉起 Electron。
-- Wealth 页面能看到“新增财富记录”入口。
-- 能新增现实收入、睡后收入、持续出血、体验出血、资产变化。
-- 最近记录、Income、Expenses、Assets、Evaluation 能随记录变化。
-- 刷新后记录仍保留。
+- Time Debt 页面能看到总览、时间日志、日度统计、负债参数、工作时间标准、仪表盘诊断。
+- 能新增固定测试日志，持续时长为 70 min，效率约 0.24 min / 个。
+- Logs、Daily Stats、Overview、Dashboard / Diagnosis 能随日志变化。
+- 刷新后日志仍保留。
 - `docs/handoff/MACBOOK_SETUP.md` 存在，并包含可复制的 MacBook 命令。
