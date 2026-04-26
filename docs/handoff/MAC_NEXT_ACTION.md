@@ -35,7 +35,10 @@
 - `pnpm typecheck` 通过。
 - `pnpm build` 通过。
 - `pnpm dev` 可启动 Electron，renderer dev server 地址为 `http://localhost:5173/`。
-- 固定测试样本在表单中作为默认日志草稿：持续时长 70 min，效率约 0.24 min / 个，状态加权 490，AI 化加权 0。
+- 已通过浏览器 renderer smoke 进入 `时间负债`，新增固定测试日志，刷新后日志仍保留。
+- 固定测试样本结果：持续时长 70 min，效率约 0.24 min / 个，状态加权 490，AI 化加权 0。
+- Daily Stats 显示总记录数 1、总时长 70 min、工作时长 70 min、AI 平均赋能比例 0%。
+- Dashboard / Diagnosis 显示 `需要恢复`、标准工时 vs 实际工时 `480 min / 70 min`。
 
 ### 未验证 / 风险
 

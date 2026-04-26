@@ -75,4 +75,5 @@
 - 已执行 `pnpm install`，lockfile 已是最新，依赖可用。
 - 已执行 `pnpm typecheck` 和 `pnpm build`，均通过。
 - 已执行 `pnpm dev` smoke test，Electron dev server 可启动，renderer 地址为 `http://localhost:5173/`。
+- 已用浏览器 renderer smoke 验证 `时间负债` 可进入，固定测试日志可保存，刷新后保留，Overview / Daily Stats / Dashboard 会随日志显示 70 min、0.24 min / 个、状态加权 490、AI 化加权 0。
 - 已新增 `docs/handoff/MAC_NEXT_ACTION.md`，MacBook 可按该卡拉取、安装、启动并验收 Time Debt。

@@ -55,6 +55,7 @@ MacBook 验证完成后，再评估是否把 Wealth / Time Debt 的 renderer `lo
 - `pnpm typecheck`：通过。
 - `pnpm build`：通过。
 - `pnpm dev`：可启动 Electron，renderer dev server 为 `http://localhost:5173/`。
+- 浏览器 renderer smoke：可进入 `时间负债`，固定测试日志新增成功，刷新后保留，日度统计和仪表盘诊断显示预期数据。
 - Mac 接力文件：已新增 `docs/handoff/MAC_NEXT_ACTION.md`，并更新 `docs/handoff/MACBOOK_SETUP.md` 的 Time Debt 同步说明。
 
 ## 验收标准
