@@ -139,14 +139,17 @@ renderer localStorage: growth-tree-os:wealth-records:v1
 
 ## 11. Time Debt 模块同步说明
 
-Windows 已新增 Time Debt module baseline。
+Windows 已新增并验证 Time Debt desktop baseline。模块入口为顶部导航的 `时间负债`，当前保存位置为 renderer localStorage，本轮不迁移 SQLite / IPC。
 
 MacBook 拉取最新代码：
 
 ```bash
 cd ~/Developer/growth-tree-os
+git status
 git fetch origin
-git pull
+git checkout main
+git pull origin main
+git rev-parse --short HEAD
 pnpm install
 pnpm dev
 ```
@@ -182,6 +185,8 @@ AI 赋能比例：0
 - 效率约为 0.24 min / 个。
 - 状态加权为 490。
 - AI 化加权为 0。
+- Daily Stats / 总览 / 仪表盘诊断会随该日志刷新。
+- 刷新后日志仍保留。
 
 当前保存位置：
 
@@ -190,4 +195,10 @@ renderer localStorage:
 - growth-tree-os:time-debt-logs:v1
 - growth-tree-os:time-debt-standards:v1
 - growth-tree-os:time-debt-params:v1
+```
+
+完整 Mac 下一步操作卡见：
+
+```text
+docs/handoff/MAC_NEXT_ACTION.md
 ```

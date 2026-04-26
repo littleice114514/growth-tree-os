@@ -68,3 +68,11 @@
 - 共享数据结构与计算层在 `app/shared/timeDebt.ts`，覆盖 TimeDebtLog、WorkTimeStandard、ProjectCategory、TimeDebtParams、DailyTimeDebtStats、TimeDebtDiagnosis。
 - 本轮保存位置为 renderer `localStorage`：`growth-tree-os:time-debt-logs:v1`、`growth-tree-os:time-debt-standards:v1`、`growth-tree-os:time-debt-params:v1`。
 - Time Debt V1 支持新增时间日志、删除日志、日度统计、负债参数配置、工作时间标准配置和仪表盘诊断；暂不接 SQLite/IPC、移动端或 AI 解释链。
+
+## 2026-04-26 M11 Time Debt 验收与 Mac 接力
+
+- Windows 端已执行 `git pull --ff-only`，远程 main 已是最新。
+- 已执行 `pnpm install`，lockfile 已是最新，依赖可用。
+- 已执行 `pnpm typecheck` 和 `pnpm build`，均通过。
+- 已执行 `pnpm dev` smoke test，Electron dev server 可启动，renderer 地址为 `http://localhost:5173/`。
+- 已新增 `docs/handoff/MAC_NEXT_ACTION.md`，MacBook 可按该卡拉取、安装、启动并验收 Time Debt。

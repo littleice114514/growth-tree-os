@@ -48,6 +48,15 @@
 
 MacBook 验证完成后，再评估是否把 Wealth / Time Debt 的 renderer `localStorage` 迁移到主进程 SQLite。
 
+## 2026-04-26 Windows 验收结果
+
+- `git pull --ff-only`：已是最新。
+- `pnpm install`：通过。
+- `pnpm typecheck`：通过。
+- `pnpm build`：通过。
+- `pnpm dev`：可启动 Electron，renderer dev server 为 `http://localhost:5173/`。
+- Mac 接力文件：已新增 `docs/handoff/MAC_NEXT_ACTION.md`，并更新 `docs/handoff/MACBOOK_SETUP.md` 的 Time Debt 同步说明。
+
 ## 验收标准
 
 - `pnpm install --frozen-lockfile` 通过。
