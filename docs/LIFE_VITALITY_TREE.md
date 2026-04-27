@@ -31,6 +31,25 @@
 - 树对象身份具有视角相对性：一个方向在整树视角中可能是小枝，在模块视角中可以成为局部主干。
 - 文档阶段先定义语义、边界和决策方法，不启动 3D 开发，不改数据库、IPC 或 Zustand。
 
+## 2.1 v0.1 基础框架落地记录
+
+2026-04-27 已进入 Life Vitality Tree 基础框架 v0.1。
+
+本阶段完成：
+
+- 新增 `app/renderer/src/features/life-vitality-tree/` 模块目录；
+- 建立 Life Tree 基础 TypeScript 类型；
+- 建立静态 mock 数据；
+- 建立 2.5D / SVG / HTML 版 Life Vitality Tree Canvas 占位组件；
+- 在顶部主入口新增 `人生生长树`；
+- 从主入口和页面切换中移除 Obsidian Graph V1；
+- 保留 Obsidian Graph 旧代码，不物理删除；
+- 支持远景、结构、模块、细节和年轮视角；
+- 支持 hover 摘要和点击详情卡；
+- 当前仍不接 SQLite、IPC、Zustand TreeSnapshot，不做真实 3D，不安装 Three.js / R3F / Drei。
+
+v0.1 的目标是让后续开发能看到 Life Vitality Tree 的基本对象、视角、交互骨架和产品边界，不代表最终视觉方案。
+
 ## 3. 暂停与归档：Obsidian Graph
 
 Obsidian Graph V1 已退出主线。后续不再对标 Obsidian 关系图谱，而是转向 Life Vitality Tree / 人生生长树。旧图谱只作为历史实验与局部交互参考保留。

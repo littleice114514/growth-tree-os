@@ -11,15 +11,24 @@
 
 ## 2. 本轮已完成
 
-- 新增 Life Vitality Tree / 人生生长树主规划文档。
-- 明确 Life Vitality Tree Canvas 是后续主视觉模块方向。
-- 将 Obsidian Graph V1 记录为退出主线的历史实验分支。
-- 建立树对象语义、四层视角、年轮视角、年龄阶段树形、保留池和 Life Tree Decision Gate。
-- 补充数据库、网页端、多用户和隐私风险预留。
-- 本轮只改文档，不改功能代码、数据库、IPC、Zustand 或依赖。
+- 新增 Life Vitality Tree / 人生生长树 v0.1 静态框架。
+- 顶部导航新增 `人生生长树`。
+- 顶部导航和页面切换中移除 `图谱 V1` 主入口。
+- 保留 Obsidian Graph 旧代码，不删除、不移动。
+- 新增 Life Tree 基础 TypeScript 类型和 mock 数据。
+- 新增 2.5D / SVG / HTML 版 Life Vitality Tree Canvas 占位组件。
+- 支持远景、结构、模块、细节和年轮视角。
+- 支持 hover 摘要和点击详情卡。
+- 本轮不接数据库、不改 IPC、不改 SQLite、不安装 3D 依赖。
 
 ## 3. 本轮修改文件
 
+- `app/renderer/src/features/life-vitality-tree/LifeVitalityTreeCanvas.tsx`
+- `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeTypes.ts`
+- `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeMockData.ts`
+- `app/renderer/src/pages/MainWorkspacePage.tsx`
+- `app/renderer/src/components/Toolbar.tsx`
+- `app/renderer/src/types/ui.ts`
 - `docs/LIFE_VITALITY_TREE.md`
 - `docs/CURRENT_STATE.md`
 - `docs/CURRENT_TASK.md`
@@ -31,17 +40,18 @@
 
 ### 已验证
 
-- `git diff --name-only` 只包含 `docs/` 下 Markdown 文件。
-- 没有修改 `app/` 下 React / TypeScript 功能代码。
+- `pnpm typecheck`：通过。
+- `pnpm build`：通过。
+- `git diff --name-only` 仅包含 Life Vitality Tree 新模块、入口切换文件和文档。
 - 没有修改 `package.json` 或 `pnpm-lock.yaml`。
-- 没有删除或移动 Obsidian Graph 文件。
-- 没有改数据库、IPC、Zustand store。
+- 没有修改 `app/main/db.ts` 或 `app/main/ipc.ts`。
+- 没有删除或移动 `app/renderer/src/features/obsidian-graph` 旧文件。
 
 ### 未验证 / 风险
 
-- 本轮为纯文档整理，默认未运行 `pnpm smoke`。
-- Life Vitality Tree 仍处于产品定义阶段，尚未进入类型草案、Canvas 原型或 3D 开发。
-- 树根、叶子状态、落叶入土、风系统、3D、网页端、多用户等仍在保留池，不是当前开发承诺。
+- Life Vitality Tree v0.1 仍是静态 mock，不接真实复盘、节点、财富或时间负债数据。
+- 本轮不是最终视觉方案，不做真实 3D。
+- 年轮、落叶入土、根系字段、数据库映射仍在后续设计阶段。
 
 ## 5. Mac 端第一步操作
 
@@ -70,44 +80,31 @@ git rev-parse --short HEAD
 
 ## 6. Mac 端环境准备
 
-本轮只检查文档，不需要安装新依赖。
-
-如需打开项目继续开发：
-
 ```bash
 pnpm install
-pnpm dev
-```
-
-如需完整工程检查：
-
-```bash
 pnpm typecheck
 pnpm build
+pnpm dev
 ```
 
 ## 7. Mac 端验收方式
 
 请在 Mac 端检查：
 
-- `docs/LIFE_VITALITY_TREE.md` 是否存在。
-- 文档是否明确 Life Vitality Tree / 人生生长树是新主视觉方向。
-- 文档是否明确 Obsidian Graph V1 退出主线并归档。
-- 文档是否包含树对象语义、四层视角、年轮视角、年龄阶段树形和畸形成长描述。
-- 文档是否包含保留池和 Life Tree Decision Gate。
-- 文档是否包含数据库、网页端、多用户和隐私风险预留。
-- `docs/CURRENT_STATE.md`、`docs/CURRENT_TASK.md`、`docs/PAUSED_BRANCHES.md`、`docs/FILE_MAP.md` 是否有短摘要或指针。
-
-预期结果：
-
-- Mac 端能直接通过 `docs/LIFE_VITALITY_TREE.md` 理解主线、边界和暂不开发内容。
-- Mac 端不需要重新阅读代码即可继续做下一轮类型草案或静态 Canvas 规划。
+- 顶部导航不再显示 `图谱 V1`。
+- 顶部导航显示 `人生生长树`。
+- 点击 `人生生长树` 后显示 Life Vitality Tree Canvas。
+- 远景、结构、模块、细节、年轮 5 个视角按钮可切换。
+- hover 树对象时出现摘要。
+- 点击树对象后右侧详情卡更新。
+- `成长树`、`财富`、`时间负债`、`提醒`、`周回看` 仍能进入。
+- `app/renderer/src/features/obsidian-graph` 目录仍存在。
 
 ## 8. Mac 端下一轮任务
 
 请让 Mac 端 Codex 接着完成：
 
-在不改数据库、不改 IPC、不启动 3D 的前提下，基于 `docs/LIFE_VITALITY_TREE.md` 起草 Life Vitality Tree 的最小 TypeScript 类型方案或静态样例数据方案，并先输出计划，不直接替换现有成长树主图。
+验证 Life Vitality Tree v0.1 在 macOS Electron 环境的页面操作闭环，并评估下一步是否把静态 mock 数据拆成可测试的数据映射层。不要直接接数据库，不要启动 3D。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
@@ -115,9 +112,9 @@ pnpm build
 
 - `git status` 输出
 - `git rev-parse --short HEAD` 输出
-- `docs/LIFE_VITALITY_TREE.md` 是否存在
-- `git pull origin main` 的完整报错
-- 如运行工程命令，则粘贴 `pnpm install`、`pnpm dev`、`pnpm typecheck` 或 `pnpm build` 的完整报错
+- `pnpm install`、`pnpm typecheck`、`pnpm build`、`pnpm dev` 的完整报错
+- 页面异常截图
+- DevTools 控制台首个关键错误
 
 ## 10. 注意事项
 
@@ -125,4 +122,4 @@ pnpm build
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
 - `.env`、SQLite、本地 runtime、依赖和构建产物不要提交。
-- Life Vitality Tree 当前是指导书和保留池，不是最终冻结方案。
+- Life Vitality Tree v0.1 是静态框架，不是最终视觉或真实数据方案。

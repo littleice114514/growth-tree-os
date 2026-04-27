@@ -4,7 +4,9 @@
 
 - 新主视觉方向已切到 Life Vitality Tree / 人生生长树，建议模块名为 Life Vitality Tree Canvas。
 - Obsidian Graph V1 已退出产品主线，后续不再对标 Obsidian 关系图谱；旧图谱只作为历史实验与 hover / highlight / detail 交互参考保留。
-- 当前阶段是产品定义和指导书整理，不进入 3D 开发，不改数据库、IPC、Zustand 或功能代码。
+- 当前阶段已进入 v0.1 基础框架：静态 TypeScript 类型、mock 数据和 2.5D / SVG / HTML Canvas 占位组件。
+- 顶部主入口已新增 `人生生长树`，并从主入口移除 `图谱 V1`。
+- 当前仍不进入真实 3D 开发，不接数据库、IPC、Zustand TreeSnapshot 或新依赖。
 - Life Vitality Tree 的主规划、保留池、决策方法和未来扩展风险记录在 `docs/LIFE_VITALITY_TREE.md`。
 
 ## 当前主线
@@ -15,7 +17,7 @@
 
 ## 当前项目真实状态
 
-- 桌面工作区入口在 `app/renderer/src/pages/MainWorkspacePage.tsx`，当前已经有 `成长树 / 图谱 V1 / 提醒 / 周回看` 视图分支。
+- 桌面工作区入口在 `app/renderer/src/pages/MainWorkspacePage.tsx`，当前已经有 `成长树 / 人生生长树 / 财富 / 时间负债 / 提醒 / 周回看` 视图分支。
 - 工作区状态由 `app/renderer/src/app/store.ts` 协调，已覆盖启动加载、复盘详情、节点选择、节点跳转、提醒完成、节点已回看、周回看刷新。
 - IPC 能力边界在 `app/main/ipc.ts`，已暴露复盘、节点、树快照、结构更新、提醒、周回看和数据根目录。
 - 真实数据逻辑集中在 `app/main/db.ts`，SQLite 表覆盖 `reviews / nodes / edges / node_evidence / reminders / app_settings`。
@@ -34,7 +36,7 @@
 ## 进行中内容
 
 - 搜索/回看/筛选仍需要收口。主画布当前使用 `TreeCanvas` 内的前端过滤；`nodes.search` IPC 和 `db.searchNodes` 已存在，但主工作区搜索框没有直接走数据库搜索结果。
-- 图谱展示有两条线：真实成长树主图在 `features/tree/TreeCanvas.tsx`；Obsidian 图谱 V1 在 `features/obsidian-graph`，但后者仍是 mock/prototype。
+- 图谱展示主线已切换：真实成长树主图在 `features/tree/TreeCanvas.tsx`；Life Vitality Tree 静态框架在 `features/life-vitality-tree`；Obsidian 图谱 V1 保留在 `features/obsidian-graph` 作为暂停归档代码。
 - README 的能力边界偏早，仍更像 P0.1 基础闭环说明；实际代码已经包含 P0.2/P0.3 的提醒、周回看和图谱入口。
 
 ## 暂停支线

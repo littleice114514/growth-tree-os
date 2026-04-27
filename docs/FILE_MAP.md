@@ -7,11 +7,26 @@
   - 记录新主视觉方向、Obsidian Graph 归档、树对象语义、四层视角、年龄树形、保留池、Life Tree Decision Gate 和未来扩展风险。
   - 这是可调整的指导书，不是最终冻结方案。
 
+## Life Vitality Tree v0.1
+
+- `app/renderer/src/features/life-vitality-tree/LifeVitalityTreeCanvas.tsx`
+  - 静态 Life Vitality Tree Canvas 占位组件。
+  - 使用 HTML + SVG 做 2.5D 表达，支持远景、结构、模块、细节和年轮视角。
+  - 使用本地 state 支持 hover 摘要和点击详情卡，不接 SQLite / IPC / Zustand TreeSnapshot。
+
+- `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeTypes.ts`
+  - Life Tree v0.1 基础类型定义。
+  - 包含视角、节点类型、季节、状态、树对象和年轮条目类型。
+
+- `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeMockData.ts`
+  - Life Tree v0.1 静态样例数据。
+  - 用来表达根、土壤、树干、筋络、大枝、小枝、叶、花、果实、落叶和年轮入口。
+
 ## 主页面入口
 
 - `app/renderer/src/pages/MainWorkspacePage.tsx`
   - 当前桌面工作区入口。
-  - 根据 `currentView` 切换 `成长树 / 提醒 / 图谱 V1 / 周回看`。
+  - 根据 `currentView` 切换 `成长树 / 人生生长树 / 财富 / 时间负债 / 提醒 / 周回看`。
   - 不要在未明确需求时改三栏主布局。
 
 ## Store
@@ -43,7 +58,7 @@
 
 - `app/renderer/src/features/obsidian-graph/ObsidianGraphView.tsx`
   - Obsidian 图谱 V1 入口。
-  - 当前使用 mock 数据，不是基础功能主线。
+  - 当前使用 mock 数据，不是基础功能主线；2026-04-27 起已从主入口断开，旧代码保留为归档支线。
 
 - `app/renderer/src/features/graph/GraphPrototype.tsx`
   - 旧图谱 prototype。
