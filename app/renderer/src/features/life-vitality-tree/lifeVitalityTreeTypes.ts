@@ -21,6 +21,12 @@ export type LifeTreeStatus = 'growing' | 'stable' | 'paused' | 'repairing' | 'ha
 
 export type LifeTreeSourceType = 'tree_snapshot' | 'review' | 'weekly_review' | 'mock'
 
+export interface LifeVitalityTreeSourceData {
+  reviews?: unknown[]
+  nodes?: unknown[]
+  treeSnapshot?: unknown
+}
+
 export type LifeTreeNode = {
   id: string
   title: string
@@ -62,6 +68,15 @@ export type LifeVitalityTree = {
   }>
   nodes: LifeTreeNode[]
   rings: LifeTreeAnnualRing[]
+  dataSource?: {
+    label: string
+    mode: 'mapped' | 'mock'
+    nodeCount: number
+    leafCount: number
+    fruitCount: number
+    fallenLeafCount: number
+    latestUpdatedAt: string
+  }
 }
 
 export type LifeVitalityTreeMockData = LifeVitalityTree

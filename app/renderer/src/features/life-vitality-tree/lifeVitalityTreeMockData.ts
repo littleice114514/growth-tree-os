@@ -224,5 +224,14 @@ export const lifeVitalityTreeMockData: LifeVitalityTreeMockData = {
       summary: '主视觉从关系图谱转向生命体画布。',
       nextStep: '先完成静态 Canvas，再讨论真实数据映射。'
     }
-  ]
+  ],
+  dataSource: {
+    label: 'Mock 示例数据',
+    mode: 'mock',
+    nodeCount: 13,
+    leafCount: 1,
+    fruitCount: 1,
+    fallenLeafCount: 1,
+    latestUpdatedAt: '2026-04-27T09:50:00.000Z'
+  }
 }

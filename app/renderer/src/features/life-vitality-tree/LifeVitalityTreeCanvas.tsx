@@ -132,6 +132,24 @@ function LifeTreeDetail({ node }: { node: LifeTreeNode }) {
   )
 }
 
+function DataSourceSummary({ data }: { data: { dataSource?: NonNullable<ReturnType<typeof buildLifeVitalityTreeFromAppData>['dataSource']> } }) {
+  const source = data.dataSource
+  if (!source) {
+    return null
+  }
+
+  return (
+    <div className="mt-4 rounded-[18px] border border-white/10 bg-black/10 px-4 py-2">
+      <MetadataRow label="数据来源" value={source.label} />
+      <MetadataRow label="节点数" value={String(source.nodeCount)} />
+      <MetadataRow label="叶子" value={String(source.leafCount)} />
+      <MetadataRow label="果实" value={String(source.fruitCount)} />
+      <MetadataRow label="落叶" value={String(source.fallenLeafCount)} />
+      <MetadataRow label="最近更新" value={formatDateTime(source.latestUpdatedAt)} />
+    </div>
+  )
+}
+
 export function LifeVitalityTreeCanvas() {
   const [viewMode, setViewMode] = useState<LifeTreeViewMode>('overview')
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
@@ -144,7 +162,7 @@ export function LifeVitalityTreeCanvas() {
     [recentReviews, tree, weeklyReview]
   )
   const data = mappedData.nodes.length > 0 ? mappedData : lifeVitalityTreeMockData
-  const isUsingFallback = !tree || tree.nodes.length === 0
+  const isUsingFallback = data.dataSource?.mode === 'mock'
   const selectedNode = useMemo(
     () => data.nodes.find((node) => node.id === selectedNodeId) ?? data.nodes[0],
     [data.nodes, selectedNodeId]
@@ -321,6 +339,7 @@ export function LifeVitalityTreeCanvas() {
 
         <aside className="rounded-[22px] border border-[color:var(--panel-border)] bg-[var(--graph-overlay-bg)] p-5 shadow-panel backdrop-blur-xl">
           <div className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--text-muted)]">boundary</div>
+          <DataSourceSummary data={data} />
           <ul className="mt-3 space-y-2 text-sm leading-6 text-[color:var(--text-secondary)]">
             <li>{isUsingFallback ? '当前没有可用 TreeSnapshot，已回退静态 mock。' : '当前为半真实映射，来自现有 TreeSnapshot / reviews / weekly review。'}</li>
             <li>不新增 SQLite 表，不改 IPC 主链路。</li>

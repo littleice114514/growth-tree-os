@@ -27,6 +27,9 @@
   - Life Tree v0.2 半真实数据映射层。
   - 将现有 `TreeSnapshot`、`ReviewRecord[]`、`WeeklyReviewSummary` 转换为 Life Vitality Tree 对象。
   - 不改 SQLite、IPC 或原始成长树推导逻辑。
+  - 使用 unknown + 安全读取函数兼容字段缺失和不同命名风格。
+  - 将普通 review 映射为 `leaf`，将包含失控、拖延、失败等关键词的 review 映射为 `fallen_leaf`。
+  - 数据为空或异常时回退 `lifeVitalityTreeMockData.ts`。
 
 ## 主页面入口
 

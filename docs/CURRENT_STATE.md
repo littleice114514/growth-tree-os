@@ -5,6 +5,8 @@
 - 新主视觉方向已切到 Life Vitality Tree / 人生生长树，建议模块名为 Life Vitality Tree Canvas。
 - Obsidian Graph V1 已退出产品主线，后续不再对标 Obsidian 关系图谱；旧图谱只作为历史实验与 hover / highlight / detail 交互参考保留。
 - 当前阶段已进入 v0.2 半真实数据映射：Life Vitality Tree Canvas 通过 renderer adapter 使用现有 TreeSnapshot、recentReviews 和 weeklyReview。
+- v0.2 已补齐安全 fallback 和 Review -> Leaf / FallenLeaf 映射；异常字段不会导致整棵树渲染崩溃。
+- Canvas 右侧已显示数据来源、节点数、叶子、果实、落叶和最近更新时间。
 - 顶部主入口已新增 `人生生长树`，并从主入口移除 `图谱 V1`。
 - 当前仍不进入真实 3D 开发，不改数据库、不新增 IPC、不安装新依赖。
 - Life Vitality Tree 的主规划、保留池、决策方法和未来扩展风险记录在 `docs/LIFE_VITALITY_TREE.md`。
