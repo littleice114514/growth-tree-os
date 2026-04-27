@@ -373,7 +373,7 @@ export function buildLifeVitalityTreeFromSourceData(source: LifeVitalityTreeSour
     title: 'Life Vitality Tree Canvas',
     ownerName: 'Me',
     season: fallenLeafCount > 0 ? 'winter' : fruitCount > 0 ? 'autumn' : 'mixed',
-    headline: '人生生长树 v0.2',
+    headline: '人生生长树 v0.3',
     description: '半真实映射阶段：从现有复盘、节点和 TreeSnapshot 生成生命树对象，不改数据库，不新增 IPC。',
     metrics: [
       { label: '节点数', value: String(nodes.length) },

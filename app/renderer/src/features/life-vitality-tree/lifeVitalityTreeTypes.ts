@@ -21,6 +21,58 @@ export type LifeTreeStatus = 'growing' | 'stable' | 'paused' | 'repairing' | 'ha
 
 export type LifeTreeSourceType = 'tree_snapshot' | 'review' | 'weekly_review' | 'mock'
 
+export type VitalityDimension =
+  | 'agency'
+  | 'sensitivity'
+  | 'recovery'
+  | 'creativity'
+  | 'connection'
+  | 'bodyEnergy'
+  | 'directionAlignment'
+
+export interface VitalityCheckItem {
+  dimension: VitalityDimension
+  label: string
+  question: string
+  score: number
+  note?: string
+}
+
+export type VitalityPattern =
+  | 'strong_growth'
+  | 'normal_growth'
+  | 'repairing'
+  | 'burning'
+  | 'numb'
+  | 'out_of_control'
+  | 'scattered'
+  | 'unknown'
+
+export interface DailyVitalityCheck {
+  id: string
+  date: string
+  items: VitalityCheckItem[]
+  totalScore: number
+  pattern: VitalityPattern
+  season: LifeTreeSeason
+  summary: string
+}
+
+export type TreeVisualTone = 'fresh' | 'lush' | 'harvest' | 'quiet' | 'burning' | 'dim' | 'scattered' | 'unknown'
+
+export interface LifeTreeVisualState {
+  tone: TreeVisualTone
+  season: LifeTreeSeason
+  trunkState: string
+  leafState: string
+  rootState: string
+  fruitState: string
+  fallenLeafState: string
+  summary: string
+  warnings: string[]
+  highlights: string[]
+}
+
 export interface LifeVitalityTreeSourceData {
   reviews?: unknown[]
   nodes?: unknown[]

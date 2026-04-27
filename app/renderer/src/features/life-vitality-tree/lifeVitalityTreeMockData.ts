@@ -4,7 +4,7 @@ export const lifeVitalityTreeMockData: LifeVitalityTreeMockData = {
   title: 'Life Vitality Tree Canvas',
   ownerName: 'Me',
   season: 'mixed',
-  headline: '人生生长树 v0.1',
+  headline: '人生生长树 v0.3',
   description: '静态框架阶段：先表达生命力、主线、修复、成果和年轮，不接数据库，不做真实 3D。',
   metrics: [
     { label: '主线筋络', value: '6' },

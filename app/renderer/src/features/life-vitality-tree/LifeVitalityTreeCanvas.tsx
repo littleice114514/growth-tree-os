@@ -5,7 +5,18 @@ import { ShellCard } from '@/components/ShellCard'
 import { formatDateTime } from '@/services/time'
 import { lifeVitalityTreeMockData } from './lifeVitalityTreeMockData'
 import { buildLifeVitalityTreeFromAppData } from './lifeVitalityTreeMapper'
-import type { LifeTreeNode, LifeTreeNodeKind, LifeTreeStatus, LifeTreeViewMode } from './lifeVitalityTreeTypes'
+import type {
+  DailyVitalityCheck,
+  LifeTreeNode,
+  LifeTreeNodeKind,
+  LifeTreeStatus,
+  LifeTreeViewMode,
+  LifeTreeVisualState,
+  TreeVisualTone
+} from './lifeVitalityTreeTypes'
+import { VitalityCheckPanel } from './VitalityCheckPanel'
+import { buildDailyVitalityCheck, createDefaultVitalityItems, vitalitySeasonHints, vitalitySeasonLabels } from './lifeVitalityTreeVitality'
+import { buildLifeTreeVisualState, getNodeVitalityHint } from './lifeVitalityTreeVisualState'
 
 const viewModes: Array<{ id: LifeTreeViewMode; label: string; hint: string }> = [
   { id: 'overview', label: '远景视角', hint: '整棵树、季节、生命力比例' },
@@ -89,6 +100,25 @@ const activeNodesByMode: Record<LifeTreeViewMode, LifeTreeNodeKind[]> = {
   rings: ['annual_ring', 'trunk']
 }
 
+const treeToneStyles: Record<TreeVisualTone, string> = {
+  fresh:
+    'bg-[radial-gradient(circle_at_50%_20%,rgba(36,148,107,0.34),transparent_34%),linear-gradient(180deg,rgba(8,18,24,0.94),rgba(12,28,19,0.96))]',
+  lush:
+    'bg-[radial-gradient(circle_at_50%_20%,rgba(76,175,80,0.38),transparent_35%),linear-gradient(180deg,rgba(8,20,16,0.94),rgba(10,38,23,0.96))]',
+  harvest:
+    'bg-[radial-gradient(circle_at_50%_20%,rgba(245,158,11,0.32),transparent_36%),linear-gradient(180deg,rgba(28,20,8,0.94),rgba(35,24,10,0.96))]',
+  quiet:
+    'bg-[radial-gradient(circle_at_50%_20%,rgba(125,211,252,0.18),transparent_34%),linear-gradient(180deg,rgba(9,16,22,0.95),rgba(12,22,28,0.97))]',
+  burning:
+    'bg-[radial-gradient(circle_at_50%_20%,rgba(248,113,113,0.34),transparent_34%),radial-gradient(circle_at_70%_52%,rgba(245,158,11,0.2),transparent_28%),linear-gradient(180deg,rgba(30,12,10,0.94),rgba(30,18,10,0.97))]',
+  dim:
+    'bg-[radial-gradient(circle_at_50%_20%,rgba(148,163,184,0.16),transparent_34%),linear-gradient(180deg,rgba(9,11,16,0.96),rgba(13,15,20,0.98))]',
+  scattered:
+    'bg-[radial-gradient(circle_at_25%_24%,rgba(56,189,248,0.18),transparent_24%),radial-gradient(circle_at_75%_42%,rgba(244,114,182,0.18),transparent_24%),linear-gradient(180deg,rgba(12,16,24,0.95),rgba(20,18,30,0.97))]',
+  unknown:
+    'bg-[radial-gradient(circle_at_50%_20%,rgba(36,148,107,0.22),transparent_34%),linear-gradient(180deg,rgba(8,18,24,0.94),rgba(12,22,18,0.96))]'
+}
+
 function nodeModeOpacity(node: LifeTreeNode, viewMode: LifeTreeViewMode) {
   if (activeNodesByMode[viewMode].includes(node.kind)) {
     return 'opacity-100'
@@ -105,7 +135,7 @@ function MetadataRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function LifeTreeDetail({ node }: { node: LifeTreeNode }) {
+function LifeTreeDetail({ node, visualState }: { node: LifeTreeNode; visualState: LifeTreeVisualState }) {
   return (
     <aside className="min-h-0 rounded-[22px] border border-[color:var(--panel-border)] bg-[var(--graph-overlay-bg)] p-5 shadow-panel backdrop-blur-xl">
       <div className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--text-muted)]">selected object</div>
@@ -127,6 +157,10 @@ function LifeTreeDetail({ node }: { node: LifeTreeNode }) {
       <div className="mt-5 border-l border-emerald-200/40 pl-4">
         <div className="text-xs uppercase tracking-[0.18em] text-[color:var(--text-muted)]">next</div>
         <p className="mt-2 text-sm leading-6 text-[color:var(--text-secondary)]">{node.nextStep}</p>
+      </div>
+      <div className="mt-5 rounded-[18px] border border-emerald-200/20 bg-emerald-200/8 px-4 py-3">
+        <div className="text-xs uppercase tracking-[0.18em] text-[color:var(--text-muted)]">今日生命力影响</div>
+        <p className="mt-2 text-sm leading-6 text-[color:var(--text-secondary)]">{getNodeVitalityHint(node.kind, visualState)}</p>
       </div>
     </aside>
   )
@@ -154,6 +188,7 @@ export function LifeVitalityTreeCanvas() {
   const [viewMode, setViewMode] = useState<LifeTreeViewMode>('overview')
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string>('tree-core')
+  const [vitalityCheck, setVitalityCheck] = useState<DailyVitalityCheck>(() => buildDailyVitalityCheck(createDefaultVitalityItems()))
   const tree = useWorkspaceStore((state) => state.tree)
   const recentReviews = useWorkspaceStore((state) => state.recentReviews)
   const weeklyReview = useWorkspaceStore((state) => state.weeklyReview)
@@ -169,19 +204,34 @@ export function LifeVitalityTreeCanvas() {
   )
   const hoveredNode = useMemo(() => data.nodes.find((node) => node.id === hoveredNodeId) ?? null, [data.nodes, hoveredNodeId])
   const activeView = viewModes.find((mode) => mode.id === viewMode) ?? viewModes[0]
+  const visualState = useMemo(() => buildLifeTreeVisualState(vitalityCheck), [vitalityCheck])
 
   return (
     <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_340px] gap-4">
-      <ShellCard className="relative min-h-0 overflow-hidden border-[color:var(--panel-border)] bg-[radial-gradient(circle_at_50%_20%,rgba(36,148,107,0.28),transparent_34%),linear-gradient(180deg,rgba(8,18,24,0.94),rgba(12,22,18,0.96))]">
+      <ShellCard className={clsx('relative min-h-0 overflow-hidden border-[color:var(--panel-border)] transition-colors duration-300', treeToneStyles[visualState.tone])}>
         <div className="absolute inset-x-0 top-0 z-10 border-b border-white/10 bg-black/10 px-5 py-4 backdrop-blur-xl">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="text-[10px] uppercase tracking-[0.24em] text-emerald-100/60">{data.title}</div>
               <div className="mt-1 flex flex-wrap items-end gap-3">
                 <h2 className="text-xl font-semibold text-white">{data.headline}</h2>
-                <span className="pb-1 text-xs text-emerald-100/65">season / {data.season}</span>
+                <span className="pb-1 text-xs text-emerald-100/65">
+                  今日状态：{vitalitySeasonLabels[vitalityCheck.season]}｜{vitalitySeasonHints[vitalityCheck.season]}
+                </span>
               </div>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-emerald-50/70">{data.description}</p>
+              <div className="mt-3 rounded-[18px] border border-white/10 bg-black/15 px-4 py-3">
+                <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-100/50">今日树状态</div>
+                <div className="mt-1 text-sm font-medium text-white">
+                  {vitalitySeasonLabels[visualState.season]}｜{visualState.summary}
+                </div>
+                {visualState.warnings.length > 0 ? (
+                  <div className="mt-2 text-xs leading-5 text-amber-100/80">风险：{visualState.warnings.join('、')}</div>
+                ) : null}
+                {visualState.highlights.length > 0 ? (
+                  <div className="mt-1 text-xs leading-5 text-emerald-100/75">亮点：{visualState.highlights.join('、')}</div>
+                ) : null}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {data.metrics.map((metric) => (
@@ -303,7 +353,7 @@ export function LifeVitalityTreeCanvas() {
         </div>
       </ShellCard>
 
-      <div className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-4">
+      <div className="grid min-h-0 grid-rows-[minmax(0,0.85fr)_minmax(0,1.15fr)_auto] gap-4">
         {viewMode === 'rings' ? (
           <aside className="min-h-0 overflow-auto rounded-[22px] border border-[color:var(--panel-border)] bg-[var(--graph-overlay-bg)] p-5 shadow-panel backdrop-blur-xl">
             <div className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--text-muted)]">annual rings</div>
@@ -334,8 +384,10 @@ export function LifeVitalityTreeCanvas() {
             </div>
           </aside>
         ) : (
-          <LifeTreeDetail node={selectedNode} />
+          <LifeTreeDetail node={selectedNode} visualState={visualState} />
         )}
+
+        <VitalityCheckPanel onChange={setVitalityCheck} />
 
         <aside className="rounded-[22px] border border-[color:var(--panel-border)] bg-[var(--graph-overlay-bg)] p-5 shadow-panel backdrop-blur-xl">
           <div className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--text-muted)]">boundary</div>

@@ -7,6 +7,8 @@
 - 当前阶段已进入 v0.2 半真实数据映射：Life Vitality Tree Canvas 通过 renderer adapter 使用现有 TreeSnapshot、recentReviews 和 weeklyReview。
 - v0.2 已补齐安全 fallback 和 Review -> Leaf / FallenLeaf 映射；异常字段不会导致整棵树渲染崩溃。
 - Canvas 右侧已显示数据来源、节点数、叶子、果实、落叶和最近更新时间。
+- v0.3 已新增“今日生命力检查”前端输入层：7 个维度 0-5 分、备注、总分、生命力类型和季节反馈；当前仅保存在组件 state，不写入数据库。
+- v0.4 已新增 LifeTreeVisualState 视觉反馈规则层：生命力类型会联动顶部“今日树状态”、树容器 tone、风险 / 亮点提示和详情卡“今日生命力影响”。
 - 顶部主入口已新增 `人生生长树`，并从主入口移除 `图谱 V1`。
 - 当前仍不进入真实 3D 开发，不改数据库、不新增 IPC、不安装新依赖。
 - Life Vitality Tree 的主规划、保留池、决策方法和未来扩展风险记录在 `docs/LIFE_VITALITY_TREE.md`。
@@ -38,7 +40,7 @@
 ## 进行中内容
 
 - 搜索/回看/筛选仍需要收口。主画布当前使用 `TreeCanvas` 内的前端过滤；`nodes.search` IPC 和 `db.searchNodes` 已存在，但主工作区搜索框没有直接走数据库搜索结果。
-- 图谱展示主线已切换：真实成长树主图在 `features/tree/TreeCanvas.tsx`；Life Vitality Tree 半真实映射框架在 `features/life-vitality-tree`；Obsidian 图谱 V1 保留在 `features/obsidian-graph` 作为暂停归档代码。
+- 图谱展示主线已切换：真实成长树主图在 `features/tree/TreeCanvas.tsx`；Life Vitality Tree 半真实映射、生命力检查输入层和视觉反馈规则层在 `features/life-vitality-tree`；Obsidian 图谱 V1 保留在 `features/obsidian-graph` 作为暂停归档代码。
 - README 的能力边界偏早，仍更像 P0.1 基础闭环说明；实际代码已经包含 P0.2/P0.3 的提醒、周回看和图谱入口。
 
 ## 暂停支线

@@ -10,13 +10,15 @@
 ## Life Vitality Tree v0.1
 
 - `app/renderer/src/features/life-vitality-tree/LifeVitalityTreeCanvas.tsx`
-  - 静态 Life Vitality Tree Canvas 占位组件。
+  - Life Vitality Tree Canvas 入口组件。
   - 使用 HTML + SVG 做 2.5D 表达，支持远景、结构、模块、细节和年轮视角。
-  - 使用本地 state 支持 hover 摘要和点击详情卡，不接 SQLite / IPC / Zustand TreeSnapshot。
+  - v0.2 后优先使用半真实映射数据，保留 mock fallback。
+  - v0.3 接入“今日生命力检查”面板和顶部季节反馈。
+  - v0.4 接入 LifeTreeVisualState，联动顶部树状态、画布 tone 和详情卡生命力解释。
 
 - `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeTypes.ts`
-  - Life Tree v0.1 基础类型定义。
-  - 包含视角、节点类型、季节、状态、树对象和年轮条目类型。
+  - Life Tree 基础类型定义。
+  - 包含视角、节点类型、季节、状态、树对象、年轮条目、v0.3 DailyVitalityCheck 和 v0.4 LifeTreeVisualState 类型。
 
 - `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeMockData.ts`
   - Life Tree v0.1 静态样例数据。
@@ -30,6 +32,22 @@
   - 使用 unknown + 安全读取函数兼容字段缺失和不同命名风格。
   - 将普通 review 映射为 `leaf`，将包含失控、拖延、失败等关键词的 review 映射为 `fallen_leaf`。
   - 数据为空或异常时回退 `lifeVitalityTreeMockData.ts`。
+
+- `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeVitality.ts`
+  - Life Tree v0.3 生命力检查规则层。
+  - 定义 7 个默认维度、总分计算、生命力类型判断、季节映射和中文摘要。
+  - 当前为纯前端规则，不接数据库、不做 AI 自动判断。
+
+- `app/renderer/src/features/life-vitality-tree/VitalityCheckPanel.tsx`
+  - Life Tree v0.3 “今日生命力检查”面板。
+  - 使用组件 state 记录 7 个维度的 0-5 分和备注。
+  - 向 Canvas 回传总分、生命力类型和季节反馈；v0.4 后继续驱动视觉反馈规则；暂不持久化。
+
+- `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeVisualState.ts`
+  - Life Tree v0.4 生命力视觉反馈规则层。
+  - 将 DailyVitalityCheck 映射为 LifeTreeVisualState。
+  - 定义 tone、season、summary、warnings、highlights 和树干 / 叶子 / 根系 / 果实 / 落叶状态说明。
+  - 提供节点详情卡的“今日生命力影响”文案。
 
 ## 主页面入口
 
