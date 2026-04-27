@@ -1,5 +1,12 @@
 # CURRENT_STATE
 
+## 2026-04-27 Life Vitality Tree 主视觉方向
+
+- 新主视觉方向已切到 Life Vitality Tree / 人生生长树，建议模块名为 Life Vitality Tree Canvas。
+- Obsidian Graph V1 已退出产品主线，后续不再对标 Obsidian 关系图谱；旧图谱只作为历史实验与 hover / highlight / detail 交互参考保留。
+- 当前阶段是产品定义和指导书整理，不进入 3D 开发，不改数据库、IPC、Zustand 或功能代码。
+- Life Vitality Tree 的主规划、保留池、决策方法和未来扩展风险记录在 `docs/LIFE_VITALITY_TREE.md`。
+
 ## 当前主线
 
 当前主线 = 基础功能闭环优先。

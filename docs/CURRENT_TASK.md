@@ -2,70 +2,63 @@
 
 ## 本轮唯一目标
 
-接入 Time Debt 时间负债模块，并继续保持 Windows / GitHub / MacBook 协同底座。
+整理 Life Vitality Tree / 人生生长树指导书，并继续保持 Windows / GitHub / MacBook 协同底座。
 
-本轮不出 APK，不处理 Android 构建，不接外部金融 API。
+本轮只做文档整理、规划归档和指导书优化，不改功能代码。
 
 ## 当前默认主线
 
-当前默认主线 = PC / 桌面端 Time Debt V1 + 双设备 GitHub 协同优先。
+当前默认主线 = Life Vitality Tree 产品定义 + 单主文档沉淀 + 双设备 GitHub 协同优先。
 
 优先关注：
 
-1. Windows 本地可启动
-2. Time Debt 可以进入并新增时间日志
-3. 日志进入 Daily Stats / Overview / Dashboard 统计和诊断
-4. 刷新后 Time Debt logs 不丢
-5. GitHub main 分支可同步，MacBook 可 pull 验证
+1. 明确 Life Vitality Tree / 人生生长树是新主视觉方向
+2. 明确 Obsidian Graph V1 退出主线并归档
+3. 建立已定路线、保留池和 Life Tree Decision Gate
+4. 保留数据库、网页端、多用户、财富、时间负债、Game Life 等未来扩展边界
+5. GitHub main 分支可同步，MacBook 可 pull 查看文档
 
 ## 本轮不做
 
-- 不出 APK。
-- 不处理 Android 构建。
-- 不接支付宝、微信、银行卡自动同步。
-- 不接 BTC、股票实时价格 API。
-- 不做复杂投资组合分析。
-- 不重构数据库或状态架构。
+- 不修改 React / TypeScript 功能代码。
+- 不删除 Obsidian Graph 文件。
+- 不移动工程文件。
+- 不改数据库。
+- 不改 Zustand store。
+- 不改 IPC。
+- 不安装新依赖。
+- 不启动 3D 开发。
+- 不新增多个分散规划文档。
 
 ## 涉及文件
 
-- Wealth 算法：`app/shared/wealth.ts`
-- Wealth 页面：`app/renderer/src/features/wealth/WealthDashboard.tsx`
-- Wealth 本地存储：`app/renderer/src/features/wealth/wealthStorage.ts`
-- Time Debt 计算层：`app/shared/timeDebt.ts`
-- Time Debt 页面：`app/renderer/src/features/time-debt/TimeDebtDashboard.tsx`
-- Time Debt 本地存储：`app/renderer/src/features/time-debt/timeDebtStorage.ts`
-- 主视图接入：`app/renderer/src/pages/MainWorkspacePage.tsx`
-- 导航接入：`app/renderer/src/components/Toolbar.tsx`
-- 视图类型：`app/renderer/src/types/ui.ts`
-- MacBook 接力卡：`docs/handoff/MACBOOK_SETUP.md`
+- Life Vitality Tree 主规划：`docs/LIFE_VITALITY_TREE.md`
 - 状态记录：`docs/CURRENT_STATE.md`
 - 当前任务：`docs/CURRENT_TASK.md`
+- 暂停分支：`docs/PAUSED_BRANCHES.md`
+- 文件地图：`docs/FILE_MAP.md`
+- Mac 接力卡：`docs/handoff/MAC_NEXT_ACTION.md`
 
 ## 下一步唯一优先事项
 
-下一轮优先让 MacBook 按 `docs/handoff/MACBOOK_SETUP.md` pull、install、dev 跑通，并验证 Time Debt 模块是否同步。
+下一轮优先让 MacBook 按 `docs/handoff/MAC_NEXT_ACTION.md` pull 最新 main，并检查 Life Vitality Tree 指导书是否清楚表达主线、保留池和决策方法。
 
-MacBook 验证完成后，再评估是否把 Wealth / Time Debt 的 renderer `localStorage` 迁移到主进程 SQLite。
+MacBook 文档验收完成后，再决定是否进入 Life Vitality Tree 的轻量类型草案或静态 Canvas 原型阶段。
 
-## 2026-04-26 Windows 验收结果
+## 2026-04-27 文档整理验收口径
 
-- `git pull --ff-only`：已是最新。
-- `pnpm install`：通过。
-- `pnpm typecheck`：通过。
-- `pnpm build`：通过。
-- `pnpm dev`：可启动 Electron，renderer dev server 为 `http://localhost:5173/`。
-- 浏览器 renderer smoke：可进入 `时间负债`，固定测试日志新增成功，刷新后保留，日度统计和仪表盘诊断显示预期数据。
-- Mac 接力文件：已新增 `docs/handoff/MAC_NEXT_ACTION.md`，并更新 `docs/handoff/MACBOOK_SETUP.md` 的 Time Debt 同步说明。
+- `git diff --name-only` 只应出现 `docs/` 下 Markdown 文件。
+- 不应出现 `app/`、`data/`、`package.json`、`pnpm-lock.yaml`、数据库或依赖文件变更。
+- `docs/LIFE_VITALITY_TREE.md` 应包含已定路线、树对象语义、四层视角、年龄树形、保留池、Decision Gate 和未来扩展风险。
+- 因本轮只改 Markdown，默认不运行 `pnpm smoke`。
 
 ## 验收标准
 
-- `pnpm install --frozen-lockfile` 通过。
-- `pnpm typecheck` 通过。
-- `pnpm build` 通过。
-- `pnpm dev` 能拉起 Electron。
-- Time Debt 页面能看到总览、时间日志、日度统计、负债参数、工作时间标准、仪表盘诊断。
-- 能新增固定测试日志，持续时长为 70 min，效率约 0.24 min / 个。
-- Logs、Daily Stats、Overview、Dashboard / Diagnosis 能随日志变化。
-- 刷新后日志仍保留。
-- `docs/handoff/MACBOOK_SETUP.md` 存在，并包含可复制的 MacBook 命令。
+- 没有修改功能代码。
+- 没有删除 Obsidian Graph 文件。
+- 没有安装依赖。
+- 没有改数据库。
+- 文档能清楚看到 Life Vitality Tree / 人生生长树 是新主视觉方向。
+- 文档能清楚看到 Obsidian Graph 退出主线并归档。
+- 文档能清楚看到年龄阶段树形、四季、树根、树干、大枝、小枝、叶子、花、果实、年轮和视角结构。
+- 文档能清楚看到保留池、Life Tree Decision Gate、数据库 / 网页端 / 多用户风险预留。

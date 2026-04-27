@@ -1,5 +1,12 @@
 # FILE_MAP
 
+## Life Vitality Tree 文档
+
+- `docs/LIFE_VITALITY_TREE.md`
+  - Life Vitality Tree / 人生生长树的主规划与保留池。
+  - 记录新主视觉方向、Obsidian Graph 归档、树对象语义、四层视角、年龄树形、保留池、Life Tree Decision Gate 和未来扩展风险。
+  - 这是可调整的指导书，不是最终冻结方案。
+
 ## 主页面入口
 
 - `app/renderer/src/pages/MainWorkspacePage.tsx`
@@ -64,4 +71,3 @@
   - 牵涉主布局和视图切换，当前不做 UI 大布局调整。
 - `docs/PRODUCT_RULES_V0_1.md`、`docs/PRODUCT_RULES_V0_2.md`
   - 历史规则保留，用来追溯阶段演进，不作为当前默认主线。
-

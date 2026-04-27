@@ -7,43 +7,41 @@
 - HTTPS 备选：https://github.com/littleice114514/growth-tree-os.git
 - 分支：main
 - 最新 commit：以本轮最终汇报和 Mac 端 `git rev-parse --short HEAD` 输出为准
-- 当前设备完成时间：2026-04-26
+- 当前设备完成时间：2026-04-27
 
 ## 2. 本轮已完成
 
-- Time Debt / 时间负债已接入桌面端顶部导航。
-- Time Debt 页面包含总览、时间日志、工作时间标准、日度统计、负债参数和仪表盘诊断。
-- 时间日志、标准工时和参数使用 renderer localStorage 持久化，刷新后保留。
-- 已完成 Windows 端 `pnpm install`、`pnpm typecheck`、`pnpm build` 和 `pnpm dev` smoke 验证。
+- 新增 Life Vitality Tree / 人生生长树主规划文档。
+- 明确 Life Vitality Tree Canvas 是后续主视觉模块方向。
+- 将 Obsidian Graph V1 记录为退出主线的历史实验分支。
+- 建立树对象语义、四层视角、年轮视角、年龄阶段树形、保留池和 Life Tree Decision Gate。
+- 补充数据库、网页端、多用户和隐私风险预留。
+- 本轮只改文档，不改功能代码、数据库、IPC、Zustand 或依赖。
 
 ## 3. 本轮修改文件
 
-- `app/shared/timeDebt.ts`
-- `app/renderer/src/features/time-debt/TimeDebtDashboard.tsx`
-- `app/renderer/src/features/time-debt/timeDebtStorage.ts`
-- `app/renderer/src/components/Toolbar.tsx`
-- `app/renderer/src/pages/MainWorkspacePage.tsx`
-- `app/renderer/src/types/ui.ts`
-- `docs/handoff/MACBOOK_SETUP.md`
+- `docs/LIFE_VITALITY_TREE.md`
+- `docs/CURRENT_STATE.md`
+- `docs/CURRENT_TASK.md`
+- `docs/PAUSED_BRANCHES.md`
+- `docs/FILE_MAP.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
 
 ## 4. 当前验证结果
 
 ### 已验证
 
-- `pnpm install` 通过。
-- `pnpm typecheck` 通过。
-- `pnpm build` 通过。
-- `pnpm dev` 可启动 Electron，renderer dev server 地址为 `http://localhost:5173/`。
-- 已通过浏览器 renderer smoke 进入 `时间负债`，新增固定测试日志，刷新后日志仍保留。
-- 固定测试样本结果：持续时长 70 min，效率约 0.24 min / 个，状态加权 490，AI 化加权 0。
-- Daily Stats 显示总记录数 1、总时长 70 min、工作时长 70 min、AI 平均赋能比例 0%。
-- Dashboard / Diagnosis 显示 `需要恢复`、标准工时 vs 实际工时 `480 min / 70 min`。
+- `git diff --name-only` 只包含 `docs/` 下 Markdown 文件。
+- 没有修改 `app/` 下 React / TypeScript 功能代码。
+- 没有修改 `package.json` 或 `pnpm-lock.yaml`。
+- 没有删除或移动 Obsidian Graph 文件。
+- 没有改数据库、IPC、Zustand store。
 
 ### 未验证 / 风险
 
-- 本轮未做 SQLite / IPC 持久化迁移，Time Debt V1 继续使用 renderer localStorage。
-- 本轮不包含 Android、APK、手机端导航、YOYO / MagicOS Bridge 或复杂 AI 自动分析。
+- 本轮为纯文档整理，默认未运行 `pnpm smoke`。
+- Life Vitality Tree 仍处于产品定义阶段，尚未进入类型草案、Canvas 原型或 3D 开发。
+- 树根、叶子状态、落叶入土、风系统、3D、网页端、多用户等仍在保留池，不是当前开发承诺。
 
 ## 5. Mac 端第一步操作
 
@@ -72,12 +70,16 @@ git rev-parse --short HEAD
 
 ## 6. Mac 端环境准备
 
+本轮只检查文档，不需要安装新依赖。
+
+如需打开项目继续开发：
+
 ```bash
 pnpm install
 pnpm dev
 ```
 
-如需完整验收：
+如需完整工程检查：
 
 ```bash
 pnpm typecheck
@@ -88,42 +90,24 @@ pnpm build
 
 请在 Mac 端检查：
 
-- 是否能进入 `时间负债`。
-- 是否能看到 `总览`、`时间日志`、`工作时间标准`、`日度统计`、`仪表盘诊断`。
-- 是否能新增固定测试日志。
-- 保存后最近日志是否出现。
-- Daily Stats 是否出现当天统计。
-- Dashboard / Diagnosis 是否出现中文诊断。
-- 刷新后日志是否保留。
-- `财富`、`成长树`、`Home` 主入口是否仍可进入。
-
-固定测试日志：
-
-```text
-标题：优化单词突围完整词库，校对 1700 后缀
-一级分类：工作
-二级项目：单词突围考研版
-开始时间：2026-03-30 14:00
-结束时间：2026-03-30 15:10
-工作量：295
-工作量单位：个
-状态分：7
-AI 赋能比例：0
-维度：时间管理
-```
+- `docs/LIFE_VITALITY_TREE.md` 是否存在。
+- 文档是否明确 Life Vitality Tree / 人生生长树是新主视觉方向。
+- 文档是否明确 Obsidian Graph V1 退出主线并归档。
+- 文档是否包含树对象语义、四层视角、年轮视角、年龄阶段树形和畸形成长描述。
+- 文档是否包含保留池和 Life Tree Decision Gate。
+- 文档是否包含数据库、网页端、多用户和隐私风险预留。
+- `docs/CURRENT_STATE.md`、`docs/CURRENT_TASK.md`、`docs/PAUSED_BRANCHES.md`、`docs/FILE_MAP.md` 是否有短摘要或指针。
 
 预期结果：
 
-- 持续时长 = 70 min
-- 效率呈现约为 0.24 min / 个
-- 状态加权 = 490
-- AI 化加权 = 0
+- Mac 端能直接通过 `docs/LIFE_VITALITY_TREE.md` 理解主线、边界和暂不开发内容。
+- Mac 端不需要重新阅读代码即可继续做下一轮类型草案或静态 Canvas 规划。
 
 ## 8. Mac 端下一轮任务
 
 请让 Mac 端 Codex 接着完成：
 
-验证 Time Debt V1 在 macOS Electron 环境的页面操作闭环，并判断 Wealth / Time Debt 的 renderer localStorage 是否需要进入下一阶段 SQLite / IPC 迁移。
+在不改数据库、不改 IPC、不启动 3D 的前提下，基于 `docs/LIFE_VITALITY_TREE.md` 起草 Life Vitality Tree 的最小 TypeScript 类型方案或静态样例数据方案，并先输出计划，不直接替换现有成长树主图。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
@@ -131,9 +115,9 @@ AI 赋能比例：0
 
 - `git status` 输出
 - `git rev-parse --short HEAD` 输出
-- `pnpm install`、`pnpm dev`、`pnpm typecheck` 或 `pnpm build` 的完整报错
-- 页面异常截图
-- DevTools 控制台首个关键错误
+- `docs/LIFE_VITALITY_TREE.md` 是否存在
+- `git pull origin main` 的完整报错
+- 如运行工程命令，则粘贴 `pnpm install`、`pnpm dev`、`pnpm typecheck` 或 `pnpm build` 的完整报错
 
 ## 10. 注意事项
 
@@ -141,3 +125,4 @@ AI 赋能比例：0
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
 - `.env`、SQLite、本地 runtime、依赖和构建产物不要提交。
+- Life Vitality Tree 当前是指导书和保留池，不是最终冻结方案。
