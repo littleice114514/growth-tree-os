@@ -19,6 +19,8 @@ export type LifeTreeSeason = 'spring' | 'summer' | 'autumn' | 'winter' | 'mixed'
 
 export type LifeTreeStatus = 'growing' | 'stable' | 'paused' | 'repairing' | 'harvesting' | 'withered' | 'unknown'
 
+export type LifeTreeSourceType = 'tree_snapshot' | 'review' | 'weekly_review' | 'mock'
+
 export type LifeTreeNode = {
   id: string
   title: string
@@ -32,6 +34,8 @@ export type LifeTreeNode = {
   nextStep: string
   x: number
   y: number
+  sourceType?: LifeTreeSourceType
+  sourceId?: string
 }
 
 export type LifeTreeAnnualRing = {
@@ -42,9 +46,11 @@ export type LifeTreeAnnualRing = {
   keywords: string[]
   summary: string
   nextStep: string
+  sourceType?: LifeTreeSourceType
+  sourceId?: string
 }
 
-export type LifeVitalityTreeMockData = {
+export type LifeVitalityTree = {
   title: string
   ownerName: string
   season: LifeTreeSeason
@@ -57,3 +63,5 @@ export type LifeVitalityTreeMockData = {
   nodes: LifeTreeNode[]
   rings: LifeTreeAnnualRing[]
 }
+
+export type LifeVitalityTreeMockData = LifeVitalityTree

@@ -21,6 +21,12 @@
 - `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeMockData.ts`
   - Life Tree v0.1 静态样例数据。
   - 用来表达根、土壤、树干、筋络、大枝、小枝、叶、花、果实、落叶和年轮入口。
+  - v0.2 后继续作为无 tree 数据时的 fallback。
+
+- `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeMapper.ts`
+  - Life Tree v0.2 半真实数据映射层。
+  - 将现有 `TreeSnapshot`、`ReviewRecord[]`、`WeeklyReviewSummary` 转换为 Life Vitality Tree 对象。
+  - 不改 SQLite、IPC 或原始成长树推导逻辑。
 
 ## 主页面入口
 

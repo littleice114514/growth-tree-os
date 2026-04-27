@@ -50,6 +50,21 @@
 
 v0.1 的目标是让后续开发能看到 Life Vitality Tree 的基本对象、视角、交互骨架和产品边界，不代表最终视觉方案。
 
+## 2.2 v0.2 半真实数据映射记录
+
+2026-04-27 已进入 Life Vitality Tree v0.2 半真实数据映射阶段。
+
+本阶段完成：
+
+- 新增 `lifeVitalityTreeMapper.ts`；
+- 新增 `buildLifeVitalityTreeFromAppData()`；
+- Life Vitality Tree Canvas 从 renderer store 读取现有 `TreeSnapshot`、`recentReviews`、`weeklyReview`；
+- 将现有主线、节点、复盘和周回看摘要映射为 Life Tree 对象；
+- mock 数据继续保留，作为无 tree 数据时的 fallback；
+- 当前仍不改 SQLite schema，不新增 IPC，不接 AI 评分，不安装 3D 依赖。
+
+v0.2 的目标不是让映射语义完全正确，而是先建立稳定 adapter，让 Life Vitality Tree 可以观察现有数据，而不是只展示纯 mock。
+
 ## 3. 暂停与归档：Obsidian Graph
 
 Obsidian Graph V1 已退出主线。后续不再对标 Obsidian 关系图谱，而是转向 Life Vitality Tree / 人生生长树。旧图谱只作为历史实验与局部交互参考保留。

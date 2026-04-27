@@ -4,9 +4,9 @@
 
 - 新主视觉方向已切到 Life Vitality Tree / 人生生长树，建议模块名为 Life Vitality Tree Canvas。
 - Obsidian Graph V1 已退出产品主线，后续不再对标 Obsidian 关系图谱；旧图谱只作为历史实验与 hover / highlight / detail 交互参考保留。
-- 当前阶段已进入 v0.1 基础框架：静态 TypeScript 类型、mock 数据和 2.5D / SVG / HTML Canvas 占位组件。
+- 当前阶段已进入 v0.2 半真实数据映射：Life Vitality Tree Canvas 通过 renderer adapter 使用现有 TreeSnapshot、recentReviews 和 weeklyReview。
 - 顶部主入口已新增 `人生生长树`，并从主入口移除 `图谱 V1`。
-- 当前仍不进入真实 3D 开发，不接数据库、IPC、Zustand TreeSnapshot 或新依赖。
+- 当前仍不进入真实 3D 开发，不改数据库、不新增 IPC、不安装新依赖。
 - Life Vitality Tree 的主规划、保留池、决策方法和未来扩展风险记录在 `docs/LIFE_VITALITY_TREE.md`。
 
 ## 当前主线
@@ -36,7 +36,7 @@
 ## 进行中内容
 
 - 搜索/回看/筛选仍需要收口。主画布当前使用 `TreeCanvas` 内的前端过滤；`nodes.search` IPC 和 `db.searchNodes` 已存在，但主工作区搜索框没有直接走数据库搜索结果。
-- 图谱展示主线已切换：真实成长树主图在 `features/tree/TreeCanvas.tsx`；Life Vitality Tree 静态框架在 `features/life-vitality-tree`；Obsidian 图谱 V1 保留在 `features/obsidian-graph` 作为暂停归档代码。
+- 图谱展示主线已切换：真实成长树主图在 `features/tree/TreeCanvas.tsx`；Life Vitality Tree 半真实映射框架在 `features/life-vitality-tree`；Obsidian 图谱 V1 保留在 `features/obsidian-graph` 作为暂停归档代码。
 - README 的能力边界偏早，仍更像 P0.1 基础闭环说明；实际代码已经包含 P0.2/P0.3 的提醒、周回看和图谱入口。
 
 ## 暂停支线

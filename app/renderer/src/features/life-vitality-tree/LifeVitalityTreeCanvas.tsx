@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
 import clsx from 'clsx'
+import { useWorkspaceStore } from '@/app/store'
 import { ShellCard } from '@/components/ShellCard'
 import { formatDateTime } from '@/services/time'
 import { lifeVitalityTreeMockData } from './lifeVitalityTreeMockData'
+import { buildLifeVitalityTreeFromAppData } from './lifeVitalityTreeMapper'
 import type { LifeTreeNode, LifeTreeNodeKind, LifeTreeStatus, LifeTreeViewMode } from './lifeVitalityTreeTypes'
 
 const viewModes: Array<{ id: LifeTreeViewMode; label: string; hint: string }> = [
@@ -66,9 +68,9 @@ const nodeStyles: Record<LifeTreeNodeKind, string> = {
 }
 
 const activeNodesByMode: Record<LifeTreeViewMode, LifeTreeNodeKind[]> = {
-  overview: ['tree', 'root', 'trunk', 'major_branch', 'fruit', 'fallen_leaf', 'annual_ring'],
+  overview: ['tree', 'root', 'trunk', 'major_branch', 'fruit', 'withered_leaf', 'fallen_leaf', 'annual_ring'],
   structure: ['root', 'soil', 'trunk', 'trunk_vein', 'major_branch', 'annual_ring'],
-  module: ['major_branch', 'minor_branch', 'leaf', 'flower', 'fruit', 'fallen_leaf'],
+  module: ['major_branch', 'minor_branch', 'leaf', 'flower', 'fruit', 'withered_leaf', 'fallen_leaf'],
   detail: [
     'tree',
     'root',
@@ -80,6 +82,7 @@ const activeNodesByMode: Record<LifeTreeViewMode, LifeTreeNodeKind[]> = {
     'leaf',
     'flower',
     'fruit',
+    'withered_leaf',
     'fallen_leaf',
     'annual_ring'
   ],
@@ -119,6 +122,7 @@ function LifeTreeDetail({ node }: { node: LifeTreeNode }) {
         <MetadataRow label="创建时间" value={formatDateTime(node.createdAt)} />
         <MetadataRow label="最近更新" value={formatDateTime(node.updatedAt)} />
         <MetadataRow label="当前状态" value={statusLabels[node.status]} />
+        <MetadataRow label="来源" value={node.sourceType ? `${node.sourceType}${node.sourceId ? ` / ${node.sourceId}` : ''}` : 'mock'} />
       </div>
       <div className="mt-5 border-l border-emerald-200/40 pl-4">
         <div className="text-xs uppercase tracking-[0.18em] text-[color:var(--text-muted)]">next</div>
@@ -132,7 +136,15 @@ export function LifeVitalityTreeCanvas() {
   const [viewMode, setViewMode] = useState<LifeTreeViewMode>('overview')
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null)
   const [selectedNodeId, setSelectedNodeId] = useState<string>('tree-core')
-  const data = lifeVitalityTreeMockData
+  const tree = useWorkspaceStore((state) => state.tree)
+  const recentReviews = useWorkspaceStore((state) => state.recentReviews)
+  const weeklyReview = useWorkspaceStore((state) => state.weeklyReview)
+  const mappedData = useMemo(
+    () => buildLifeVitalityTreeFromAppData({ tree, recentReviews, weeklyReview }),
+    [recentReviews, tree, weeklyReview]
+  )
+  const data = mappedData.nodes.length > 0 ? mappedData : lifeVitalityTreeMockData
+  const isUsingFallback = !tree || tree.nodes.length === 0
   const selectedNode = useMemo(
     () => data.nodes.find((node) => node.id === selectedNodeId) ?? data.nodes[0],
     [data.nodes, selectedNodeId]
@@ -310,9 +322,9 @@ export function LifeVitalityTreeCanvas() {
         <aside className="rounded-[22px] border border-[color:var(--panel-border)] bg-[var(--graph-overlay-bg)] p-5 shadow-panel backdrop-blur-xl">
           <div className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--text-muted)]">boundary</div>
           <ul className="mt-3 space-y-2 text-sm leading-6 text-[color:var(--text-secondary)]">
-            <li>当前为静态 mock，不接 SQLite / IPC。</li>
-            <li>旧 Obsidian Graph 文件保留为归档支线。</li>
-            <li>本轮不做真实 3D、摄像头或手势识别。</li>
+            <li>{isUsingFallback ? '当前没有可用 TreeSnapshot，已回退静态 mock。' : '当前为半真实映射，来自现有 TreeSnapshot / reviews / weekly review。'}</li>
+            <li>不新增 SQLite 表，不改 IPC 主链路。</li>
+            <li>旧 Obsidian Graph 文件保留为归档支线；本轮不做真实 3D。</li>
           </ul>
         </aside>
       </div>

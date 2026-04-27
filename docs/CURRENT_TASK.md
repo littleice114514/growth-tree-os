@@ -2,20 +2,20 @@
 
 ## 本轮唯一目标
 
-完成 Life Vitality Tree / 人生生长树基础框架 v0.1，并继续保持 Windows / GitHub / MacBook 协同底座。
+完成 Life Vitality Tree / 人生生长树 v0.2 半真实数据映射层，并继续保持 Windows / GitHub / MacBook 协同底座。
 
-本轮做最小功能框架：主入口切换、静态类型、mock 数据、2.5D / SVG / HTML Canvas 占位组件和文档更新。
+本轮做 renderer 侧 adapter / mapper：把现有 TreeSnapshot、recentReviews、weeklyReview 转换为 Life Vitality Tree 可识别的树对象。
 
 ## 当前默认主线
 
-当前默认主线 = Life Vitality Tree v0.1 静态 Canvas 框架 + 双设备 GitHub 协同优先。
+当前默认主线 = Life Vitality Tree v0.2 半真实数据映射 + 双设备 GitHub 协同优先。
 
 优先关注：
 
-1. 从主入口移除 Obsidian Graph V1
-2. 新增 `人生生长树` 主入口
-3. 建立 Life Tree 基础类型和 mock 数据
-4. 建立静态 Life Vitality Tree Canvas 占位体验
+1. 新增 Life Tree mapper
+2. Canvas 优先使用半真实映射数据
+3. 保留 mock fallback
+4. 不改 DB / IPC / 原始 TreeSnapshot 逻辑
 5. GitHub main 分支可同步，MacBook 可 pull 验收
 
 ## 本轮不做
@@ -28,7 +28,8 @@
 - 不安装新依赖。
 - 不启动 3D 开发。
 - 不新增多个分散规划文档。
-- 不接真实 SQLite / IPC / TreeSnapshot。
+- 不新增真实 SQLite / IPC 链路。
+- 不删除 mock 数据。
 
 ## 涉及文件
 
@@ -36,6 +37,7 @@
 - Life Vitality Tree Canvas：`app/renderer/src/features/life-vitality-tree/LifeVitalityTreeCanvas.tsx`
 - Life Tree 类型：`app/renderer/src/features/life-vitality-tree/lifeVitalityTreeTypes.ts`
 - Life Tree mock 数据：`app/renderer/src/features/life-vitality-tree/lifeVitalityTreeMockData.ts`
+- Life Tree mapper：`app/renderer/src/features/life-vitality-tree/lifeVitalityTreeMapper.ts`
 - 主页面入口：`app/renderer/src/pages/MainWorkspacePage.tsx`
 - 导航入口：`app/renderer/src/components/Toolbar.tsx`
 - 视图类型：`app/renderer/src/types/ui.ts`
@@ -47,19 +49,18 @@
 
 ## 下一步唯一优先事项
 
-下一轮优先让 MacBook 按 `docs/handoff/MAC_NEXT_ACTION.md` pull 最新 main，并验证 `人生生长树` 入口、5 个视角按钮、hover 摘要和点击详情卡。
+下一轮优先让 MacBook 按 `docs/handoff/MAC_NEXT_ACTION.md` pull 最新 main，并验证 `人生生长树` 是否显示现有成长树数据映射后的 metrics、节点标题、路径、状态和年轮聚合。
 
-MacBook 验收完成后，再决定是否把静态 mock 进一步拆成可测试的数据映射层。
+MacBook 验收完成后，再决定是否把 mapper 拆成更明确的单元测试或数据映射规则文档。
 
-## 2026-04-27 v0.1 验收口径
+## 2026-04-27 v0.2 验收口径
 
 - `pnpm typecheck` 通过。
 - `pnpm build` 通过。
-- 顶部导航不再显示 `图谱 V1`。
-- 顶部导航显示 `人生生长树`。
-- `人生生长树` 页面能显示 Life Vitality Tree Canvas。
-- 远景、结构、模块、细节、年轮 5 个视角按钮可切换。
-- hover 树对象可显示摘要，点击树对象可显示详情卡。
+- `人生生长树` 页面 metrics 反映现有 TreeSnapshot 的主线数、非 mainline 节点数、achievement 数和修复事项数。
+- hover / click 详情卡能显示真实节点标题、所属路径、创建时间、更新时间、状态映射和来源。
+- 最近复盘存在时，年轮视角按年份聚合 review rings。
+- 无 tree 数据时仍回退 mock，不白屏。
 - Obsidian Graph 旧文件仍保留，未物理删除。
 
 ## 验收标准

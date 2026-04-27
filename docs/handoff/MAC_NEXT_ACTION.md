@@ -11,14 +11,13 @@
 
 ## 2. 本轮已完成
 
-- 新增 Life Vitality Tree / 人生生长树 v0.1 静态框架。
-- 顶部导航新增 `人生生长树`。
-- 顶部导航和页面切换中移除 `图谱 V1` 主入口。
-- 保留 Obsidian Graph 旧代码，不删除、不移动。
-- 新增 Life Tree 基础 TypeScript 类型和 mock 数据。
-- 新增 2.5D / SVG / HTML 版 Life Vitality Tree Canvas 占位组件。
-- 支持远景、结构、模块、细节和年轮视角。
-- 支持 hover 摘要和点击详情卡。
+- Life Vitality Tree / 人生生长树 已从 v0.1 纯 mock 推进到 v0.2 半真实数据映射。
+- 新增 `lifeVitalityTreeMapper.ts`。
+- Canvas 优先使用现有 `TreeSnapshot`、`recentReviews`、`weeklyReview` 映射出的 Life Tree 数据。
+- mock 数据继续保留，用于无 tree 数据 fallback。
+- metrics 可反映主线数、行动/叶片数、阶段成果数和修复事项数。
+- hover / click 详情卡可显示真实节点标题、路径、时间、状态映射和来源。
+- 年轮视角可按近期复盘年份聚合 rings。
 - 本轮不接数据库、不改 IPC、不改 SQLite、不安装 3D 依赖。
 
 ## 3. 本轮修改文件
@@ -26,13 +25,10 @@
 - `app/renderer/src/features/life-vitality-tree/LifeVitalityTreeCanvas.tsx`
 - `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeTypes.ts`
 - `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeMockData.ts`
-- `app/renderer/src/pages/MainWorkspacePage.tsx`
-- `app/renderer/src/components/Toolbar.tsx`
-- `app/renderer/src/types/ui.ts`
+- `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeMapper.ts`
 - `docs/LIFE_VITALITY_TREE.md`
 - `docs/CURRENT_STATE.md`
 - `docs/CURRENT_TASK.md`
-- `docs/PAUSED_BRANCHES.md`
 - `docs/FILE_MAP.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
 
@@ -42,14 +38,14 @@
 
 - `pnpm typecheck`：通过。
 - `pnpm build`：通过。
-- `git diff --name-only` 仅包含 Life Vitality Tree 新模块、入口切换文件和文档。
+- `git diff --name-only` 仅包含 Life Vitality Tree 模块和文档。
 - 没有修改 `package.json` 或 `pnpm-lock.yaml`。
 - 没有修改 `app/main/db.ts` 或 `app/main/ipc.ts`。
 - 没有删除或移动 `app/renderer/src/features/obsidian-graph` 旧文件。
 
 ### 未验证 / 风险
 
-- Life Vitality Tree v0.1 仍是静态 mock，不接真实复盘、节点、财富或时间负债数据。
+- Life Vitality Tree v0.2 是 renderer 侧半真实映射，不是后端真实 schema。
 - 本轮不是最终视觉方案，不做真实 3D。
 - 年轮、落叶入土、根系字段、数据库映射仍在后续设计阶段。
 
@@ -94,9 +90,11 @@ pnpm dev
 - 顶部导航不再显示 `图谱 V1`。
 - 顶部导航显示 `人生生长树`。
 - 点击 `人生生长树` 后显示 Life Vitality Tree Canvas。
+- metrics 应反映当前成长树数据，不再只是纯 mock 数字。
 - 远景、结构、模块、细节、年轮 5 个视角按钮可切换。
-- hover 树对象时出现摘要。
-- 点击树对象后右侧详情卡更新。
+- hover 树对象时出现摘要，能看到真实节点标题或映射对象。
+- 点击树对象后右侧详情卡更新，并显示来源。
+- 年轮视角能按近期复盘年份显示 rings；如果没有复盘则保留 fallback。
 - `成长树`、`财富`、`时间负债`、`提醒`、`周回看` 仍能进入。
 - `app/renderer/src/features/obsidian-graph` 目录仍存在。
 
@@ -104,7 +102,7 @@ pnpm dev
 
 请让 Mac 端 Codex 接着完成：
 
-验证 Life Vitality Tree v0.1 在 macOS Electron 环境的页面操作闭环，并评估下一步是否把静态 mock 数据拆成可测试的数据映射层。不要直接接数据库，不要启动 3D。
+验证 Life Vitality Tree v0.2 在 macOS Electron 环境的半真实映射效果，并评估是否为 `lifeVitalityTreeMapper.ts` 增加单元测试或更明确的映射规则说明。不要直接接数据库，不要启动 3D。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
@@ -122,4 +120,4 @@ pnpm dev
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
 - `.env`、SQLite、本地 runtime、依赖和构建产物不要提交。
-- Life Vitality Tree v0.1 是静态框架，不是最终视觉或真实数据方案。
+- Life Vitality Tree v0.2 是半真实 renderer 映射，不是最终视觉或后端真实数据方案。
