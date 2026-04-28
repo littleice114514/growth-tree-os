@@ -108,3 +108,34 @@
   - 工作区存在本地运行残留 `codex-live-dev.pid`，不纳入提交。
 - 下一步：
   - MacBook 拉取本轮 commit 后验收 `人生总览`、`财富`、`时间负债` 三个入口的 Preview 是否可见，并确认 `成长树` 仍可正常进入。
+
+### 2026-04-28｜AI Workflow Assets 跨设备同步
+
+- 设备：Windows / Codex
+- 分支：main
+- commit：本轮最终 commit 以 `git rev-parse --short HEAD` 和最终汇报为准
+- 本轮目标：把 Win 端已沉淀的 Codex / AI workflow / skills / handoff 资产整理成可版本管理目录，并推送到 GitHub 供 Mac 拉取复用。
+- 修改文件：
+  - `.ai-workflow/README.md`
+  - `.ai-workflow/skills/*/SKILL.md`
+  - `.ai-workflow/commands/README.md`
+  - `.ai-workflow/docs/README.md`
+  - `.ai-workflow/handoff/README.md`
+  - `docs/handoff/MAC_NEXT_ACTION.md`
+  - `docs/handoff/SYNC_LOG.md`
+  - `docs/handoff/DEVELOPMENT_LOG.md`
+- 完成内容：
+  - 解决中断前遗留 rebase 冲突，保留 Mac / Win 两段开发日志。
+  - 建立 `.ai-workflow/` 统一入口。
+  - 同步 `concise-dev`、`frontend-skill`、`handoff-card`、`repo-map` 四个可复用 skill。
+  - 建立 commands / docs / handoff 索引，明确当前未发现 repo 内 command 文件。
+  - 更新 Mac 下一步操作卡，补齐拉取、安装 skill、验收和失败回传命令。
+- 验收结果：
+  - `git rebase --continue` 已完成。
+  - `.ai-workflow/README.md` 可读并包含 skills / commands / docs / handoff 索引。
+  - 已执行敏感关键词扫描；未发现需要纳入提交的真实密钥。
+- 当前问题：
+  - Mac 端尚未 pull 验收。
+  - `codex-live-dev.pid` 为本地运行残留，继续不提交。
+- 下一步：
+  - MacBook 拉取最新 main 后确认 `.ai-workflow/README.md` 和 `.ai-workflow/skills/*/SKILL.md` 存在，并按需安装到 `$HOME/.codex/skills`。

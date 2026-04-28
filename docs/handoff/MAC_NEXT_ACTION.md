@@ -6,52 +6,46 @@
 - GitHub 仓库：git@github.com:littleice114514/growth-tree-os.git
 - HTTPS 备选：https://github.com/littleice114514/growth-tree-os.git
 - 分支：main
-- 最新 commit：以本轮最终汇报和 Mac 端 `git rev-parse --short HEAD` 输出为准
-- 当前设备完成时间：2026-04-27
+- 最新 commit：以 Windows 端最终汇报和 Mac 端 `git rev-parse --short HEAD` 输出为准
+- 当前设备完成时间：2026-04-28
 
 ## 2. 本轮已完成
 
-- Life Vitality Tree / 人生生长树 已从 v0.1 纯 mock 推进到 v0.2 半真实数据映射。
-- 新增 `lifeVitalityTreeMapper.ts`。
-- Canvas 优先使用现有 `TreeSnapshot`、`recentReviews`、`weeklyReview` 映射出的 Life Tree 数据。
-- Mapper 已补齐 unknown 安全读取，兼容常见时间字段命名。
-- Review 可映射为 `leaf`；包含失控、拖延、失败等关键词时映射为 `fallen_leaf`。
-- mock 数据继续保留，用于无 tree 数据 fallback。
-- metrics 可反映主线数、行动/叶片数、阶段成果数和修复事项数。
-- hover / click 详情卡可显示真实节点标题、路径、时间、状态映射和来源。
-- 页面显示数据来源、节点数、叶子、果实、落叶和最近更新时间。
-- 年轮视角可按近期复盘年份聚合 rings。
-- 本轮不接数据库、不改 IPC、不改 SQLite、不安装 3D 依赖。
+- 已恢复 Windows 端中断前的 rebase 状态，合并保留 Mac / Windows 两段 `DEVELOPMENT_LOG.md` 记录。
+- 已建立 `.ai-workflow/` 作为跨设备 AI 工作流统一入口。
+- 已同步 Win 端可复用本地 skills：`concise-dev`、`frontend-skill`、`handoff-card`、`repo-map`。
+- 已建立 commands / docs / handoff 索引，说明当前未发现 repo 内 command 文件。
+- 已记录敏感信息扫描口径和排除项，未纳入 `.env`、日志、pid、缓存、构建产物或本地密钥。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/life-vitality-tree/LifeVitalityTreeCanvas.tsx`
-- `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeTypes.ts`
-- `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeMockData.ts`
-- `app/renderer/src/features/life-vitality-tree/lifeVitalityTreeMapper.ts`
-- `docs/LIFE_VITALITY_TREE.md`
-- `docs/CURRENT_STATE.md`
-- `docs/CURRENT_TASK.md`
-- `docs/FILE_MAP.md`
+- `.ai-workflow/README.md`
+- `.ai-workflow/skills/concise-dev/SKILL.md`
+- `.ai-workflow/skills/frontend-skill/SKILL.md`
+- `.ai-workflow/skills/handoff-card/SKILL.md`
+- `.ai-workflow/skills/repo-map/SKILL.md`
+- `.ai-workflow/commands/README.md`
+- `.ai-workflow/docs/README.md`
+- `.ai-workflow/handoff/README.md`
+- `docs/handoff/DEVELOPMENT_LOG.md`
+- `docs/handoff/SYNC_LOG.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
 
 ## 4. 当前验证结果
 
 ### 已验证
 
-- `pnpm typecheck`：通过。
-- `pnpm build`：通过。
-- `pnpm dev`：通过，renderer dev server 地址为 `http://localhost:5173/`。
-- `git diff --name-only` 仅包含 Life Vitality Tree 模块和文档。
-- 没有修改 `package.json` 或 `pnpm-lock.yaml`。
-- 没有修改 `app/main/db.ts` 或 `app/main/ipc.ts`。
-- 没有删除或移动 `app/renderer/src/features/obsidian-graph` 旧文件。
+- `git rebase --continue` 已成功完成，当前分支回到 `main`。
+- `.ai-workflow/README.md` 已创建，并包含 skills / commands / docs / handoff / Mac 使用说明 / 排除项。
+- 已扫描候选内容关键词：`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、`GITHUB_TOKEN`、`token`、`secret`、`password`、`cookie`、`authorization`、`api_key`、`sk-`。
+- `docs/P2_VISUAL_UPGRADE_LOG.md` 中的 `token` 为主题 token 语义；`pnpm-lock.yaml` 中的 `token` 为依赖名命中，均不作为密钥提交。
+- 本轮未提交 `codex-live-dev.pid`。
 
 ### 未验证 / 风险
 
-- Life Vitality Tree v0.2 是 renderer 侧半真实映射，不是后端真实 schema。
-- 本轮不是最终视觉方案，不做真实 3D。
-- 年轮、落叶入土、根系字段、数据库映射仍在后续设计阶段。
+- Mac 端尚未 pull 验收。
+- `.ai-workflow/skills/` 当前同步的是 Win 端可复用用户层 skills；系统/plugin/provider skills 只在 README 中索引，没有复制。
+- 本轮不验证业务 UI，不运行 Electron smoke；范围仅限 AI workflow 资产同步。
 
 ## 5. Mac 端第一步操作
 
@@ -87,43 +81,49 @@ pnpm build
 pnpm dev
 ```
 
+如需把同步的 skills 安装到 Mac Codex：
+
+```bash
+mkdir -p "$HOME/.codex/skills"
+cp -R .ai-workflow/skills/concise-dev "$HOME/.codex/skills/"
+cp -R .ai-workflow/skills/frontend-skill "$HOME/.codex/skills/"
+cp -R .ai-workflow/skills/handoff-card "$HOME/.codex/skills/"
+cp -R .ai-workflow/skills/repo-map "$HOME/.codex/skills/"
+```
+
 ## 7. Mac 端验收方式
 
 请在 Mac 端检查：
 
-- 顶部导航不再显示 `图谱 V1`。
-- 顶部导航显示 `人生生长树`。
-- 点击 `人生生长树` 后显示 Life Vitality Tree Canvas。
-- metrics 应反映当前成长树数据，不再只是纯 mock 数字。
-- 数据来源摘要应显示节点数、叶子、果实、落叶和最近更新时间。
-- 远景、结构、模块、细节、年轮 5 个视角按钮可切换。
-- hover 树对象时出现摘要，能看到真实节点标题或映射对象。
-- 点击树对象后右侧详情卡更新，并显示来源。
-- 年轮视角能按近期复盘年份显示 rings；如果没有复盘则保留 fallback。
-- `成长树`、`财富`、`时间负债`、`提醒`、`周回看` 仍能进入。
-- `app/renderer/src/features/obsidian-graph` 目录仍存在。
+- `git branch --show-current` 输出 `main`。
+- `git status` clean。
+- `ls -la .ai-workflow` 能看到 `README.md`、`skills/`、`commands/`、`docs/`、`handoff/`。
+- `cat .ai-workflow/README.md` 能看到 skills / commands / docs / handoff 索引。
+- `.ai-workflow/skills` 下能看到 `concise-dev`、`frontend-skill`、`handoff-card`、`repo-map`。
+- `.ai-workflow/README.md` 没有真实 API key、token、cookie、password 或 authorization 值。
 
 ## 8. Mac 端下一轮任务
 
 请让 Mac 端 Codex 接着完成：
 
-验证 Life Vitality Tree v0.2 在 macOS Electron 环境的半真实映射效果，并评估是否为 `lifeVitalityTreeMapper.ts` 增加单元测试或更明确的映射规则说明。不要直接接数据库，不要启动 3D。
+拉取 Windows 端 AI workflow 同步 commit 后，确认 `.ai-workflow/README.md` 和 `.ai-workflow/skills/*/SKILL.md` 可读，并按需把 4 个同步 skills 安装到 Mac 的 `$HOME/.codex/skills`。验收后再继续推进 Dashboard Preview 真实数据融合，不要直接改数据库或 IPC。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
 请截图或粘贴：
 
 - `git status` 输出
+- `git branch --show-current` 输出
 - `git rev-parse --short HEAD` 输出
+- `ls -la .ai-workflow` 输出
+- `find .ai-workflow -maxdepth 3 -type f | sort` 输出
+- `cat .ai-workflow/README.md` 的关键报错或缺失段落
 - `pnpm install`、`pnpm typecheck`、`pnpm build`、`pnpm dev` 的完整报错
-- `人生生长树` 数据来源摘要截图
-- 页面异常截图
-- DevTools 控制台首个关键错误
 
 ## 10. 注意事项
 
-- 不要直接覆盖本地未提交改动。
+- 不要直接覆盖 Mac 本地未提交改动。
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
 - `.env`、SQLite、本地 runtime、依赖和构建产物不要提交。
-- Life Vitality Tree v0.2 是半真实 renderer 映射，不是最终视觉或后端真实数据方案。
+- `.ai-workflow/` 是跨设备 AI workflow 入口；项目真实状态仍以 `docs/` 和代码为准。
