@@ -13,6 +13,8 @@ release/
 .env.*.local
 
 *.log
+*.pid
+codex-live-dev.pid
 .DS_Store
 Thumbs.db
 
