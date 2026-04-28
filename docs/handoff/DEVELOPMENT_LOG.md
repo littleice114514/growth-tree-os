@@ -139,3 +139,31 @@
   - `codex-live-dev.pid` 为本地运行残留，继续不提交。
 - 下一步：
   - MacBook 拉取最新 main 后确认 `.ai-workflow/README.md` 和 `.ai-workflow/skills/*/SKILL.md` 存在，并按需安装到 `$HOME/.codex/skills`。
+
+### 2026-04-28｜TimeDebt 时间日志输入体验优化 V0.2
+
+- 设备：MacBook / Codex
+- 分支：main
+- commit：未提交，本地工作区变更
+- 本轮目标：优化 TimeDebt “新增时间日志”入口，降低真实时间数据的日常录入成本。
+- 修改文件：
+  - `app/renderer/src/features/time-debt/TimeDebtDashboard.tsx`
+  - `app/renderer/src/features/time-debt/SmartOptionInput.tsx`
+  - `app/renderer/src/features/time-debt/timeDebtOptionsStorage.ts`
+  - `docs/handoff/DEVELOPMENT_LOG.md`
+- 完成内容：
+  - 开始时间 / 结束时间输入框在字段为空且获得焦点时，自动填入当前电脑本地时间。
+  - 新增单个轻量计时器，支持“开始计时 → 结束计时并生成记录”，并复用现有 TimeDebt logs 保存逻辑。
+  - 一级分类、二级项目、工作量单位改为候选输入，可选择旧选项，也可直接输入新选项。
+  - 新增本地选项池 `growth-tree-os:time-debt-options:v1`，保存日志时自动把新分类 / 项目 / 单位加入候选池。
+  - 保留原表单保存逻辑和分类字典入口，不改日志 schema、数据库、IPC、导航或 Wealth。
+- 验收结果：
+  - 等效 typecheck 通过：`./node_modules/.bin/tsc --noEmit -p tsconfig.node.json && ./node_modules/.bin/tsc --noEmit -p app/renderer/tsconfig.json`。
+  - dev server 已启动，`http://localhost:5173/` 返回 HTTP 200；随后已停止。
+  - 待 Electron 窗口手动目测：时间字段自动填充、计时器生成日志、候选项保存后复用。
+- 当前问题：
+  - 计时器运行态暂存在 React state，刷新页面会丢失正在进行的计时；本轮先不新增 running timer 持久化。
+  - `pnpm` 当前不在 PATH，`package.json` 当前无 `lint` 脚本。
+- 下一步：
+  - TimeDebt Overview 根据新日志继续做更细的 7 日趋势 / top tasks selector。
+  - Wealth Overview 真实数据融合。

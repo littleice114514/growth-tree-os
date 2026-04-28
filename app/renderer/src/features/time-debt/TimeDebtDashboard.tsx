@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   buildTimeDebtOverview,
   buildTimeDebtDiagnosis,
+  calculateDurationMinutes,
   createTimeDebtLog,
   createTimeDebtParams,
   createWorkTimeStandard,
@@ -24,6 +25,14 @@ import {
   saveTimeDebtParams,
   timeDebtStorageKeys
 } from './timeDebtStorage'
+import { SmartOptionInput } from './SmartOptionInput'
+import {
+  loadTimeDebtOptions,
+  saveTimeDebtOptions,
+  timeDebtOptionsStorageKey,
+  upsertTimeDebtOptions,
+  type TimeDebtOptions
+} from './timeDebtOptionsStorage'
 import { TimeDebtDashboardPreview } from '@/features/dashboard-preview'
 
 type TimeDebtView = 'overview' | 'logs' | 'dailyStats' | 'debtParams' | 'workStandard' | 'diagnosis'
@@ -48,6 +57,15 @@ type StandardDraft = {
   note: string
 }
 
+type RunningTimer = {
+  title: string
+  primaryCategory: string
+  secondaryProject: string
+  workloadUnit: string
+  startTime: string
+  startTimestampMs: number
+}
+
 const today = new Date().toISOString().slice(0, 10)
 const sampleDate = '2026-03-30'
 const viewLabels: Record<TimeDebtView, string> = {
@@ -63,8 +81,11 @@ export function TimeDebtDashboard() {
   const [logs, setLogs] = useState<TimeDebtLog[]>(() => loadTimeDebtLogs())
   const [standards, setStandards] = useState<WorkTimeStandard[]>(() => loadWorkTimeStandards())
   const [params, setParams] = useState<TimeDebtParams>(() => loadTimeDebtParams())
+  const [options, setOptions] = useState<TimeDebtOptions>(() => loadTimeDebtOptions())
   const [currentView, setCurrentView] = useState<TimeDebtView>('overview')
   const [logDraft, setLogDraft] = useState<LogDraft>(() => createSampleLogDraft())
+  const [runningTimer, setRunningTimer] = useState<RunningTimer | null>(null)
+  const [timerNow, setTimerNow] = useState(() => Date.now())
   const [standardDraft, setStandardDraft] = useState<StandardDraft>(() => ({
     date: today,
     standardWorkHours: '8',
@@ -83,28 +104,96 @@ export function TimeDebtDashboard() {
   const stats = overview.stats
   const diagnosis = useMemo(() => buildTimeDebtDiagnosis(stats), [stats])
 
-  const saveLog = () => {
-    if (!logDraft.title.trim() || !logDraft.startTime || !logDraft.endTime) {
-      return
+  useEffect(() => {
+    if (!runningTimer) {
+      return undefined
     }
+    const intervalId = window.setInterval(() => setTimerNow(Date.now()), 1000)
+    return () => window.clearInterval(intervalId)
+  }, [runningTimer])
 
+  const persistLog = (draft: LogDraft): boolean => {
+    if (!draft.title.trim() || !draft.startTime || !draft.endTime) {
+      return false
+    }
     const log = createTimeDebtLog(
       {
-        title: logDraft.title,
-        primaryCategory: logDraft.primaryCategory,
-        secondaryProject: logDraft.secondaryProject,
-        startTime: logDraft.startTime,
-        endTime: logDraft.endTime,
-        workload: optionalNumber(logDraft.workload),
-        workloadUnit: logDraft.workloadUnit,
-        statusScore: optionalNumber(logDraft.statusScore),
-        aiEnableRatio: optionalNumber(logDraft.aiEnableRatio),
-        dimension: logDraft.dimension,
-        resultNote: logDraft.resultNote
+        title: draft.title,
+        primaryCategory: draft.primaryCategory,
+        secondaryProject: draft.secondaryProject,
+        startTime: draft.startTime,
+        endTime: draft.endTime,
+        workload: optionalNumber(draft.workload),
+        workloadUnit: draft.workloadUnit,
+        statusScore: optionalNumber(draft.statusScore),
+        aiEnableRatio: optionalNumber(draft.aiEnableRatio),
+        dimension: draft.dimension,
+        resultNote: draft.resultNote
       },
       params
     )
     setLogs(appendTimeDebtLog(log))
+    const nextOptions = upsertTimeDebtOptions(options, {
+      category: draft.primaryCategory,
+      project: draft.secondaryProject,
+      unit: draft.workloadUnit
+    })
+    setOptions(nextOptions)
+    saveTimeDebtOptions(nextOptions)
+    return true
+  }
+
+  const saveLog = () => {
+    persistLog(logDraft)
+  }
+
+  const startTimer = () => {
+    if (!logDraft.title.trim() || runningTimer) {
+      return
+    }
+    const now = new Date()
+    const startTime = formatLocalDateTimeInput(now)
+    const workloadUnit = logDraft.workloadUnit || 'min'
+    setRunningTimer({
+      title: logDraft.title.trim(),
+      primaryCategory: logDraft.primaryCategory.trim(),
+      secondaryProject: logDraft.secondaryProject.trim(),
+      workloadUnit,
+      startTime,
+      startTimestampMs: now.getTime()
+    })
+    setTimerNow(now.getTime())
+    setLogDraft((current) => ({
+      ...current,
+      startTime,
+      endTime: '',
+      workloadUnit
+    }))
+  }
+
+  const finishTimer = () => {
+    if (!runningTimer) {
+      return
+    }
+    const now = new Date()
+    const minimumEndTimestamp = runningTimer.startTimestampMs + 60000
+    const endDate = new Date(Math.max(now.getTime(), minimumEndTimestamp))
+    const endTime = formatLocalDateTimeInput(endDate)
+    const durationMinutes = Math.max(1, calculateDurationMinutes(runningTimer.startTime, endTime))
+    const nextDraft = {
+      ...logDraft,
+      title: runningTimer.title,
+      primaryCategory: runningTimer.primaryCategory,
+      secondaryProject: runningTimer.secondaryProject,
+      startTime: runningTimer.startTime,
+      endTime,
+      workload: logDraft.workload || String(durationMinutes),
+      workloadUnit: runningTimer.workloadUnit || 'min'
+    }
+    if (persistLog(nextDraft)) {
+      setLogDraft(nextDraft)
+      setRunningTimer(null)
+    }
   }
 
   const saveStandard = () => {
@@ -170,7 +259,23 @@ export function TimeDebtDashboard() {
           </>
         ) : null}
         {currentView === 'logs' ? (
-          <LogsView draft={logDraft} logs={logs} onChange={(patch) => setLogDraft((current) => ({ ...current, ...patch }))} onSave={saveLog} onDelete={removeLog} />
+          <LogsView
+            draft={logDraft}
+            logs={logs}
+            options={options}
+            runningTimer={runningTimer}
+            timerNow={timerNow}
+            onChange={(patch) => setLogDraft((current) => ({ ...current, ...patch }))}
+            onSave={saveLog}
+            onDelete={removeLog}
+            onStartTimer={startTimer}
+            onFinishTimer={finishTimer}
+            onCreateOption={(values) => {
+              const nextOptions = upsertTimeDebtOptions(options, values)
+              setOptions(nextOptions)
+              saveTimeDebtOptions(nextOptions)
+            }}
+          />
         ) : null}
         {currentView === 'dailyStats' ? <DailyStatsView stats={stats} selectedDate={selectedDate} /> : null}
         {currentView === 'debtParams' ? (
@@ -217,23 +322,72 @@ function Overview({ overview, onOpenLogs }: { overview: TimeDebtOverview; onOpen
 function LogsView({
   draft,
   logs,
+  options,
+  runningTimer,
+  timerNow,
   onChange,
   onSave,
-  onDelete
+  onDelete,
+  onStartTimer,
+  onFinishTimer,
+  onCreateOption
 }: {
   draft: LogDraft
   logs: TimeDebtLog[]
+  options: TimeDebtOptions
+  runningTimer: RunningTimer | null
+  timerNow: number
   onChange: (patch: Partial<LogDraft>) => void
   onSave: () => void
   onDelete: (logId: string) => void
+  onStartTimer: () => void
+  onFinishTimer: () => void
+  onCreateOption: (values: { category?: string; project?: string; unit?: string }) => void
 }) {
   const selectedCategory = defaultProjectCategories.find(
     (category) => category.primaryCategory === draft.primaryCategory && category.secondaryProject === draft.secondaryProject
   )
+  const canStartTimer = Boolean(draft.title.trim()) && !runningTimer
 
   return (
     <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
       <Panel title="新增时间日志" eyebrow="Work Logs">
+        <div className="mb-4 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-4">
+          {runningTimer ? (
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="text-xs text-[color:var(--text-muted)]">当前计时中</div>
+                <div className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">{runningTimer.title}</div>
+                <div className="mt-2 flex flex-wrap gap-3 text-xs text-[color:var(--text-secondary)]">
+                  <span>开始时间：{formatDisplayDateTime(runningTimer.startTime)}</span>
+                  <span>已进行：{formatElapsedTime(timerNow - runningTimer.startTimestampMs)}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onFinishTimer}
+                className="rounded-2xl bg-[var(--button-bg)] px-5 py-2 text-sm font-semibold text-[color:var(--button-text)] transition hover:bg-[var(--button-hover)]"
+              >
+                结束计时并生成记录
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="text-xs text-[color:var(--text-muted)]">当前计时：未开始</div>
+                <p className="mt-1 text-sm text-[color:var(--text-secondary)]">先填写标题和分类，再用计时方式生成一条真实时间日志。</p>
+              </div>
+              <button
+                type="button"
+                onClick={onStartTimer}
+                disabled={!canStartTimer}
+                className="rounded-2xl bg-[var(--button-bg)] px-5 py-2 text-sm font-semibold text-[color:var(--button-text)] transition hover:bg-[var(--button-hover)] disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                开始计时
+              </button>
+            </div>
+          )}
+        </div>
         <div className="grid gap-4 md:grid-cols-2">
           <TextField label="标题" value={draft.title} onChange={(title) => onChange({ title })} />
           <SelectField
@@ -251,12 +405,50 @@ function LogsView({
             }}
             options={defaultProjectCategories.map((category) => `${category.primaryCategory}::${category.secondaryProject}`)}
           />
-          <TextField label="一级分类" value={draft.primaryCategory} onChange={(primaryCategory) => onChange({ primaryCategory })} />
-          <TextField label="二级项目" value={draft.secondaryProject} onChange={(secondaryProject) => onChange({ secondaryProject })} />
-          <TextField label="开始时间" value={draft.startTime} onChange={(startTime) => onChange({ startTime })} type="datetime-local" />
-          <TextField label="结束时间" value={draft.endTime} onChange={(endTime) => onChange({ endTime })} type="datetime-local" />
+          <SmartOptionInput
+            label="一级分类"
+            value={draft.primaryCategory}
+            options={options.categories}
+            onChange={(primaryCategory) => onChange({ primaryCategory })}
+            onCreateOption={(category) => onCreateOption({ category })}
+          />
+          <SmartOptionInput
+            label="二级项目"
+            value={draft.secondaryProject}
+            options={options.projects}
+            onChange={(secondaryProject) => onChange({ secondaryProject })}
+            onCreateOption={(project) => onCreateOption({ project })}
+          />
+          <TextField
+            label="开始时间"
+            value={draft.startTime}
+            onChange={(startTime) => onChange({ startTime })}
+            onFocus={() => {
+              if (!draft.startTime) {
+                onChange({ startTime: formatLocalDateTimeInput(new Date()) })
+              }
+            }}
+            type="datetime-local"
+          />
+          <TextField
+            label="结束时间"
+            value={draft.endTime}
+            onChange={(endTime) => onChange({ endTime })}
+            onFocus={() => {
+              if (!draft.endTime) {
+                onChange({ endTime: formatLocalDateTimeInput(new Date()) })
+              }
+            }}
+            type="datetime-local"
+          />
           <TextField label="工作量" value={draft.workload} onChange={(workload) => onChange({ workload })} type="number" />
-          <TextField label="工作量单位" value={draft.workloadUnit || selectedCategory?.defaultWorkloadUnit || ''} onChange={(workloadUnit) => onChange({ workloadUnit })} />
+          <SmartOptionInput
+            label="工作量单位"
+            value={draft.workloadUnit || selectedCategory?.defaultWorkloadUnit || ''}
+            options={options.units}
+            onChange={(workloadUnit) => onChange({ workloadUnit })}
+            onCreateOption={(unit) => onCreateOption({ unit })}
+          />
           <TextField label="状态分" value={draft.statusScore} onChange={(statusScore) => onChange({ statusScore })} type="number" />
           <TextField label="AI 赋能比例" value={draft.aiEnableRatio} onChange={(aiEnableRatio) => onChange({ aiEnableRatio })} type="number" />
           <TextField label="维度" value={draft.dimension} onChange={(dimension) => onChange({ dimension })} />
@@ -493,10 +685,22 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-function TextField({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
+function TextField({
+  label,
+  value,
+  onChange,
+  onFocus,
+  type = 'text'
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  onFocus?: () => void
+  type?: string
+}) {
   return (
     <Field label={label}>
-      <input value={value} onChange={(event) => onChange(event.target.value)} type={type} className={inputClass} />
+      <input value={value} onChange={(event) => onChange(event.target.value)} onFocus={onFocus} type={type} className={inputClass} />
     </Field>
   )
 }
@@ -539,6 +743,34 @@ function optionalNumber(value: string): number | undefined {
   return Number.isFinite(numberValue) ? numberValue : undefined
 }
 
+function formatLocalDateTimeInput(date: Date): string {
+  const year = date.getFullYear()
+  const month = padDatePart(date.getMonth() + 1)
+  const day = padDatePart(date.getDate())
+  const hours = padDatePart(date.getHours())
+  const minutes = padDatePart(date.getMinutes())
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
+function padDatePart(value: number): string {
+  return String(value).padStart(2, '0')
+}
+
+function formatDisplayDateTime(value: string): string {
+  if (!value) {
+    return '待补充'
+  }
+  return value.replace('T', ' ')
+}
+
+function formatElapsedTime(milliseconds: number): string {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  return `${padDatePart(hours)}:${padDatePart(minutes)}:${padDatePart(seconds)}`
+}
+
 function formatMinutes(minutes: number): string {
   return `${Math.round(minutes)} min`
 }
@@ -568,4 +800,7 @@ function formatNumber(value: number): string {
   }).format(value)
 }
 
-export const timeDebtStorageLocation = timeDebtStorageKeys
+export const timeDebtStorageLocation = {
+  ...timeDebtStorageKeys,
+  options: timeDebtOptionsStorageKey
+}
