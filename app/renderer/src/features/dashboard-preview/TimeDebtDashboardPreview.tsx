@@ -2,126 +2,80 @@ import {
   ActionSuggestionCard,
   CapsuleProgressBar,
   MetricCard,
-  MiniTrendStrip,
   PreviewShell,
   StatusCard
 } from './DashboardPreviewComponents'
-import { InteractiveStackedBar, type StackedBarSegment } from '@/components/charts/InteractiveStackedBar'
-import { timeDebtMock } from './dashboardPreviewData'
+import type { TimeDebtOverview } from '@shared/timeDebt'
+import { InteractiveStackedBar } from '@/components/charts/InteractiveStackedBar'
 
-const timeStructureMeta: Record<string, Pick<StackedBarSegment, 'colorClass' | 'description'>> = {
-  工作: {
-    colorClass: 'bg-cyan-300/80',
-    description: '投入到生产性任务的时间'
-  },
-  学习: {
-    colorClass: 'bg-emerald-300/80',
-    description: '用于能力增长的时间'
-  },
-  生活: {
-    colorClass: 'bg-sky-300/75',
-    description: '生活维护与必要事务'
-  },
-  运动: {
-    colorClass: 'bg-lime-300/75',
-    description: '身体恢复与能量补给'
-  },
-  空转: {
-    colorClass: 'bg-slate-300/70',
-    description: '低回流或无明确收益时间'
-  }
-}
-
-export function TimeDebtDashboardPreview() {
-  const workMax = Math.max(timeDebtMock.actualWorkMinutes, timeDebtMock.standardWorkMinutes)
-  const timeStructureSegments: StackedBarSegment[] = timeDebtMock.timeStructure.map((item) => {
-    const meta = timeStructureMeta[item.label] ?? {
-      colorClass: 'bg-slate-300/70',
-      description: '时间结构中的其他部分'
-    }
-    return {
-      id: item.label,
-      label: item.label,
-      value: item.minutes,
-      unit: 'min',
-      colorClass: meta.colorClass,
-      description: meta.description
-    }
-  })
-  const timeDebtBattleSegments: StackedBarSegment[] = [
-    {
-      id: 'debt',
-      label: '负债',
-      value: timeDebtMock.debtValue,
-      unit: 'min',
-      colorClass: 'bg-rose-300/75',
-      description: '超过承受线或低回流消耗'
-    },
-    {
-      id: 'nourishment',
-      label: '滋养',
-      value: timeDebtMock.nourishmentValue,
-      unit: 'min',
-      colorClass: 'bg-emerald-300/75',
-      description: '恢复精力或产生长期价值的时间'
-    }
-  ]
+export function TimeDebtDashboardPreview({ overview }: { overview: TimeDebtOverview }) {
+  const workMax = Math.max(overview.actualWorkMinutes, overview.standardWorkMinutes, 1)
+  const hasTodayLogs = overview.totalMinutes > 0
+  const statusTone = overview.status === 'debt' ? 'bad' : overview.status === 'warning' ? 'warn' : overview.status === 'healthy' ? 'good' : 'info'
 
   return (
     <PreviewShell
       eyebrow="time debt preview"
-      title="Time Debt Dashboard Preview"
-      description="先用 mock 数据看时间负债仪表盘的产品形态：状态、结构、对抗和下一步动作。"
+      title="Time Debt Overview"
+      description="基于本地时间日志、标准工时和负债参数生成今日时间结构，不再使用今日 mock 数据。"
     >
       <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <StatusCard title="今日时间状态" status={timeDebtMock.status} diagnosis={timeDebtMock.diagnosis} suggestion={timeDebtMock.suggestion} tone="warn" />
+        <StatusCard title="今日时间状态" status={overview.statusLabel} diagnosis={overview.diagnosis} suggestion={overview.nextAction} tone={statusTone} />
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <MetricCard label="工时差额" value={`+${timeDebtMock.workMinuteDelta} min`} detail="实际工作时长超过今日标准" tone="warn" />
-          <MetricCard label="净时间价值" value={`${timeDebtMock.netTimeValue}`} detail="高消耗低回流信号" tone="bad" />
-          <MetricCard label="AI 杠杆率" value={`${Math.round(timeDebtMock.aiEnableRatio * 100)}%`} detail="仍有自动化空间" tone="info" />
-          <MetricCard label="任务数量" value={`${timeDebtMock.topTasks.length}`} detail="只展示最高影响任务" />
+          <MetricCard label="总记录时间" value={formatMinutes(overview.totalMinutes)} detail={hasTodayLogs ? '来自今日时间日志' : '今日暂无时间日志'} tone={hasTodayLogs ? 'neutral' : 'info'} />
+          <MetricCard label="工时差额" value={formatSignedMinutes(overview.workDeltaMinutes)} detail="实际工时 - 标准工时" tone={overview.workDeltaMinutes > 0 ? 'warn' : 'info'} />
+          <MetricCard label="净时间价值" value={formatNumber(overview.netTimeValue)} detail="沿用 Time Debt V1 价值规则" tone={overview.netTimeValue >= 0 ? 'good' : 'bad'} />
+          <MetricCard label="今日日志" value={`${overview.stats.totalLogs}`} detail="本地 localStorage 聚合" />
         </div>
 
         <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
           <div className="mb-4 text-sm font-semibold text-[color:var(--text-primary)]">标准工时 vs 实际工时</div>
           <div className="space-y-4">
-            <CapsuleProgressBar label="标准工时" value={timeDebtMock.standardWorkMinutes} max={workMax} tone="good" />
-            <CapsuleProgressBar label="实际工时" value={timeDebtMock.actualWorkMinutes} max={workMax} tone="warn" />
+            <CapsuleProgressBar label="标准工时" value={overview.standardWorkMinutes} max={workMax} tone="good" />
+            <CapsuleProgressBar label="实际工时" value={overview.actualWorkMinutes} max={workMax} tone={overview.actualWorkMinutes > overview.standardWorkMinutes ? 'warn' : 'info'} />
           </div>
         </section>
 
         <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
           <div className="mb-4 text-sm font-semibold text-[color:var(--text-primary)]">时间结构</div>
-          <InteractiveStackedBar segments={timeStructureSegments} />
+          <InteractiveStackedBar segments={hasTodayLogs ? overview.timeStructureSegments : []} />
         </section>
 
         <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
           <div className="mb-4 text-sm font-semibold text-[color:var(--text-primary)]">时间负债对抗</div>
-          <InteractiveStackedBar segments={timeDebtBattleSegments} compact />
-          <ActionSuggestionCard title="明日动作" body="先压低低回流工作时长，再给身体和复盘留出恢复窗口。" />
+          <InteractiveStackedBar segments={hasTodayLogs ? overview.battleSegments : []} compact />
+          <ActionSuggestionCard title={hasTodayLogs ? '下一步动作' : '空状态提示'} body={hasTodayLogs ? overview.nextAction : '先记录一条时间块，系统会自动生成时间结构。'} />
         </section>
 
         <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
           <div className="mb-4 text-sm font-semibold text-[color:var(--text-primary)]">最近 7 天趋势</div>
-          <MiniTrendStrip values={timeDebtMock.trend7d} />
+          <EmptyPreview text="7 日趋势需要按日期聚合 logs，本轮先接今日 Overview 真实数据。" />
         </section>
 
         <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4 xl:col-span-2">
           <div className="mb-3 text-sm font-semibold text-[color:var(--text-primary)]">效率与 AI 杠杆</div>
-          <div className="grid gap-3 md:grid-cols-3">
-            {timeDebtMock.topTasks.map((task) => (
-              <div key={task.title} className="rounded-2xl border border-white/10 bg-black/10 p-3">
-                <div className="text-sm font-medium text-[color:var(--text-primary)]">{task.title}</div>
-                <div className="mt-2 text-xs leading-5 text-[color:var(--text-secondary)]">
-                  {task.duration} min / {task.efficiency} / 状态 {task.statusScore}
-                </div>
-                <CapsuleProgressBar label="AI 杠杆" value={task.aiRatio * 100} max={100} tone={task.aiRatio > 0.5 ? 'good' : 'info'} />
-              </div>
-            ))}
-          </div>
+          <EmptyPreview text="Top tasks 需要独立 selector 按影响排序，本轮不继续使用 mock 任务。" />
         </section>
       </div>
     </PreviewShell>
   )
+}
+
+function EmptyPreview({ text }: { text: string }) {
+  return <div className="rounded-2xl border border-dashed border-[color:var(--panel-border)] bg-black/10 p-4 text-sm leading-6 text-[color:var(--text-muted)]">{text}</div>
+}
+
+function formatMinutes(minutes: number): string {
+  return `${Math.round(minutes)} min`
+}
+
+function formatSignedMinutes(minutes: number): string {
+  return `${minutes >= 0 ? '+' : ''}${Math.round(minutes)} min`
+}
+
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat('zh-CN', {
+    maximumFractionDigits: 2
+  }).format(value)
 }

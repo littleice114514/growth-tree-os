@@ -1,6 +1,8 @@
 export type TimeDebtValueJudgement = 'green' | 'red' | 'neutral'
 export type TimeDebtDiagnosisStatus = 'surplus' | 'balanced' | 'overdraft' | 'recovery_needed' | 'undefined'
 export type TimeDebtRiskLevel = 'low' | 'medium' | 'high'
+export type TimeDebtOverviewStatus = 'empty' | 'healthy' | 'warning' | 'debt'
+export type TimeDebtOverviewSegmentId = 'work' | 'study' | 'life' | 'exercise' | 'idle' | 'other' | 'debt' | 'nourishment'
 
 export type TimeDebtLog = {
   id: string
@@ -97,6 +99,34 @@ export type TimeDebtDiagnosis = {
   workMinuteDelta: number
   netTimeValue: number
   riskLevel: TimeDebtRiskLevel
+}
+
+export type TimeDebtOverviewSegment = {
+  id: TimeDebtOverviewSegmentId
+  label: string
+  value: number
+  unit: 'min'
+  colorClass: string
+  description: string
+}
+
+export type TimeDebtOverview = {
+  date: string
+  totalMinutes: number
+  actualWorkMinutes: number
+  standardWorkMinutes: number
+  workDeltaMinutes: number
+  debtMinutes: number
+  nourishMinutes: number
+  netTimeValue: number
+  status: TimeDebtOverviewStatus
+  statusLabel: string
+  diagnosis: string
+  nextAction: string
+  timeStructureSegments: TimeDebtOverviewSegment[]
+  battleSegments: TimeDebtOverviewSegment[]
+  recentLogs: TimeDebtLog[]
+  stats: DailyTimeDebtStats
 }
 
 export type TimeDebtLogDraft = {
@@ -324,6 +354,59 @@ export function buildTimeDebtDiagnosis(stats: DailyTimeDebtStats): TimeDebtDiagn
   }
 }
 
+export function buildTimeDebtOverview(
+  logs: TimeDebtLog[],
+  date: string,
+  standards: WorkTimeStandard[] = [],
+  params: TimeDebtParams = defaultTimeDebtParams
+): TimeDebtOverview {
+  const stats = buildDailyTimeDebtStats(logs, date, standards, params)
+  const dayLogs = logs.filter((log) => getDateFromDateTime(log.startTime) === date).map((log) => enrichTimeDebtLog(log, params))
+  const buckets = createOverviewBuckets()
+
+  for (const log of dayLogs) {
+    buckets[resolveOverviewBucket(log)] += log.durationMinutes
+  }
+
+  const actualWorkMinutes = buckets.work + buckets.study
+  // Fallback remains 480 min through resolveStandardWorkMinutes when no custom standard exists.
+  const standardWorkMinutes = resolveStandardWorkMinutes(standards, date)
+  const workDeltaMinutes = actualWorkMinutes - standardWorkMinutes
+  const debtMinutes = Math.max(0, workDeltaMinutes) + buckets.idle
+  const nourishMinutes = buckets.exercise
+  const status = resolveOverviewStatus(stats.totalMinutes, debtMinutes)
+  const copy = overviewCopy[status]
+
+  return {
+    date,
+    totalMinutes: stats.totalMinutes,
+    actualWorkMinutes,
+    standardWorkMinutes,
+    workDeltaMinutes,
+    debtMinutes,
+    nourishMinutes,
+    netTimeValue: stats.netTimeValue,
+    status,
+    statusLabel: copy.label,
+    diagnosis: copy.diagnosis,
+    nextAction: copy.nextAction,
+    timeStructureSegments: [
+      createOverviewSegment('work', '工作', buckets.work, 'bg-cyan-300/80', '投入到生产性任务的时间'),
+      createOverviewSegment('study', '学习', buckets.study, 'bg-emerald-300/80', '用于能力增长的时间'),
+      createOverviewSegment('life', '生活', buckets.life, 'bg-sky-300/75', '生活维护与必要事务'),
+      createOverviewSegment('exercise', '运动', buckets.exercise, 'bg-lime-300/75', '身体恢复与能量补给'),
+      createOverviewSegment('idle', '空转', buckets.idle, 'bg-slate-300/70', '低回流或无明确收益时间'),
+      createOverviewSegment('other', '其他', buckets.other, 'bg-violet-300/65', '暂未归入固定分类的时间')
+    ],
+    battleSegments: [
+      createOverviewSegment('debt', '负债', debtMinutes, 'bg-rose-300/75', '超过承受线或低回流消耗'),
+      createOverviewSegment('nourishment', '滋养', nourishMinutes, 'bg-emerald-300/75', '恢复精力或产生长期价值的时间')
+    ],
+    recentLogs: dayLogs.slice(0, 6),
+    stats
+  }
+}
+
 export function calculateDurationMinutes(startTime: string, endTime: string): number {
   const start = new Date(startTime).getTime()
   const end = new Date(endTime).getTime()
@@ -340,6 +423,94 @@ export function getDateFromDateTime(dateTime: string): string {
 export function resolveStandardWorkMinutes(standards: WorkTimeStandard[], date: string): number {
   const standard = standards.find((item) => item.date === date)
   return standard?.standardWorkMinutes ?? 480
+}
+
+function createOverviewBuckets(): Record<'work' | 'study' | 'life' | 'exercise' | 'idle' | 'other', number> {
+  return {
+    work: 0,
+    study: 0,
+    life: 0,
+    exercise: 0,
+    idle: 0,
+    other: 0
+  }
+}
+
+function resolveOverviewBucket(log: TimeDebtLog): 'work' | 'study' | 'life' | 'exercise' | 'idle' | 'other' {
+  const text = `${log.primaryCategory} ${log.secondaryProject} ${log.title} ${log.resultNote ?? ''}`.toLowerCase()
+  if (containsAny(text, ['空转', 'idle', '刷信息', '无效', '失控'])) {
+    return 'idle'
+  }
+  if (containsAny(text, ['运动', 'sport', 'exercise'])) {
+    return 'exercise'
+  }
+  if (containsAny(text, ['生活', '恢复', '睡眠', '休息', '日常'])) {
+    return 'life'
+  }
+  if (containsAny(text, ['学习'])) {
+    return 'study'
+  }
+  if (containsAny(text, ['工作'])) {
+    return 'work'
+  }
+  return 'other'
+}
+
+function containsAny(text: string, patterns: string[]): boolean {
+  return patterns.some((pattern) => text.includes(pattern))
+}
+
+function resolveOverviewStatus(totalMinutes: number, debtMinutes: number): TimeDebtOverviewStatus {
+  if (totalMinutes === 0) {
+    return 'empty'
+  }
+  if (debtMinutes >= 180) {
+    return 'debt'
+  }
+  if (debtMinutes >= 60) {
+    return 'warning'
+  }
+  return 'healthy'
+}
+
+const overviewCopy: Record<TimeDebtOverviewStatus, { label: string; diagnosis: string; nextAction: string }> = {
+  empty: {
+    label: '今日暂无时间日志',
+    diagnosis: '今天还没有时间日志，先记录一条最重要的时间块。',
+    nextAction: '记录最近 2 小时做了什么。'
+  },
+  healthy: {
+    label: '时间结构健康',
+    diagnosis: '今天时间结构相对健康，继续保持高回流投入。',
+    nextAction: '保留一个高质量工作块，并安排短恢复。'
+  },
+  warning: {
+    label: '轻度时间负债',
+    diagnosis: '今天出现轻度时间负债，建议减少低回流消耗。',
+    nextAction: '找出今天最大的空转/透支来源。'
+  },
+  debt: {
+    label: '时间透支明显',
+    diagnosis: '今天时间透支明显，明天需要优先安排恢复与减负。',
+    nextAction: '明天减少一个低回流任务，并固定一个恢复块。'
+  }
+}
+
+function createOverviewSegment(
+  id: TimeDebtOverviewSegmentId,
+  label: string,
+  value: number,
+  colorClass: string,
+  description: string
+): TimeDebtOverviewSegment {
+  return {
+    id,
+    label,
+    value,
+    unit: 'min',
+    colorClass,
+    description
+  }
 }
 
 function createCategory(

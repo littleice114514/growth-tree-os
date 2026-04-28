@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import {
-  buildDailyTimeDebtStats,
+  buildTimeDebtOverview,
   buildTimeDebtDiagnosis,
   createTimeDebtLog,
   createTimeDebtParams,
@@ -10,6 +10,7 @@ import {
   type DailyTimeDebtStats,
   type TimeDebtDiagnosis,
   type TimeDebtLog,
+  type TimeDebtOverview,
   type TimeDebtParams,
   type WorkTimeStandard
 } from '@shared/timeDebt'
@@ -77,10 +78,10 @@ export function TimeDebtDashboard() {
     note: params.note ?? ''
   }))
 
-  const selectedDate = logDraft.startTime.slice(0, 10) || today
-  const stats = useMemo(() => buildDailyTimeDebtStats(logs, selectedDate, standards, params), [logs, params, selectedDate, standards])
+  const selectedDate = today
+  const overview = useMemo(() => buildTimeDebtOverview(logs, selectedDate, standards, params), [logs, params, selectedDate, standards])
+  const stats = overview.stats
   const diagnosis = useMemo(() => buildTimeDebtDiagnosis(stats), [stats])
-  const recentLogs = logs.slice(0, 6)
 
   const saveLog = () => {
     if (!logDraft.title.trim() || !logDraft.startTime || !logDraft.endTime) {
@@ -142,7 +143,7 @@ export function TimeDebtDashboard() {
               记录时间日志、工作时间标准和负债参数，用来判断今天是在还债、欠债、产生价值，还是制造未来压力。
             </p>
           </div>
-          <StatusBadge diagnosis={diagnosis} />
+          <StatusBadge overview={overview} />
         </header>
 
         <nav className="flex flex-wrap gap-2">
@@ -164,8 +165,8 @@ export function TimeDebtDashboard() {
 
         {currentView === 'overview' ? (
           <>
-            <TimeDebtDashboardPreview />
-            <Overview stats={stats} diagnosis={diagnosis} recentLogs={recentLogs} />
+            <TimeDebtDashboardPreview overview={overview} />
+            <Overview overview={overview} onOpenLogs={() => setCurrentView('logs')} />
           </>
         ) : null}
         {currentView === 'logs' ? (
@@ -184,24 +185,30 @@ export function TimeDebtDashboard() {
   )
 }
 
-function Overview({ stats, diagnosis, recentLogs }: { stats: DailyTimeDebtStats; diagnosis: TimeDebtDiagnosis; recentLogs: TimeDebtLog[] }) {
+function Overview({ overview, onOpenLogs }: { overview: TimeDebtOverview; onOpenLogs: () => void }) {
+  const hasTodayLogs = overview.totalMinutes > 0
   return (
     <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-      <Panel title="时间负债总览" eyebrow={stats.date}>
+      <Panel title="时间负债总览" eyebrow={overview.date}>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <Metric label="今日状态" value={diagnosis.title} />
-          <Metric label="今日标准工时" value={formatMinutes(stats.standardWorkMinutes)} />
-          <Metric label="今日实际工作时长" value={formatMinutes(stats.workMinutes)} />
-          <Metric label="工时差额" value={formatSignedMinutes(stats.workMinuteDelta)} tone={stats.workMinuteDelta >= 0 ? 'good' : 'warn'} />
-          <Metric label="净时间价值" value={formatMoney(stats.netTimeValue)} tone={stats.netTimeValue >= 0 ? 'good' : 'bad'} />
-          <Metric label="今日建议" value={diagnosis.riskLevel === 'high' ? '先止损' : '继续记录'} />
+          <Metric label="今日状态" value={overview.statusLabel} />
+          <Metric label="总记录时间" value={formatMinutes(overview.totalMinutes)} />
+          <Metric label="今日标准工时" value={formatMinutes(overview.standardWorkMinutes)} />
+          <Metric label="今日实际工时" value={formatMinutes(overview.actualWorkMinutes)} />
+          <Metric label="工时差额" value={formatSignedMinutes(overview.workDeltaMinutes)} tone={overview.workDeltaMinutes > 0 ? 'warn' : 'good'} />
+          <Metric label="净时间价值" value={formatMoney(overview.netTimeValue)} tone={overview.netTimeValue >= 0 ? 'good' : 'bad'} />
         </div>
         <p className="mt-4 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-4 text-sm leading-6 text-[color:var(--text-secondary)]">
-          {diagnosis.suggestion}
+          {overview.diagnosis} {overview.nextAction}
         </p>
+        {!hasTodayLogs ? (
+          <button type="button" onClick={onOpenLogs} className="mt-4 rounded-2xl bg-[var(--button-bg)] px-5 py-2 text-sm font-semibold text-[color:var(--button-text)] transition hover:bg-[var(--button-hover)]">
+            去新增时间日志
+          </button>
+        ) : null}
       </Panel>
       <Panel title="最近时间日志 3 条" eyebrow="Recent Logs">
-        <LogList logs={recentLogs.slice(0, 3)} />
+        <LogList logs={overview.recentLogs.slice(0, 3)} />
       </Panel>
     </div>
   )
@@ -387,17 +394,17 @@ function DiagnosisView({ diagnosis, stats }: { diagnosis: TimeDebtDiagnosis; sta
   )
 }
 
-function StatusBadge({ diagnosis }: { diagnosis: TimeDebtDiagnosis }) {
+function StatusBadge({ overview }: { overview: TimeDebtOverview }) {
   const tone =
-    diagnosis.riskLevel === 'high'
+    overview.status === 'debt'
       ? 'border-rose-400/30 bg-rose-500/15 text-accent-rose'
-      : diagnosis.riskLevel === 'medium'
+      : overview.status === 'warning' || overview.status === 'empty'
         ? 'border-amber-400/25 bg-amber-400/10 text-accent-amber'
         : 'border-emerald-400/25 bg-emerald-400/10 text-accent-green'
   return (
     <div className={`rounded-2xl border px-4 py-3 ${tone}`}>
       <div className="text-xs uppercase tracking-[0.18em] opacity-75">今日时间状态</div>
-      <div className="mt-1 text-xl font-semibold">{diagnosis.title}</div>
+      <div className="mt-1 text-xl font-semibold">{overview.statusLabel}</div>
     </div>
   )
 }
