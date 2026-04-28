@@ -8,6 +8,13 @@
 
 ## 2. 后续增强方向
 
+## 2026-04-28 Preview V0.1 已落地说明
+
+- 当前已存在 `Time Debt Dashboard Preview`、`Wealth Dashboard Preview` 和 `Life Dashboard Preview` 三个前端 Preview 入口。
+- 本轮策略仍是先页面原型、后真实数据；当前 Preview 使用 mock 数据确认状态卡、进度条、对抗条、趋势条和下一步动作的视觉语言。
+- `财富` 和 `时间负债` 保留原有记录 / 统计功能，Preview 仅作为 Overview 首屏判断层，不替代真实数据链。
+- 后续再评估接入 records/store、双轴联动、LLM 诊断和高级可视化。
+
 ### Life Operating Dashboard
 
 - Time Debt + Wealth 双轴联动

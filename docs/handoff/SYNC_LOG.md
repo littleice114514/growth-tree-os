@@ -17,3 +17,20 @@
 - 是否有冲突：
 - 验收结果：
 - 下一步：
+
+### 2026-04-28｜Dashboard Preview V0.1 同步记录
+
+- 来源设备：Windows
+- 目标设备：GitHub / MacBook
+- 分支：main
+- commit：本轮最终 commit 以 `git rev-parse --short HEAD` 和最终汇报为准
+- push 是否成功：待本轮提交后执行，结果以最终汇报为准
+- pull 是否成功：MacBook 端待执行 `git fetch origin && git pull origin main`
+- 是否有冲突：当前 Windows 工作区无冲突；仅有未跟踪本地运行残留 `codex-live-dev.pid`
+- 验收结果：
+  - `pnpm install`：通过。
+  - `pnpm typecheck`：通过。
+  - `pnpm build`：通过。
+  - `pnpm dev`：renderer `http://localhost:5173/` 返回 HTTP 200。
+- 下一步：
+  - MacBook 拉取最新 main 后运行 `pnpm install`、`pnpm dev`，检查 Time Debt / Wealth / Life Dashboard Preview 和成长树入口。

@@ -210,9 +210,9 @@ Windows 已新增 Time Debt + Wealth + Life Dashboard Preview。
 MacBook 拉取最新：
 
 ```bash
-cd ~/Developer/growth-tree-os
+cd /Users/ice/Developer/growth-tree-os
 git fetch origin
-git pull
+git pull origin main
 pnpm install
 pnpm dev
 ```
@@ -224,3 +224,16 @@ pnpm dev
 - 是否能看到 Life Dashboard Preview。
 - 三个仪表盘页面是否能正常切换。
 - 是否保持现有成长树功能不坏。
+
+Windows 本轮验收结果：
+
+- `pnpm install`：通过，lockfile 已是最新。
+- `pnpm typecheck`：通过。
+- `pnpm build`：通过。
+- `pnpm dev`：renderer `http://localhost:5173/` 返回 HTTP 200。
+
+注意：
+
+- Dashboard Preview V0.1 仍使用 mock 数据，后续再接 Time Debt / Wealth records 和 store。
+- 不需要出 APK，不需要安装 Tremor，不接 LLM 或外部 API。
+- 如果 MacBook 已有本地修改，先运行 `git status`，不要直接覆盖。

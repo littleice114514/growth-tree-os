@@ -80,3 +80,31 @@
   - 7 日趋势和 top tasks 仍未接真实 selector，本轮只接今日 Overview。
 - 下一步：
   - Wealth Overview 真实数据融合：把 Wealth Preview 从 mock 数据逐步接入真实 localStorage records。
+
+### 2026-04-28｜Dashboard Preview V0.1
+
+- 设备：Windows
+- 分支：main
+- commit：本轮最终 commit 以 `git rev-parse --short HEAD` 和最终汇报为准
+- 本轮目标：确认并补齐 Time Debt Dashboard Preview、Wealth Dashboard Preview、Life Dashboard Preview 的可见入口、验收记录和双设备同步文档。
+- 修改文件：
+  - `docs/handoff/DEVELOPMENT_LOG.md`
+  - `docs/handoff/SYNC_LOG.md`
+  - `docs/handoff/MACBOOK_SETUP.md`
+  - `docs/product/DASHBOARD_FUTURE_BACKLOG.md`
+- 完成内容：
+  - 确认 `app/renderer/src/features/dashboard-preview/*` 已存在并提供统一 Preview 组件、mock 数据和三类仪表盘页面。
+  - 确认 `人生总览` 入口展示 Life Dashboard Preview。
+  - 确认 `财富` Overview 内展示 Wealth Dashboard Preview，并保留原有财富记录和统计功能。
+  - 确认 `时间负债` Overview 内展示 Time Debt Dashboard Preview，并保留原有时间日志、日度统计和诊断功能。
+  - 更新 MacBook 接力说明和 Dashboard backlog，明确本轮属于 Preview V0.1 快速出效果版。
+- 验收结果：
+  - `pnpm install`：通过，lockfile 已是最新。
+  - `pnpm typecheck`：通过。
+  - `pnpm build`：通过。
+  - `pnpm dev`：已有 dev 进程运行，renderer 地址 `http://localhost:5173/` 返回 HTTP 200。
+- 当前问题：
+  - 本轮仍使用 mock 数据，不接真实 records/store 汇总、不接 LLM、不接外部 API。
+  - 工作区存在本地运行残留 `codex-live-dev.pid`，不纳入提交。
+- 下一步：
+  - MacBook 拉取本轮 commit 后验收 `人生总览`、`财富`、`时间负债` 三个入口的 Preview 是否可见，并确认 `成长树` 仍可正常进入。
