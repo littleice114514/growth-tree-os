@@ -3,12 +3,54 @@ import {
   CapsuleProgressBar,
   MetricCard,
   PreviewShell,
-  StackedRatioBar,
   StatusCard
 } from './DashboardPreviewComponents'
+import { InteractiveStackedBar, type StackedBarSegment } from '@/components/charts/InteractiveStackedBar'
 import { wealthMock } from './dashboardPreviewData'
 
+const cashFlowQualityMeta: Record<string, Pick<StackedBarSegment, 'colorClass' | 'description'>> = {
+  现实收入: {
+    colorClass: 'bg-emerald-300/80',
+    description: '来自现实劳动或当日确定到账的收入'
+  },
+  睡后收入: {
+    colorClass: 'bg-lime-300/80',
+    description: '不直接依赖当下劳动的收入回流'
+  },
+  系统收入: {
+    colorClass: 'bg-cyan-300/80',
+    description: '由内容、软件、自动化或项目系统带来的收入'
+  },
+  真实支出: {
+    colorClass: 'bg-amber-300/75',
+    description: '当日现实生活中的必要或普通支出'
+  },
+  持续出血: {
+    colorClass: 'bg-rose-300/65',
+    description: '订阅、固定压力或不易取消的持续消耗'
+  },
+  体验出血: {
+    colorClass: 'bg-fuchsia-300/65',
+    description: '为了短期刺激、体验或状态补偿产生的消耗'
+  }
+}
+
 export function WealthDashboardPreview() {
+  const cashFlowQualitySegments: StackedBarSegment[] = wealthMock.cashFlowQuality.map((item) => {
+    const meta = cashFlowQualityMeta[item.label] ?? {
+      colorClass: 'bg-slate-300/70',
+      description: '现金流质量中的其他部分'
+    }
+    return {
+      id: item.label,
+      label: item.label,
+      value: item.value,
+      unit: '¥',
+      colorClass: meta.colorClass,
+      description: meta.description
+    }
+  })
+
   return (
     <PreviewShell
       eyebrow="wealth preview"
@@ -27,13 +69,7 @@ export function WealthDashboardPreview() {
 
         <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
           <div className="mb-4 text-sm font-semibold text-[color:var(--text-primary)]">现金流质量</div>
-          <StackedRatioBar
-            items={wealthMock.cashFlowQuality.map((item, index) => ({
-              label: item.label,
-              value: item.value,
-              color: ['bg-emerald-300/80', 'bg-lime-300/80', 'bg-cyan-300/80', 'bg-amber-300/75', 'bg-rose-300/65', 'bg-fuchsia-300/65'][index] ?? 'bg-slate-300/70'
-            }))}
-          />
+          <InteractiveStackedBar segments={cashFlowQualitySegments} />
         </section>
 
         <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">

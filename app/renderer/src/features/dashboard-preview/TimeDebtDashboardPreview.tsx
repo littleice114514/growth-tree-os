@@ -4,14 +4,69 @@ import {
   MetricCard,
   MiniTrendStrip,
   PreviewShell,
-  StackedRatioBar,
-  StatusCard,
-  TugOfWarBar
+  StatusCard
 } from './DashboardPreviewComponents'
+import { InteractiveStackedBar, type StackedBarSegment } from '@/components/charts/InteractiveStackedBar'
 import { timeDebtMock } from './dashboardPreviewData'
+
+const timeStructureMeta: Record<string, Pick<StackedBarSegment, 'colorClass' | 'description'>> = {
+  工作: {
+    colorClass: 'bg-cyan-300/80',
+    description: '投入到生产性任务的时间'
+  },
+  学习: {
+    colorClass: 'bg-emerald-300/80',
+    description: '用于能力增长的时间'
+  },
+  生活: {
+    colorClass: 'bg-sky-300/75',
+    description: '生活维护与必要事务'
+  },
+  运动: {
+    colorClass: 'bg-lime-300/75',
+    description: '身体恢复与能量补给'
+  },
+  空转: {
+    colorClass: 'bg-slate-300/70',
+    description: '低回流或无明确收益时间'
+  }
+}
 
 export function TimeDebtDashboardPreview() {
   const workMax = Math.max(timeDebtMock.actualWorkMinutes, timeDebtMock.standardWorkMinutes)
+  const timeStructureSegments: StackedBarSegment[] = timeDebtMock.timeStructure.map((item) => {
+    const meta = timeStructureMeta[item.label] ?? {
+      colorClass: 'bg-slate-300/70',
+      description: '时间结构中的其他部分'
+    }
+    return {
+      id: item.label,
+      label: item.label,
+      value: item.minutes,
+      unit: 'min',
+      colorClass: meta.colorClass,
+      description: meta.description
+    }
+  })
+  const timeDebtBattleSegments: StackedBarSegment[] = [
+    {
+      id: 'debt',
+      label: '负债',
+      value: timeDebtMock.debtValue,
+      unit: 'min',
+      colorClass: 'bg-rose-300/75',
+      description: '超过承受线或低回流消耗'
+    },
+    {
+      id: 'nourishment',
+      label: '滋养',
+      value: timeDebtMock.nourishmentValue,
+      unit: 'min',
+      colorClass: 'bg-emerald-300/75',
+      description: '恢复精力或产生长期价值的时间'
+    }
+  ]
+
   return (
     <PreviewShell
       eyebrow="time debt preview"
@@ -38,18 +93,12 @@ export function TimeDebtDashboardPreview() {
 
         <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
           <div className="mb-4 text-sm font-semibold text-[color:var(--text-primary)]">时间结构</div>
-          <StackedRatioBar
-            items={timeDebtMock.timeStructure.map((item, index) => ({
-              label: item.label,
-              value: item.minutes,
-              color: ['bg-cyan-300/80', 'bg-emerald-300/80', 'bg-sky-300/75', 'bg-lime-300/75', 'bg-rose-300/70'][index] ?? 'bg-slate-300/70'
-            }))}
-          />
+          <InteractiveStackedBar segments={timeStructureSegments} />
         </section>
 
         <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
           <div className="mb-4 text-sm font-semibold text-[color:var(--text-primary)]">时间负债对抗</div>
-          <TugOfWarBar leftLabel="负债" leftValue={timeDebtMock.debtValue} rightLabel="滋养" rightValue={timeDebtMock.nourishmentValue} />
+          <InteractiveStackedBar segments={timeDebtBattleSegments} compact />
           <ActionSuggestionCard title="明日动作" body="先压低低回流工作时长，再给身体和复盘留出恢复窗口。" />
         </section>
 
