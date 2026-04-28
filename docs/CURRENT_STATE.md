@@ -9,8 +9,13 @@
 - Canvas 右侧已显示数据来源、节点数、叶子、果实、落叶和最近更新时间。
 - v0.3 已新增“今日生命力检查”前端输入层：7 个维度 0-5 分、备注、总分、生命力类型和季节反馈；当前仅保存在组件 state，不写入数据库。
 - v0.4 已新增 LifeTreeVisualState 视觉反馈规则层：生命力类型会联动顶部“今日树状态”、树容器 tone、风险 / 亮点提示和详情卡“今日生命力影响”。
+- v0.5 已新增叶子 / 花 / 果实 / 枯叶 / 落叶 / 土壤候选 / 根系养分候选的前端规则层：mapper 会按复盘和节点关键词生成更细的树对象说明。
+- Life Vitality Tree 当前 2D/2.5D 页面已补充可读性优化：节点 label 改为深色 pill，当前视图浮层避让主树区域，右侧未选中节点时显示 Global Vitality 全局生命力面板。
+- Life Vitality Tree v0.6 已进入 2D 树形视觉骨架：Canvas 内部派生根系、树干、主枝、叶子、果实和枯萎信号位置，新增中心树干、底部土壤、枝干曲线和“这棵树如何阅读”右侧解释面板。
+- Life Curve V0 已新增 `人生曲线` 入口：从最近复盘前端派生 DailyScore，展示最近 7 天个人能力、项目脉冲、AI 协作、财富安全、健康生命力和复合曲线趋势。
+- Life Curve Chart V1 已新增六条人生曲线模型图：传统就业、创业脉冲、连续创业、AI 协作、资本复利、复合叠加可选择叠加显示，支持 hover 查看年龄与数值。
 - 顶部主入口已新增 `人生生长树`，并从主入口移除 `图谱 V1`。
-- 当前仍不进入真实 3D 开发，不改数据库、不新增 IPC、不安装新依赖。
+- 当前仍不进入真实 3D 开发，不改数据库、不新增 IPC、不安装新依赖；three.js / react-three-fiber / drei 仍暂缓。
 - Life Vitality Tree 的主规划、保留池、决策方法和未来扩展风险记录在 `docs/LIFE_VITALITY_TREE.md`。
 
 ## 当前主线
@@ -21,7 +26,7 @@
 
 ## 当前项目真实状态
 
-- 桌面工作区入口在 `app/renderer/src/pages/MainWorkspacePage.tsx`，当前已经有 `成长树 / 人生生长树 / 财富 / 时间负债 / 提醒 / 周回看` 视图分支。
+- 桌面工作区入口在 `app/renderer/src/pages/MainWorkspacePage.tsx`，当前已经有 `成长树 / 人生生长树 / 人生曲线 / 财富 / 时间负债 / 提醒 / 周回看` 视图分支。
 - 工作区状态由 `app/renderer/src/app/store.ts` 协调，已覆盖启动加载、复盘详情、节点选择、节点跳转、提醒完成、节点已回看、周回看刷新。
 - IPC 能力边界在 `app/main/ipc.ts`，已暴露复盘、节点、树快照、结构更新、提醒、周回看和数据根目录。
 - 真实数据逻辑集中在 `app/main/db.ts`，SQLite 表覆盖 `reviews / nodes / edges / node_evidence / reminders / app_settings`。
@@ -40,7 +45,7 @@
 ## 进行中内容
 
 - 搜索/回看/筛选仍需要收口。主画布当前使用 `TreeCanvas` 内的前端过滤；`nodes.search` IPC 和 `db.searchNodes` 已存在，但主工作区搜索框没有直接走数据库搜索结果。
-- 图谱展示主线已切换：真实成长树主图在 `features/tree/TreeCanvas.tsx`；Life Vitality Tree 半真实映射、生命力检查输入层和视觉反馈规则层在 `features/life-vitality-tree`；Obsidian 图谱 V1 保留在 `features/obsidian-graph` 作为暂停归档代码。
+- 图谱展示主线已切换：真实成长树主图在 `features/tree/TreeCanvas.tsx`；Life Vitality Tree 半真实映射、生命力检查输入层、视觉反馈规则层和 v0.5 树对象规则层在 `features/life-vitality-tree`；Life Curve V0/V1 趋势层和六曲线模型图在 `features/life-curve`；Obsidian 图谱 V1 保留在 `features/obsidian-graph` 作为暂停归档代码。
 - README 的能力边界偏早，仍更像 P0.1 基础闭环说明；实际代码已经包含 P0.2/P0.3 的提醒、周回看和图谱入口。
 
 ## 暂停支线

@@ -10,6 +10,7 @@ import { ExtractionDrawer } from '@/features/extraction/ExtractionDrawer'
 import { ReminderPanel } from '@/features/reminders/ReminderPanel'
 import { WeeklyReviewPanel } from '@/features/review/WeeklyReviewPanel'
 import { LifeVitalityTreeCanvas } from '@/features/life-vitality-tree/LifeVitalityTreeCanvas'
+import { LifeCurveDashboard } from '@/features/life-curve/LifeCurveDashboard'
 import { WealthDashboard } from '@/features/wealth/WealthDashboard'
 import { TimeDebtDashboard } from '@/features/time-debt/TimeDebtDashboard'
 import { LifeDashboardPreview } from '@/features/dashboard-preview'
@@ -92,6 +93,7 @@ export function MainWorkspacePage() {
         ) : null}
         {currentView === 'lifeDashboard' ? <LifeDashboardPreview /> : null}
         {currentView === 'lifeVitalityTree' ? <LifeVitalityTreeCanvas /> : null}
+        {currentView === 'lifeCurve' ? <LifeCurveDashboard /> : null}
         {currentView === 'wealth' ? <WealthDashboard /> : null}
         {currentView === 'timeDebt' ? <TimeDebtDashboard /> : null}
         {currentView === 'weeklyReview' ? (

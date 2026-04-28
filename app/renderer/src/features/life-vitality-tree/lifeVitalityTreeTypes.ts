@@ -125,8 +125,11 @@ export type LifeVitalityTree = {
     mode: 'mapped' | 'mock'
     nodeCount: number
     leafCount: number
+    flowerCount?: number
     fruitCount: number
+    witheredLeafCount?: number
     fallenLeafCount: number
+    soilCount?: number
     latestUpdatedAt: string
   }
 }
