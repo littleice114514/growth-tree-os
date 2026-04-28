@@ -202,3 +202,25 @@ renderer localStorage:
 ```text
 docs/handoff/MAC_NEXT_ACTION.md
 ```
+
+## 12. Dashboard Preview V0.1 同步说明
+
+Windows 已新增 Time Debt + Wealth + Life Dashboard Preview。
+
+MacBook 拉取最新：
+
+```bash
+cd ~/Developer/growth-tree-os
+git fetch origin
+git pull
+pnpm install
+pnpm dev
+```
+
+检查：
+
+- 是否能看到 Time Debt Dashboard Preview。
+- 是否能看到 Wealth Dashboard Preview。
+- 是否能看到 Life Dashboard Preview。
+- 三个仪表盘页面是否能正常切换。
+- 是否保持现有成长树功能不坏。

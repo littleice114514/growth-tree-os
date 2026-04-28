@@ -13,6 +13,7 @@ import {
   type WealthStatus
 } from '@shared/wealth'
 import { appendWealthRecord, deleteWealthRecord, loadWealthRecords, wealthRecordsStorageKey } from './wealthStorage'
+import { WealthDashboardPreview } from '@/features/dashboard-preview'
 
 type WealthView = 'overview' | 'income' | 'expenses' | 'assets' | 'evaluation'
 type RecordDraft = {
@@ -168,7 +169,10 @@ export function WealthDashboard() {
         </nav>
 
         {currentView === 'overview' ? (
-          <OverviewView snapshot={snapshot} summary={summary} recentRecords={recentRecords} onDelete={removeRecord} />
+          <>
+            <WealthDashboardPreview />
+            <OverviewView snapshot={snapshot} summary={summary} recentRecords={recentRecords} onDelete={removeRecord} />
+          </>
         ) : null}
         {currentView === 'income' ? <IncomeView records={records} /> : null}
         {currentView === 'expenses' ? <ExpensesView records={records} monthlyPressure={summary.monthlyOngoingPressure} /> : null}

@@ -12,6 +12,7 @@ import { WeeklyReviewPanel } from '@/features/review/WeeklyReviewPanel'
 import { LifeVitalityTreeCanvas } from '@/features/life-vitality-tree/LifeVitalityTreeCanvas'
 import { WealthDashboard } from '@/features/wealth/WealthDashboard'
 import { TimeDebtDashboard } from '@/features/time-debt/TimeDebtDashboard'
+import { LifeDashboardPreview } from '@/features/dashboard-preview'
 
 export function MainWorkspacePage() {
   const isReviewComposerOpen = useWorkspaceStore((state) => state.isReviewComposerOpen)
@@ -89,6 +90,7 @@ export function MainWorkspacePage() {
             </div>
           </main>
         ) : null}
+        {currentView === 'lifeDashboard' ? <LifeDashboardPreview /> : null}
         {currentView === 'lifeVitalityTree' ? <LifeVitalityTreeCanvas /> : null}
         {currentView === 'wealth' ? <WealthDashboard /> : null}
         {currentView === 'timeDebt' ? <TimeDebtDashboard /> : null}

@@ -23,6 +23,7 @@ import {
   saveTimeDebtParams,
   timeDebtStorageKeys
 } from './timeDebtStorage'
+import { TimeDebtDashboardPreview } from '@/features/dashboard-preview'
 
 type TimeDebtView = 'overview' | 'logs' | 'dailyStats' | 'debtParams' | 'workStandard' | 'diagnosis'
 
@@ -161,7 +162,12 @@ export function TimeDebtDashboard() {
           ))}
         </nav>
 
-        {currentView === 'overview' ? <Overview stats={stats} diagnosis={diagnosis} recentLogs={recentLogs} /> : null}
+        {currentView === 'overview' ? (
+          <>
+            <TimeDebtDashboardPreview />
+            <Overview stats={stats} diagnosis={diagnosis} recentLogs={recentLogs} />
+          </>
+        ) : null}
         {currentView === 'logs' ? (
           <LogsView draft={logDraft} logs={logs} onChange={(patch) => setLogDraft((current) => ({ ...current, ...patch }))} onSave={saveLog} onDelete={removeLog} />
         ) : null}
