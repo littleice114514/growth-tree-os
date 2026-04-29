@@ -10,10 +10,13 @@
 - docs/dev-protocol/BRANCH_AND_FILE_BOUNDARY.md
 - docs/dev-protocol/DEV_LOG_RULES.md
 - docs/dev-protocol/PROJECT_HANDOFF_RULES.md
+- docs/dev-protocol/FLEXIBLE_OWNERSHIP_RULES.md
 
 如果文件不存在，停止业务开发，先提示需要建立协议文件。
 
 每次开发前，必须先读取 docs/dev-protocol/PROJECT_HANDOFF_RULES.md，确认是否存在新聊天框交接规则、模块切换规则和固定任务指令开头。未完成读取前，不允许直接开始业务开发。
+
+每次开发前，必须先读取 docs/dev-protocol/FLEXIBLE_OWNERSHIP_RULES.md，确认默认分工、弹性跨边界条件、跨边界声明模板和冲突检查要求。未完成读取前，不允许直接开始跨边界任务。
 
 ## 2. 检查 Git 状态
 
@@ -66,6 +69,7 @@ develop
 - 本轮允许修改的文件 / 目录
 - 本轮禁止修改的文件 / 目录
 - 本轮日志文件路径
+- 是否需要按 docs/dev-protocol/FLEXIBLE_OWNERSHIP_RULES.md 发起跨边界声明
 
 ## 7. 日志路径
 
@@ -85,6 +89,7 @@ docs/dev-log/YYYY-MM/YYYY-MM-DD/win-任务名.md
 
 - 不直接修改。
 - 记录为跨边界需求。
+- 按 docs/dev-protocol/FLEXIBLE_OWNERSHIP_RULES.md 写入跨边界声明。
 - 输出风险说明。
 - 等集成阶段处理。
 

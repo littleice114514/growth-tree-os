@@ -11,6 +11,7 @@
 - 所有阶段性成果先合并到 develop，再由 develop 验收后进入 main。
 - 每次 Codex 开工前，必须先读取 docs/dev-protocol/CODEX_STARTUP_CHECKLIST.md。
 - 每次新聊天框继续推进项目前，必须先参考 docs/dev-protocol/PROJECT_HANDOFF_RULES.md。
+- 每次任务涉及默认分工调整或跨边界修改时，必须先参考 docs/dev-protocol/FLEXIBLE_OWNERSHIP_RULES.md。
 
 ## 2. 分支定义
 
@@ -29,18 +30,26 @@ Windows 端开发分支，主要负责 skill、脚本、工具链、文档、重
 ## 3. 推荐分工
 
 Mac 优先负责：
+- UI 页面
 - 前端页面体验
-- UI / 交互 / 视觉优化
-- 轻量功能闭环
+- 交互体验
+- 前端视觉
+- 页面布局
+- 轻量功能验收
 - 用户实际操作体验验收
 
 Windows 优先负责：
+- 3D 模型开发
+- 3D 资源处理
+- Three.js / React Three Fiber / 3D 渲染实验
+- 重资源处理
 - Codex skills
 - Claude / Codex 工作流文件
 - 脚本与工具链
-- 3D 模型实验或重资源处理
 - 构建、打包、集成辅助
 - 文档与流程固化
+
+默认分工用于减少冲突，不是永久锁死。任何一端需要临时承担对方默认范围内的任务时，必须先按 docs/dev-protocol/FLEXIBLE_OWNERSHIP_RULES.md 完成跨边界声明、文件边界确认、日志记录和冲突检查。
 
 ## 4. 开工流程
 
@@ -68,6 +77,7 @@ Windows 优先负责：
 6. commit
 7. push 当前 feature 分支
 8. 输出本轮修改文件、验收结果、风险点、下一步建议
+9. 如本轮存在跨边界修改，输出跨边界声明与冲突检查结果
 
 ## 6. 合并规则
 
@@ -92,3 +102,15 @@ docs/dev-protocol/PROJECT_HANDOFF_RULES.md
 docs/dev-protocol/CODEX_STARTUP_CHECKLIST.md
 
 再进行任务判断、分支选择、文件边界确认和日志路径确认。
+
+## 8. 弹性分工与冗余规则
+
+Windows 默认负责 3D、重资源、skills、工作流、脚本、工具链和构建辅助。
+
+Mac 默认负责 UI 页面、交互体验、前端视觉、页面布局和轻量验收。
+
+默认分工不是永久锁死。出现新想法、新模块或紧急阻塞时，任一端可以在明确理由、明确文件边界、明确日志记录、明确冲突检查的前提下承担临时跨边界任务。
+
+跨边界任务必须先参考：
+
+docs/dev-protocol/FLEXIBLE_OWNERSHIP_RULES.md
