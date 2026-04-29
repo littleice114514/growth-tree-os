@@ -39,6 +39,10 @@ Win / Mac 分工：
 
 - `TreeSnapshot`、`GrowthEvent`、`GrowthRule` 的最小类型文件。
 - mock events、mock rules、mock snapshot 样例。
+- 已落地 `app/renderer/src/features/life-tree-3d/contracts/` TypeScript contracts。
+- 已新增 `mockTreeSnapshot`，包含根系、主干、8 个主枝、叶子、果实、裂痕、年轮、季节和质量档位提示。
+- 已新增 `defaultGrowthRules`，覆盖 M3D-1 指定的成长事件和修复型负面事件表达。
+- 下一步进入 M3D-2：无 3D 生长模拟器，用纯数据计算新旧快照差异。
 
 不做什么：
 
@@ -222,10 +226,11 @@ Win / Mac 分工：
 
 ## 下一阶段建议
 
-M3D-0 完成后，下一阶段进入 M3D-1：
+M3D-1 完成后，下一阶段进入 M3D-2：
 
-- 只提取最小 TypeScript 类型；
-- 建立 mock `GrowthEvent`、`GrowthRule` 与 `TreeSnapshot` 样例；
+- 使用 M3D-1 的 `TreeSnapshot`、`GrowthEvent`、`GrowthRule` 类型；
+- 基于 `mockTreeSnapshot`、`mockGrowthEvents` 和 `defaultGrowthRules` 实现纯函数模拟器；
+- 输出 daily / weekly / monthly / phase 的 snapshot diff 样例；
 - 不引入 3D 依赖；
 - 不改主页面 UI；
-- 为 M3D-2 的无 3D 生长模拟器准备数据。
+- 为 M3D-3 的程序化 3D POC 准备稳定 `TreeSnapshot` 输入。
