@@ -53,6 +53,8 @@ Windows 默认负责：
 默认分工不是永久锁死。
 如果一端需要临时承担对方默认负责范围，必须先读取 FLEXIBLE_OWNERSHIP_RULES.md，并明确跨边界原因、文件边界、日志路径和冲突检查结果。
 
+双端默认分工不是永久锁死。新想法出现时，先根据任务类型、资源需求、文件边界和冲突风险重新判断设备角色；如需跨边界，必须按 FLEXIBLE_OWNERSHIP_RULES.md 记录跨边界声明。
+
 日志必须按设备拆分：
 docs/dev-log/YYYY-MM/YYYY-MM-DD/mac-任务名.md
 docs/dev-log/YYYY-MM/YYYY-MM-DD/win-任务名.md

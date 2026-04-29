@@ -16,7 +16,7 @@
 
 每次开发前，必须先读取 docs/dev-protocol/PROJECT_HANDOFF_RULES.md，确认是否存在新聊天框交接规则、模块切换规则和固定任务指令开头。未完成读取前，不允许直接开始业务开发。
 
-每次开发前，必须先读取 docs/dev-protocol/FLEXIBLE_OWNERSHIP_RULES.md，确认默认分工、弹性跨边界条件、跨边界声明模板和冲突检查要求。未完成读取前，不允许直接开始跨边界任务。
+每次开发前，必须先读取 docs/dev-protocol/FLEXIBLE_OWNERSHIP_RULES.md，确认当前任务是否属于默认分工范围。如果任务需要跨设备边界，必须先写跨边界声明，再设计执行方案。未完成读取前，不允许直接开始跨边界任务。
 
 ## 2. 检查 Git 状态
 
