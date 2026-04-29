@@ -23,6 +23,7 @@
 - docs/dev-protocol/BRANCH_AND_FILE_BOUNDARY.md
 - docs/dev-protocol/DEV_LOG_RULES.md
 - docs/dev-protocol/PROJECT_HANDOFF_RULES.md
+- docs/dev-protocol/FLEXIBLE_OWNERSHIP_RULES.md
 
 以后给 Codex / Claude / Cursor 等开发代理任何开发指令时，必须要求它先读取 CODEX_STARTUP_CHECKLIST.md，再判断当前设备、分支、任务类型、允许修改范围、禁止修改范围和日志路径。
 
@@ -38,13 +39,19 @@ Mac 默认负责：
 - 轻量验收
 
 Windows 默认负责：
+- 3D 模型开发
+- 3D 资源处理
+- Three.js / React Three Fiber / 3D 渲染实验
+- 重资源处理
 - skills
 - .codex / .claude 工作流
 - 脚本
 - 工具链
-- 3D / 重资源
 - 构建辅助
 - 文档协议
+
+默认分工不是永久锁死。
+如果一端需要临时承担对方默认负责范围，必须先读取 FLEXIBLE_OWNERSHIP_RULES.md，并明确跨边界原因、文件边界、日志路径和冲突检查结果。
 
 日志必须按设备拆分：
 docs/dev-log/YYYY-MM/YYYY-MM-DD/mac-任务名.md
@@ -114,6 +121,7 @@ feature/win-* = Windows 任务分支
 - 修改文件列表
 - 当前模块边界
 - 禁止误改区域
+- 是否涉及弹性分工或跨边界声明
 - 日志文件位置
 - 验收结果
 - 当前风险
