@@ -42,6 +42,13 @@ import {
   type TimeDebtPlan
 } from './timeDebtPlansStorage'
 import {
+  clearActiveTimeDebtTimer,
+  createActiveTimeDebtTimer,
+  loadActiveTimeDebtTimer,
+  saveActiveTimeDebtTimer,
+  timeDebtActiveTimerStorageKey
+} from './timeDebtActiveTimerStorage'
+import {
   archiveTimePlanReminderBySource,
   consumeTimeDebtNavigationIntent,
   createTimePlanReminder,
@@ -113,6 +120,14 @@ type CalendarBlock = {
 }
 
 const today = new Date().toISOString().slice(0, 10)
+const workloadUnitOptions = [
+  { value: 'min', label: '分钟' },
+  { value: 'hour', label: '小时' },
+  { value: 'item', label: '项' },
+  { value: 'time', label: '次' },
+  { value: 'page', label: '页' },
+  { value: 'question', label: '题' }
+] as const
 const viewLabels: Record<TimeDebtView, string> = {
   today: '今日台',
   timeline: '时间轴',
@@ -132,7 +147,7 @@ export function TimeDebtDashboard() {
   const [timelineDate, setTimelineDate] = useState(today)
   const [logDraft, setLogDraft] = useState<LogDraft>(() => createDefaultLogDraft())
   const [planDraft, setPlanDraft] = useState<PlanDraft>(() => createDefaultPlanDraft())
-  const [runningTimer, setRunningTimer] = useState<RunningTimer | null>(null)
+  const [runningTimer, setRunningTimer] = useState<RunningTimer | null>(() => activeTimerToRunningTimer(loadActiveTimeDebtTimer()))
   const [manualSourcePlanId, setManualSourcePlanId] = useState<string | null>(null)
   const [highlightedPlanId, setHighlightedPlanId] = useState<string | null>(null)
   const [timerNow, setTimerNow] = useState(() => Date.now())
@@ -237,7 +252,7 @@ export function TimeDebtDashboard() {
     const plannedDurationMinutes = sourcePlan?.plannedDurationMinutes || (sourcePlan ? calculateDurationMinutes(sourcePlan.plannedStartTime, sourcePlan.plannedEndTime) : undefined)
     const suggestedEndTime = plannedDurationMinutes ? formatLocalDateTimeInput(new Date(now.getTime() + plannedDurationMinutes * 60000)) : undefined
     const workloadUnit = draft.workloadUnit || 'min'
-    setRunningTimer({
+    const nextTimer = {
       title: draft.title.trim(),
       primaryCategory: draft.primaryCategory.trim(),
       secondaryProject: draft.secondaryProject.trim(),
@@ -249,7 +264,23 @@ export function TimeDebtDashboard() {
       plannedEndTime: sourcePlan?.plannedEndTime,
       plannedDurationMinutes,
       suggestedEndTime
-    })
+    }
+    setRunningTimer(nextTimer)
+    saveActiveTimeDebtTimer(
+      createActiveTimeDebtTimer({
+        title: nextTimer.title,
+        primaryCategory: nextTimer.primaryCategory,
+        secondaryProject: nextTimer.secondaryProject,
+        workloadUnit: nextTimer.workloadUnit,
+        actualStart: nextTimer.startTime,
+        startTimestampMs: nextTimer.startTimestampMs,
+        sourcePlanId: planId,
+        plannedStart: nextTimer.plannedStartTime,
+        plannedEnd: nextTimer.plannedEndTime,
+        plannedDuration: nextTimer.plannedDurationMinutes,
+        suggestedEnd: nextTimer.suggestedEndTime
+      })
+    )
     setTimerNow(now.getTime())
     rememberOptions(draft.primaryCategory, draft.secondaryProject, workloadUnit)
     if (planId) {
@@ -293,6 +324,7 @@ export function TimeDebtDashboard() {
         archiveTimePlanReminderBySource(runningTimer.planId, 'completed')
       }
       setRunningTimer(null)
+      clearActiveTimeDebtTimer()
     }
   }
 
@@ -1027,14 +1059,12 @@ function EntryModal({
   return (
     <Modal title={title} eyebrow="Time Entry" onClose={onClose}>
       {mode === 'plan' ? (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
           <TextField label="任务名" value={planDraft.title} onChange={(title) => onPlanChange({ title })} />
           <CategorySelect
             value={`${planDraft.primaryCategory}::${planDraft.secondaryProject}`}
             onChange={(primaryCategory, secondaryProject) => onPlanChange({ primaryCategory, secondaryProject })}
           />
-          <SmartOptionInput label="一级分类" value={planDraft.primaryCategory} options={options.categories} onChange={(primaryCategory) => onPlanChange({ primaryCategory })} onCreateOption={(category) => onCreateOption({ category })} />
-          <SmartOptionInput label="二级项目" value={planDraft.secondaryProject} options={options.projects} onChange={(secondaryProject) => onPlanChange({ secondaryProject })} onCreateOption={(project) => onCreateOption({ project })} />
           <TextField label="计划开始" value={planDraft.plannedStartTime} onChange={(plannedStartTime) => onPlanChange({ plannedStartTime })} type="datetime-local" />
           <TextField label="计划结束" value={planDraft.plannedEndTime} onChange={(plannedEndTime) => onPlanChange({ plannedEndTime })} type="datetime-local" />
           <div className="md:col-span-2">
@@ -1044,7 +1074,7 @@ function EntryModal({
           </div>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
           <TextField label="任务名" value={logDraft.title} onChange={(title) => onLogChange({ title })} />
           <CategorySelect
             value={`${logDraft.primaryCategory}::${logDraft.secondaryProject}`}
@@ -1057,14 +1087,12 @@ function EntryModal({
               })
             }
           />
-          <SmartOptionInput label="一级分类" value={logDraft.primaryCategory} options={options.categories} onChange={(primaryCategory) => onLogChange({ primaryCategory })} onCreateOption={(category) => onCreateOption({ category })} />
-          <SmartOptionInput label="二级项目" value={logDraft.secondaryProject} options={options.projects} onChange={(secondaryProject) => onLogChange({ secondaryProject })} onCreateOption={(project) => onCreateOption({ project })} />
           {mode === 'manual' ? (
             <>
               <TextField label="开始时间" value={logDraft.startTime} onChange={(startTime) => onLogChange({ startTime })} type="datetime-local" />
               <TextField label="结束时间" value={logDraft.endTime} onChange={(endTime) => onLogChange({ endTime })} type="datetime-local" />
               <TextField label="工作量" value={logDraft.workload} onChange={(workload) => onLogChange({ workload })} type="number" />
-              <SmartOptionInput label="工作量单位" value={logDraft.workloadUnit} options={options.units} onChange={(workloadUnit) => onLogChange({ workloadUnit })} onCreateOption={(unit) => onCreateOption({ unit })} />
+              <SelectField label="工作量单位" value={logDraft.workloadUnit} onChange={(workloadUnit) => onLogChange({ workloadUnit })} options={workloadUnitOptions.map((item) => item.value)} formatOptionLabel={formatWorkloadUnitLabel} />
               <TextField label="状态分" value={logDraft.statusScore} onChange={(statusScore) => onLogChange({ statusScore })} type="number" />
               <TextField label="AI 赋能比例" value={logDraft.aiEnableRatio} onChange={(aiEnableRatio) => onLogChange({ aiEnableRatio })} type="number" />
               <Field label="结果记录 / 备注">
@@ -1074,7 +1102,7 @@ function EntryModal({
           ) : (
             <>
               <TextField label="开始时间" value={logDraft.startTime} onChange={(startTime) => onLogChange({ startTime })} type="datetime-local" />
-              <SmartOptionInput label="工作量单位" value={logDraft.workloadUnit} options={options.units} onChange={(workloadUnit) => onLogChange({ workloadUnit })} onCreateOption={(unit) => onCreateOption({ unit })} />
+              <SelectField label="工作量单位" value={logDraft.workloadUnit} onChange={(workloadUnit) => onLogChange({ workloadUnit })} options={workloadUnitOptions.map((item) => item.value)} formatOptionLabel={formatWorkloadUnitLabel} />
               <p className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3 text-sm leading-6 text-[color:var(--text-secondary)]">
                 确认后会进入计时中状态，并在今日时间日志表生成 Active 时间块。
               </p>
@@ -1213,15 +1241,23 @@ function SettingsModal({
 }
 
 function Modal({ title, eyebrow, onClose, children, wide = false }: { title: string; eyebrow: string; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [])
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 p-4">
-      <section className={`max-h-[88vh] w-full overflow-auto rounded-[22px] border border-[color:var(--panel-border)] bg-[var(--overlay-bg)] p-5 text-[color:var(--text-primary)] shadow-panel backdrop-blur-2xl ${wide ? 'max-w-5xl' : 'max-w-3xl'}`}>
-        <div className="mb-5 flex items-start justify-between gap-4">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-hidden bg-black/35 px-4 py-[7vh]">
+      <section className={`max-h-[85vh] w-full overflow-auto rounded-[22px] border border-[color:var(--panel-border)] bg-[var(--overlay-bg)] p-5 text-[color:var(--text-primary)] shadow-panel backdrop-blur-2xl ${wide ? 'max-w-5xl' : 'max-w-3xl'}`}>
+        <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">{eyebrow}</div>
             <h3 className="mt-1 text-lg font-semibold">{title}</h3>
           </div>
-          <button type="button" onClick={onClose} className={tinyButtonClass}>
+          <button type="button" onClick={onClose} className={`${tinyButtonClass} shrink-0`}>
             关闭
           </button>
         </div>
@@ -1307,7 +1343,7 @@ function CategorySelect({
 }) {
   return (
     <SelectField
-      label="一级分类 / 二级项目"
+      label="分类项目"
       value={value}
       onChange={(nextValue) => {
         const [primaryCategory, secondaryProject] = nextValue.split('::')
@@ -1315,6 +1351,7 @@ function CategorySelect({
         onChange(primaryCategory, secondaryProject, category)
       }}
       options={defaultProjectCategories.map((category) => `${category.primaryCategory}::${category.secondaryProject}`)}
+      formatOptionLabel={(option) => option.replace('::', ' · ')}
     />
   )
 }
@@ -1359,13 +1396,25 @@ function TextField({
   )
 }
 
-function SelectField({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  formatOptionLabel = (option) => option
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  options: string[]
+  formatOptionLabel?: (option: string) => string
+}) {
   return (
     <Field label={label}>
       <select value={value} onChange={(event) => onChange(event.target.value)} className={inputClass}>
         {options.map((option) => (
           <option key={option} value={option}>
-            {option}
+            {formatOptionLabel(option)}
           </option>
         ))}
       </select>
@@ -1573,6 +1622,25 @@ function planToLogDraft(plan: TimeDebtPlan): LogDraft {
   }
 }
 
+function activeTimerToRunningTimer(timer: ReturnType<typeof loadActiveTimeDebtTimer>): RunningTimer | null {
+  if (!timer) {
+    return null
+  }
+  return {
+    title: timer.title,
+    primaryCategory: timer.primaryCategory,
+    secondaryProject: timer.secondaryProject,
+    workloadUnit: timer.workloadUnit,
+    startTime: timer.actualStart,
+    startTimestampMs: timer.startTimestampMs,
+    planId: timer.sourcePlanId,
+    plannedStartTime: timer.plannedStart,
+    plannedEndTime: timer.plannedEnd,
+    plannedDurationMinutes: timer.plannedDuration,
+    suggestedEndTime: timer.suggestedEnd
+  }
+}
+
 function planToManualDraft(plan: TimeDebtPlan): LogDraft {
   return {
     ...createDefaultLogDraft(),
@@ -1715,6 +1783,10 @@ function formatPercent(value: number): string {
   }).format(value)
 }
 
+function formatWorkloadUnitLabel(value: string): string {
+  return workloadUnitOptions.find((item) => item.value === value)?.label ?? value
+}
+
 function formatDiagnosisReason(overview: TimeDebtOverview, diagnosis: TimeDebtDiagnosis): string {
   if (overview.stats.totalLogs === 0) {
     return '今日记录不足'
@@ -1781,6 +1853,7 @@ export const timeDebtStorageLocation = {
   ...timeDebtStorageKeys,
   options: timeDebtOptionsStorageKey,
   plans: timeDebtPlansStorageKey,
+  activeTimer: timeDebtActiveTimerStorageKey,
   timePlanReminders: timePlanReminderStorageKeys.reminders,
   navigationIntent: timePlanReminderStorageKeys.navigationIntent
 }

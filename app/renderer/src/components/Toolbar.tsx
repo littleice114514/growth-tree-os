@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useWorkspaceStore } from '@/app/store'
 import { useThemeMode } from '@/app/theme'
 import type { WorkspaceView } from '@/types/ui'
+import { loadActiveTimeDebtTimer, type ActiveTimeDebtTimer } from '@/features/time-debt/timeDebtActiveTimerStorage'
 
 const workspaceViews: Array<[WorkspaceView, string]> = [
   ['tree', '成长树'],
@@ -38,7 +39,19 @@ export function Toolbar() {
   const setCurrentView = useWorkspaceStore((state) => state.setCurrentView)
   const tree = useWorkspaceStore((state) => state.tree)
   const reminders = useWorkspaceStore((state) => state.reminders)
+  const [activeTimer, setActiveTimer] = useState<ActiveTimeDebtTimer | null>(() => loadActiveTimeDebtTimer())
+  const [timerNow, setTimerNow] = useState(() => Date.now())
   const shouldShowSearchResults = Boolean(searchQuery.trim())
+
+  useEffect(() => {
+    const reloadActiveTimer = () => setActiveTimer(loadActiveTimeDebtTimer())
+    const intervalId = window.setInterval(() => setTimerNow(Date.now()), activeTimer ? 1000 : 30000)
+    window.addEventListener('time-debt-active-timer-change', reloadActiveTimer)
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('time-debt-active-timer-change', reloadActiveTimer)
+    }
+  }, [activeTimer])
 
   const stats = useMemo(() => {
     const total = tree?.nodes.filter((item) => item.nodeType !== 'mainline').length ?? 0
@@ -78,6 +91,17 @@ export function Toolbar() {
       </div>
 
       <div className="flex items-center gap-3">
+        {activeTimer ? (
+          <button
+            type="button"
+            onClick={() => void setCurrentView('timeDebt')}
+            className="hidden max-w-[260px] rounded-2xl border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-left text-xs text-accent-green transition hover:bg-emerald-400/15 xl:block"
+            title="回到 Time Debt"
+          >
+            <span className="block truncate">正在计时：{activeTimer.title}</span>
+            <span className="mt-0.5 block font-semibold tabular-nums">{formatElapsedTime(timerNow - activeTimer.startTimestampMs)}</span>
+          </button>
+        ) : null}
         <div className="hidden rounded-2xl border border-[color:var(--input-border)] bg-[var(--control-bg)] px-3 py-2 text-xs text-[color:var(--text-secondary)] xl:block">
           {stats}
         </div>
@@ -142,4 +166,16 @@ export function Toolbar() {
       </div>
     </header>
   )
+}
+
+function formatElapsedTime(milliseconds: number): string {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  return `${padDatePart(hours)}:${padDatePart(minutes)}:${padDatePart(seconds)}`
+}
+
+function padDatePart(value: number): string {
+  return String(value).padStart(2, '0')
 }
