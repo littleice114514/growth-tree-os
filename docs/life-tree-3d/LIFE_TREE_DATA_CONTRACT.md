@@ -7,14 +7,21 @@
 数据流固定为：
 
 ```ts
-GrowthEvent[] + GrowthRule[] -> TreeSnapshot -> TreeTimeline -> Renderer
+previous TreeSnapshot + GrowthEvent[] + GrowthRule[] -> next TreeSnapshot -> TreeTimeline -> Renderer
 ```
 
+- 旧 `TreeSnapshot` 表示昨天或上一阶段的树状态。
 - `GrowthEvent` 记录发生了什么。
 - `GrowthRule` 定义事件如何影响树。
-- `TreeSnapshot` 保存某个时间点的树状态。
+- 新 `TreeSnapshot` 保存今天或当前阶段结算后的树状态。
 - `TreeTimeline` 管理 daily / weekly / monthly / phase 快照。
 - Renderer 只读取 `TreeSnapshot` 和 `QualityProfile`，不直接读业务事件。
+
+核心公式：
+
+```text
+昨天的树状态 + 今天发生的成长事件 + 生长规则 = 今天的新树状态
+```
 
 ## 2. RendererMode
 
@@ -22,10 +29,10 @@ GrowthEvent[] + GrowthRule[] -> TreeSnapshot -> TreeTimeline -> Renderer
 type RendererMode =
   | 'none'
   | 'static_2d'
-  | 'procedural_3d'
-  | 'low_poly_3d'
-  | 'semi_realistic_3d'
-  | 'realistic_3d'
+  | 'procedural'
+  | 'low-poly'
+  | 'semi-realistic'
+  | 'realistic'
 ```
 
 ## 3. QualityProfile
@@ -52,8 +59,8 @@ interface TreeSnapshot {
   id: string
   ownerId: string
   snapshotDate: string
-  snapshotType: 'daily' | 'weekly' | 'monthly' | 'semester' | 'phase'
-  treeAgeStage: 'seed' | 'sapling' | 'young_tree' | 'mature_tree' | 'old_tree'
+  snapshotType: 'daily' | 'weekly' | 'monthly' | 'semester' | 'yearly' | 'custom_phase'
+  treeAgeStage: 'seedling' | 'young_tree' | 'expanding_tree' | 'mature_tree' | 'ancient_tree'
   season: SeasonState
   vitality: {
     score: number
@@ -132,6 +139,8 @@ interface TreeTimeline {
   dailySnapshots: TreeSnapshot[]
   weeklySnapshots: TreeSnapshot[]
   monthlySnapshots: TreeSnapshot[]
+  semesterSnapshots: TreeSnapshot[]
+  yearlySnapshots: TreeSnapshot[]
   phaseSnapshots: TreeSnapshot[]
   eventCursor: {
     lastEventId: string
@@ -165,6 +174,7 @@ interface BranchState {
 ```ts
 interface LeafState {
   id: string
+  nodeId: string
   branchId: string
   sourceEventId: string
   status: 'fresh' | 'stable' | 'withered' | 'fallen'
@@ -180,6 +190,7 @@ interface LeafState {
 ```ts
 interface FruitState {
   id: string
+  nodeId: string
   branchId: string
   sourceEventId: string
   resultType: 'delivery' | 'income' | 'award' | 'workflow' | 'version' | 'review'
@@ -194,6 +205,7 @@ interface FruitState {
 ```ts
 interface ScarState {
   id: string
+  nodeId: string
   targetPart: 'trunk' | 'branch' | 'root'
   targetId: string
   sourceEventId: string

@@ -13,7 +13,9 @@
 
 - 新增 Life Vitality Tree 3D 框架设计目录 `docs/life-tree-3d/`。
 - 完成 7 个 M3D-0 设计文档，覆盖概念、数据契约、生长规则、时间线、渲染策略、Win/Mac 性能和路线图。
+- 已补齐严格验收项：12 个指定 eventType、4 个 rendererMode、5 个 tree age stage、`public/models/life-tree/low|medium|high` 路径预留、`nodeId` 绑定原则、low / medium / high 性能上限和 3D 非单点故障策略。
 - 明确 3D 树应由 `GrowthEvent + GrowthRule -> TreeSnapshot -> TreeTimeline -> Renderer` 驱动。
+- 更精确地说：`previous TreeSnapshot + GrowthEvents + GrowthRules = next TreeSnapshot`。
 - 明确后期写实模型必须是模块化资产，不是整棵不可拆的死模型。
 - 明确 Windows high profile 与 Mac medium / low profile 的性能分层。
 - 本轮未安装 3D 依赖，未写 Three.js / R3F，未修改 UI 页面和数据库。
@@ -86,6 +88,7 @@ pnpm dev
 
 - `docs/life-tree-3d/` 存在。
 - 7 个 M3D-0 文档均存在。
+- 文档中可检索到 12 个指定 eventType、4 个 rendererMode、5 个 tree age stage 和 `public/models/life-tree` 路径约定。
 - `docs/dev-log/2026-04/2026-04-29/win-life-tree-3d-framework.md` 存在。
 - `git diff origin/main -- package.json pnpm-lock.yaml` 没有 3D 依赖变更。
 - 没有新增 `.glb`、`.gltf`、贴图或 Blender 模型文件。

@@ -1,138 +1,231 @@
 # Life Tree 3D Roadmap
 
-本文件定义 Life Vitality Tree 3D 从框架设计到写实生命树的路线图。
+本文件定义 Life Vitality Tree 3D 从框架设计到写实生命树的路线图。每个阶段都必须保持数据层、生长事件层、生长规则层、快照层、渲染层和性能层分离。
 
-## M3D-0 Framework Design
+## M3D-0｜框架设计
 
-当前阶段。
+阶段目标：
 
-目标：
+- 定义 3D 生长树概念、数据契约、生长规则、时间线、渲染策略和 Win / Mac 性能分层。
 
-- 定义 3D 生长树概念；
-- 定义数据契约草案；
-- 定义生长规则；
-- 定义时间线和快照；
-- 定义渲染策略；
-- 定义 Win / Mac 性能分层；
-- 不写真实 3D 实现。
+主要产物：
 
-验收：
+- `docs/life-tree-3d/` 7 个框架文档。
+- Windows 独立 dev-log。
 
-- `docs/life-tree-3d/` 文档完整；
-- 明确数据层、规则层、快照层、渲染层、性能层；
-- 不引入 3D 依赖；
-- 不修改 UI 页面。
+不做什么：
 
-## M3D-1 Types and Rule Draft
+- 不写 Three.js / R3F / Blender / glb / 真实 3D Canvas。
+- 不接数据库，不改主页面，不装依赖。
 
-目标：
+验收标准：
 
-- 从文档中提取最小正式 TypeScript 类型；
-- 定义 `TreeSnapshot`、`GrowthEvent`、`GrowthRule` 的最小代码草案；
-- 仍不接数据库；
-- 仍不做 3D Canvas。
+- 文档覆盖 `TreeSnapshot + GrowthEvent + GrowthRule` 关系。
+- 明确写实模型是模块化资产。
+- 明确 3D 不作为系统单点故障。
 
-边界：
+Win / Mac 分工：
 
-- 类型文件必须独立；
-- 不能破坏现有 Life Vitality Tree 前端 mapper；
-- 规则先使用 mock events 验证。
+- Windows 负责框架设计。
+- Mac 不参与，只在后续拉取验收文档完整性。
 
-## M3D-2 No-3D Growth Simulator
+## M3D-1｜类型与规则草案
 
-目标：
+阶段目标：
 
-- 不使用 3D；
-- 用表格、JSON 或 2D debug panel 模拟事件到快照的变化；
-- 验证规则权重、衰减、上限是否合理；
-- 验证 daily / weekly / monthly snapshot 关系。
+- 从文档提取最小 TypeScript 类型和 mock 规则草案。
 
-边界：
+主要产物：
 
-- 不做视觉最终效果；
-- 不导入模型；
-- 不改数据库 schema。
+- `TreeSnapshot`、`GrowthEvent`、`GrowthRule` 的最小类型文件。
+- mock events、mock rules、mock snapshot 样例。
 
-## M3D-3 Procedural 3D POC
+不做什么：
 
-目标：
+- 不安装 3D 依赖。
+- 不接真实数据库。
+- 不替换现有 Life Vitality Tree 页面。
 
-- 创建可关闭的 3D POC；
-- 程序化生成树干、枝干、叶子、果实和裂痕占位；
-- 用 mock `TreeSnapshot` 驱动；
-- 验证 Windows high 和 Mac low 的性能边界。
+验收标准：
 
-边界：
+- 类型可通过 `pnpm typecheck`。
+- mock 数据能表达旧快照 + 事件 + 规则 = 新快照。
 
-- 只做 POC；
-- 不替换现有主页面；
+Win / Mac 分工：
+
+- Windows 负责类型与规则草案。
+- Mac 可只读验收类型命名是否影响 UI 边界。
+
+## M3D-2｜无 3D 生长模拟器
+
+阶段目标：
+
+- 不使用 3D，用表格、JSON 或 debug 文档验证生长规则。
+
+主要产物：
+
+- 无 3D snapshot diff 模拟器。
+- daily / weekly / monthly / phase 样例输出。
+
+不做什么：
+
+- 不写 3D Canvas。
+- 不导入模型或贴图。
+- 不做最终视觉效果。
+
+验收标准：
+
+- 能从 mock GrowthEvents 生成新 TreeSnapshot。
+- 能解释每条变化来自哪些 GrowthRule。
+
+Win / Mac 分工：
+
+- Windows 负责规则计算和模拟器。
+- Mac 可在不改页面的前提下验收输出可读性。
+
+## M3D-3｜程序化 3D POC
+
+阶段目标：
+
+- 首次实现 procedural 3D POC，用 mock `TreeSnapshot` 生成树。
+
+主要产物：
+
+- 可关闭的 3D POC。
+- 程序化树干、枝干、叶片、果实、裂痕占位。
+- high / medium / low profile 初始验证。
+
+不做什么：
+
 - 不导入写实模型。
+- 不替换现有主页面。
+- 不把业务逻辑写进 renderer。
 
-## M3D-4 3D Interaction Layer
+验收标准：
 
-目标：
+- procedural 树能读 `TreeSnapshot`。
+- Mac low profile 可降级。
+- WebGL 失败有 fallback。
 
-- 增加视角切换、hover、点击详情；
-- 与现有 Life Tree 语义保持一致；
-- UI 控制层与渲染层拆分；
-- 为 Mac 端体验优化留下文件边界。
+Win / Mac 分工：
 
-边界：
+- Windows 负责 3D 渲染底座和性能测试。
+- Mac 负责轻量预览和体验反馈，不共改同一文件。
 
-- Windows 负责渲染和资源；
-- Mac 可负责页面容器和交互体验；
-- 双端不能同时改同一文件。
+## M3D-4｜3D 交互层
 
-## M3D-5 Realistic Model Interface
+阶段目标：
 
-目标：
+- 增加视角切换、hover、click、详情面板和 `nodeId` 绑定。
 
-- 定义 glb / Blender 资产命名；
-- 定义 tree asset slots；
-- 定义模型压缩、贴图大小和 fallback；
-- 验证模块化资产替换程序化部件。
+主要产物：
 
-边界：
+- 3D 对象到业务节点的交互桥。
+- UI 控制层与渲染层分离。
 
-- 不做整棵不可拆的死模型；
-- 资产必须能按树干、枝干、叶子、果实、裂痕、根系拆分；
-- 渲染层仍只读 `TreeSnapshot`。
+不做什么：
 
-## M3D-6 Semi-Realistic Asset Replacement
+- 不做写实资产替换。
+- 不把 UI 状态塞进 3D 资源层。
 
-目标：
+验收标准：
 
-- 用半写实模块资产替换部分程序化部件；
-- 保持 Mac low profile 可用；
-- 建立资产加载失败的 fallback；
-- 记录性能指标。
+- 点击对象能通过 `nodeId` 找到对应快照对象。
+- Mac low profile 可关闭重动画。
 
-边界：
+Win / Mac 分工：
 
-- 不追求最终写实；
-- 优先验证模块化替换链路。
+- Windows 负责渲染对象和交互事件输出。
+- Mac 负责 UI 容器、按钮、布局和用户体验。
 
-## M3D-7 Realistic Vitality Tree Optimization
+## M3D-5｜写实模型接口
 
-目标：
+阶段目标：
 
-- 在 Windows high profile 上优化写实树；
-- 完善树皮、裂痕、果实、根系、季节和光照；
-- 为 Mac 提供 medium / low 质量版本；
-- 完成长期可维护的 3D 生命树渲染架构。
+- 定义 glb / Blender 资产接口、路径、命名和质量档。
 
-边界：
+主要产物：
 
-- 写实只是一种 renderer mode；
-- 业务规则仍归规则层；
-- 快照仍是唯一渲染输入。
+- `public/models/life-tree/low|medium|high` 路径约定。
+- tree asset slots。
+- 模型加载失败 fallback 规则。
+
+不做什么：
+
+- 不做整棵不可拆的死模型。
+- 不默认加载 high 资源。
+
+验收标准：
+
+- 树干、枝干、叶簇、果实、裂痕、树皮材质、季节材质均可模块化替换。
+- 资源失败不影响 TreeSnapshot 展示。
+
+Win / Mac 分工：
+
+- Windows 负责模型接口、压缩和资源管线。
+- Mac 验证 medium / low 资源不会破坏体验。
+
+## M3D-6｜半写实资产替换
+
+阶段目标：
+
+- 用半写实模块资产替换部分 procedural 部件。
+
+主要产物：
+
+- 半写实树干、枝干、叶簇、果实或裂痕模块。
+- low / medium / high 资源加载策略。
+
+不做什么：
+
+- 不追求最终写实。
+- 不牺牲 Mac 默认稳定档。
+
+验收标准：
+
+- 模块资产可按 `TreeSnapshot` 状态替换。
+- Mac medium / low 能稳定运行。
+
+Win / Mac 分工：
+
+- Windows 负责资产替换和性能记录。
+- Mac 负责稳定性、交互和视觉一致性反馈。
+
+## M3D-7｜写实生命树优化
+
+阶段目标：
+
+- 在 Windows high profile 上完善写实生命树，同时保留 Mac 可用降级。
+
+主要产物：
+
+- 写实树皮、裂痕、叶簇、果实、季节材质和光照策略。
+- high profile 演示版本。
+- medium / low fallback 版本。
+
+不做什么：
+
+- 不让 high profile 成为默认体验。
+- 不让 3D 成为系统单点故障。
+- 不让 renderer 直接处理业务逻辑。
+
+验收标准：
+
+- high profile 写实效果可演示。
+- medium / low 仍可用。
+- 同一份 `TreeSnapshot` 可驱动不同 rendererMode。
+
+Win / Mac 分工：
+
+- Windows 负责写实优化和重资源验证。
+- Mac 负责默认体验、无独显稳定性和 UI 交互验收。
 
 ## 下一阶段建议
 
-M3D-0 完成后，下一阶段建议进入 M3D-1：
+M3D-0 完成后，下一阶段进入 M3D-1：
 
 - 只提取最小 TypeScript 类型；
-- 建立 mock `GrowthEvent` 与 `TreeSnapshot` 样例；
+- 建立 mock `GrowthEvent`、`GrowthRule` 与 `TreeSnapshot` 样例；
 - 不引入 3D 依赖；
 - 不改主页面 UI；
 - 为 M3D-2 的无 3D 生长模拟器准备数据。
