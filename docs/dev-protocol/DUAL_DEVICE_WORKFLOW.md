@@ -10,6 +10,7 @@
 - Windows 与 Mac 必须各自使用 feature 分支。
 - 所有阶段性成果先合并到 develop，再由 develop 验收后进入 main。
 - 每次 Codex 开工前，必须先读取 docs/dev-protocol/CODEX_STARTUP_CHECKLIST.md。
+- 每次新聊天框继续推进项目前，必须先参考 docs/dev-protocol/PROJECT_HANDOFF_RULES.md。
 
 ## 2. 分支定义
 
@@ -77,3 +78,17 @@ Windows 优先负责：
 - 冲突时不得盲目覆盖。
 - 合并完成后必须运行验收命令。
 - develop 稳定后，才允许合并 main。
+
+## 7. 新聊天框继承规则
+
+本项目不依赖单个聊天框记忆维持开发规则。
+
+任何新聊天框继续推进项目时，必须先参考：
+
+docs/dev-protocol/PROJECT_HANDOFF_RULES.md
+
+并要求开发代理先读取：
+
+docs/dev-protocol/CODEX_STARTUP_CHECKLIST.md
+
+再进行任务判断、分支选择、文件边界确认和日志路径确认。

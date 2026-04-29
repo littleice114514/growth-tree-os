@@ -9,8 +9,11 @@
 - docs/dev-protocol/DUAL_DEVICE_WORKFLOW.md
 - docs/dev-protocol/BRANCH_AND_FILE_BOUNDARY.md
 - docs/dev-protocol/DEV_LOG_RULES.md
+- docs/dev-protocol/PROJECT_HANDOFF_RULES.md
 
 如果文件不存在，停止业务开发，先提示需要建立协议文件。
+
+每次开发前，必须先读取 docs/dev-protocol/PROJECT_HANDOFF_RULES.md，确认是否存在新聊天框交接规则、模块切换规则和固定任务指令开头。未完成读取前，不允许直接开始业务开发。
 
 ## 2. 检查 Git 状态
 
