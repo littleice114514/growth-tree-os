@@ -41,6 +41,14 @@ import {
   updateTimeDebtPlan,
   type TimeDebtPlan
 } from './timeDebtPlansStorage'
+import {
+  archiveTimePlanReminderBySource,
+  consumeTimeDebtNavigationIntent,
+  createTimePlanReminder,
+  timePlanReminderStorageKeys,
+  updateTimePlanReminderBySource,
+  upsertTimePlanReminder
+} from '@/features/reminders/timePlanReminderStorage'
 
 type TimeDebtView = 'today' | 'timeline' | 'insights'
 type EntryMode = 'timer' | 'manual' | 'plan'
@@ -97,7 +105,7 @@ type CalendarBlock = {
   startTime: string
   endTime: string
   durationMinutes: number
-  status: 'planned' | 'active' | 'completed'
+  status: 'planned' | 'active' | 'completed' | 'missed'
   meta: string
   plan?: TimeDebtPlan
   leftPercent?: number
@@ -125,6 +133,8 @@ export function TimeDebtDashboard() {
   const [logDraft, setLogDraft] = useState<LogDraft>(() => createDefaultLogDraft())
   const [planDraft, setPlanDraft] = useState<PlanDraft>(() => createDefaultPlanDraft())
   const [runningTimer, setRunningTimer] = useState<RunningTimer | null>(null)
+  const [manualSourcePlanId, setManualSourcePlanId] = useState<string | null>(null)
+  const [highlightedPlanId, setHighlightedPlanId] = useState<string | null>(null)
   const [timerNow, setTimerNow] = useState(() => Date.now())
   const [optionDraft, setOptionDraft] = useState({ category: '', project: '', unit: '' })
   const [standardDraft, setStandardDraft] = useState<StandardDraft>(() => ({
@@ -187,6 +197,7 @@ export function TimeDebtDashboard() {
   }
 
   const openEntry = (mode: EntryMode, sourcePlan?: TimeDebtPlan) => {
+    setManualSourcePlanId(mode === 'manual' && sourcePlan ? sourcePlan.id : null)
     if (mode === 'plan') {
       setPlanDraft(sourcePlan ? planToDraft(sourcePlan) : createDefaultPlanDraft())
     } else {
@@ -196,7 +207,21 @@ export function TimeDebtDashboard() {
   }
 
   const saveManualLog = () => {
-    if (persistLog(logDraft)) {
+    const log = persistLog(logDraft)
+    if (log) {
+      if (manualSourcePlanId) {
+        setPlans(
+          updateTimeDebtPlan(manualSourcePlanId, {
+            status: 'completed',
+            actualStartTime: log.startTime,
+            actualEndTime: log.endTime,
+            actualDurationMinutes: log.durationMinutes,
+            completedLogId: log.id
+          })
+        )
+        archiveTimePlanReminderBySource(manualSourcePlanId, 'completed')
+        setManualSourcePlanId(null)
+      }
       setEntryMode(null)
       setLogDraft(createDefaultLogDraft())
     }
@@ -229,6 +254,7 @@ export function TimeDebtDashboard() {
     rememberOptions(draft.primaryCategory, draft.secondaryProject, workloadUnit)
     if (planId) {
       setPlans(updateTimeDebtPlan(planId, { status: 'active', actualStartTime: startTime, suggestedEndTime }))
+      updateTimePlanReminderBySource(planId, { status: 'active' })
     }
     setEntryMode(null)
   }
@@ -264,6 +290,7 @@ export function TimeDebtDashboard() {
             completedLogId: log.id
           })
         )
+        archiveTimePlanReminderBySource(runningTimer.planId, 'completed')
       }
       setRunningTimer(null)
     }
@@ -271,10 +298,12 @@ export function TimeDebtDashboard() {
 
   const abandonPlan = (planId: string) => {
     setPlans(updateTimeDebtPlan(planId, { status: 'abandoned' }))
+    archiveTimePlanReminderBySource(planId, 'dismissed')
   }
 
   const convertPlanToManualLog = (plan: TimeDebtPlan) => {
     setLogDraft(planToManualDraft(plan))
+    setManualSourcePlanId(plan.id)
     setEntryMode('manual')
   }
 
@@ -284,6 +313,17 @@ export function TimeDebtDashboard() {
     }
     const nextPlan = createTimeDebtPlan(planDraft)
     setPlans(appendTimeDebtPlan(nextPlan))
+    upsertTimePlanReminder(
+      createTimePlanReminder({
+        sourceId: nextPlan.id,
+        title: nextPlan.title,
+        plannedStart: nextPlan.plannedStartTime,
+        plannedEnd: nextPlan.plannedEndTime,
+        plannedDuration: nextPlan.plannedDurationMinutes,
+        primaryCategory: nextPlan.primaryCategory,
+        secondaryProject: nextPlan.secondaryProject
+      })
+    )
     rememberOptions(planDraft.primaryCategory, planDraft.secondaryProject)
     setPlanDraft(createDefaultPlanDraft())
     setEntryMode(null)
@@ -325,6 +365,26 @@ export function TimeDebtDashboard() {
     setLogs(deleteTimeDebtLog(logId))
   }
 
+  useEffect(() => {
+    const intent = consumeTimeDebtNavigationIntent()
+    if (!intent) {
+      return
+    }
+    const sourcePlan = plans.find((plan) => plan.id === intent.sourceId)
+    if (!sourcePlan) {
+      return
+    }
+    setCurrentView('today')
+    setHighlightedPlanId(sourcePlan.id)
+    if (intent.mode === 'start') {
+      startTimer(planToLogDraft(sourcePlan), sourcePlan.id)
+      return
+    }
+    if (intent.mode === 'manual') {
+      convertPlanToManualLog(sourcePlan)
+    }
+  }, [])
+
   return (
     <main className="min-h-0 flex-1 overflow-auto rounded-[22px] border border-[color:var(--panel-border)] bg-[var(--panel-bg)] p-5 text-[color:var(--text-primary)] shadow-panel backdrop-blur-2xl">
       <div className="mx-auto flex max-w-[1500px] flex-col gap-5">
@@ -360,6 +420,7 @@ export function TimeDebtDashboard() {
             plans={todayPlans}
             runningTimer={runningTimer}
             timerNow={timerNow}
+            highlightedPlanId={highlightedPlanId}
             onOpenEntry={openEntry}
             onStartPlan={(plan) => startTimer(planToLogDraft(plan), plan.id)}
             onConvertPlanToManual={convertPlanToManualLog}
@@ -386,7 +447,10 @@ export function TimeDebtDashboard() {
           planDraft={planDraft}
           options={options}
           runningTimer={runningTimer}
-          onClose={() => setEntryMode(null)}
+          onClose={() => {
+            setEntryMode(null)
+            setManualSourcePlanId(null)
+          }}
           onLogChange={(patch) => setLogDraft((current) => ({ ...current, ...patch }))}
           onPlanChange={(patch) => setPlanDraft((current) => ({ ...current, ...patch }))}
           onCreateOption={(values) => {
@@ -430,6 +494,7 @@ function TodayView({
   plans,
   runningTimer,
   timerNow,
+  highlightedPlanId,
   onOpenEntry,
   onStartPlan,
   onConvertPlanToManual,
@@ -442,6 +507,7 @@ function TodayView({
   plans: TimeDebtPlan[]
   runningTimer: RunningTimer | null
   timerNow: number
+  highlightedPlanId: string | null
   onOpenEntry: (mode: EntryMode, sourcePlan?: TimeDebtPlan) => void
   onStartPlan: (plan: TimeDebtPlan) => void
   onConvertPlanToManual: (plan: TimeDebtPlan) => void
@@ -468,7 +534,16 @@ function TodayView({
           </p>
         </Panel>
       </div>
-      <DailyCalendarView logs={logs} plans={plans} runningTimer={runningTimer} timerNow={timerNow} onStartPlan={onStartPlan} />
+      <DailyCalendarView
+        logs={logs}
+        plans={plans}
+        runningTimer={runningTimer}
+        timerNow={timerNow}
+        highlightedPlanId={highlightedPlanId}
+        onStartPlan={onStartPlan}
+        onConvertPlanToManual={onConvertPlanToManual}
+        onAbandonPlan={onAbandonPlan}
+      />
     </div>
   )
 }
@@ -613,15 +688,27 @@ function DailyCalendarView({
   plans,
   runningTimer,
   timerNow,
-  onStartPlan
+  highlightedPlanId,
+  onStartPlan,
+  onConvertPlanToManual,
+  onAbandonPlan
 }: {
   logs: TimeDebtLog[]
   plans: TimeDebtPlan[]
   runningTimer: RunningTimer | null
   timerNow: number
+  highlightedPlanId: string | null
   onStartPlan: (plan: TimeDebtPlan) => void
+  onConvertPlanToManual: (plan: TimeDebtPlan) => void
+  onAbandonPlan: (planId: string) => void
 }) {
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(highlightedPlanId)
   const blocks = useMemo(() => buildCalendarBlocks(logs, plans, runningTimer, timerNow), [logs, plans, runningTimer, timerNow])
+  useEffect(() => {
+    if (highlightedPlanId) {
+      setSelectedBlockId(highlightedPlanId)
+    }
+  }, [highlightedPlanId])
   return (
     <section className="min-w-0 rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
@@ -633,6 +720,7 @@ function DailyCalendarView({
           <Legend dotClass="border-dashed border-amber-400 bg-amber-400/10" label="Planned" />
           <Legend dotClass="border-emerald-400 bg-emerald-400/20" label="Active" />
           <Legend dotClass="border-cyan-400 bg-cyan-400/20" label="Completed" />
+          <Legend dotClass="border-rose-400 bg-rose-400/10" label="Missed" />
         </div>
       </div>
       <div className="relative h-[1440px] overflow-hidden rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)]">
@@ -643,7 +731,15 @@ function DailyCalendarView({
         ))}
         <div className="absolute bottom-0 left-[72px] top-0 w-px bg-[var(--panel-border)]" />
         {blocks.map((block) => (
-          <CalendarBlockCard key={block.id} block={block} onStartPlan={onStartPlan} />
+          <CalendarBlockCard
+            key={block.id}
+            block={block}
+            selected={selectedBlockId === block.id}
+            onSelect={() => setSelectedBlockId((current) => (current === block.id ? null : block.id))}
+            onStartPlan={onStartPlan}
+            onConvertPlanToManual={onConvertPlanToManual}
+            onAbandonPlan={onAbandonPlan}
+          />
         ))}
         {blocks.length === 0 ? (
           <div className="absolute left-[92px] right-5 top-8 rounded-2xl border border-dashed border-[color:var(--panel-border)] p-5 text-sm text-[color:var(--text-muted)]">
@@ -655,7 +751,21 @@ function DailyCalendarView({
   )
 }
 
-function CalendarBlockCard({ block, onStartPlan }: { block: CalendarBlock; onStartPlan: (plan: TimeDebtPlan) => void }) {
+function CalendarBlockCard({
+  block,
+  selected,
+  onSelect,
+  onStartPlan,
+  onConvertPlanToManual,
+  onAbandonPlan
+}: {
+  block: CalendarBlock
+  selected: boolean
+  onSelect: () => void
+  onStartPlan: (plan: TimeDebtPlan) => void
+  onConvertPlanToManual: (plan: TimeDebtPlan) => void
+  onAbandonPlan: (planId: string) => void
+}) {
   const startMinute = minutesFromDateTime(block.startTime)
   const heightMinutes = Math.max(block.durationMinutes, 25)
   const widthFactor = (block.widthPercent ?? 100) / 100
@@ -671,9 +781,24 @@ function CalendarBlockCard({ block, onStartPlan }: { block: CalendarBlock; onSta
       ? 'border-dashed border-amber-400/45 bg-amber-400/10 text-[color:var(--text-primary)]'
       : block.status === 'active'
         ? 'border-emerald-400/45 bg-emerald-400/18 text-[color:var(--text-primary)] shadow-[0_12px_28px_rgba(16,185,129,0.14)]'
-        : `${categoryBlockClass(block.primaryCategory)} text-[color:var(--text-primary)]`
+        : block.status === 'missed'
+          ? 'border-rose-400/35 bg-rose-400/10 text-[color:var(--text-primary)]'
+          : `${categoryBlockClass(block.primaryCategory)} text-[color:var(--text-primary)]`
   return (
-    <div className={`absolute overflow-hidden rounded-2xl border px-3 py-2 ${blockClass}`} style={style} title={`${block.title} / ${block.meta}`}>
+    <div
+      role="button"
+      tabIndex={0}
+      className={`absolute overflow-hidden rounded-2xl border px-3 py-2 text-left transition hover:z-20 hover:ring-1 hover:ring-white/20 ${selected ? 'z-30 ring-2 ring-[color:var(--node-selected-border)]' : ''} ${blockClass}`}
+      style={style}
+      title={`${block.title} / ${block.meta}`}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onSelect()
+        }
+      }}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold">{block.title}</div>
@@ -683,13 +808,76 @@ function CalendarBlockCard({ block, onStartPlan }: { block: CalendarBlock; onSta
           <div className="mt-1 text-[11px] opacity-70">{block.meta}</div>
         </div>
         {block.status === 'planned' && block.plan ? (
-          <button type="button" onClick={() => onStartPlan(block.plan as TimeDebtPlan)} className={tinyPrimaryButtonClass}>
-            开始计时
-          </button>
+          <span className="rounded-full border border-amber-400/30 px-2 py-1 text-[10px] uppercase text-accent-amber">planned</span>
+        ) : block.status === 'missed' ? (
+          <span className="rounded-full border border-rose-400/30 px-2 py-1 text-[10px] uppercase text-accent-rose">missed</span>
         ) : (
           <span className="rounded-full border border-current/20 px-2 py-1 text-[10px] uppercase opacity-75">{block.status}</span>
         )}
       </div>
+      {selected ? (
+        <div className="mt-2 rounded-xl border border-current/15 bg-black/10 p-2 text-[11px] leading-5">
+          <div>{blockDetail(block)}</div>
+          {block.plan && (block.status === 'planned' || block.status === 'missed') ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onStartPlan(block.plan as TimeDebtPlan)
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    onStartPlan(block.plan as TimeDebtPlan)
+                  }
+                }}
+                className={tinyPrimaryButtonClass}
+              >
+                开始计时
+              </span>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onConvertPlanToManual(block.plan as TimeDebtPlan)
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    onConvertPlanToManual(block.plan as TimeDebtPlan)
+                  }
+                }}
+                className={tinyButtonClass}
+              >
+                转为补记
+              </span>
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onAbandonPlan((block.plan as TimeDebtPlan).id)
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    onAbandonPlan((block.plan as TimeDebtPlan).id)
+                  }
+                }}
+                className={tinyButtonClass}
+              >
+                忽略
+              </span>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -1208,18 +1396,21 @@ function buildCalendarBlocks(logs: TimeDebtLog[], plans: TimeDebtPlan[], running
   }))
   const planned: CalendarBlock[] = plans
     .filter((plan) => plan.status === 'planned')
-    .map((plan) => ({
-      id: plan.id,
-      title: plan.title,
-      primaryCategory: plan.primaryCategory,
-      secondaryProject: plan.secondaryProject,
-      startTime: plan.plannedStartTime,
-      endTime: plan.plannedEndTime,
-      durationMinutes: calculateDurationMinutes(plan.plannedStartTime, plan.plannedEndTime),
-      status: 'planned',
-      meta: `${planReminder(plan, timerNow)} / 计划 ${formatTimeOnly(plan.plannedStartTime)}-${formatTimeOnly(plan.plannedEndTime)}`,
-      plan
-    }))
+    .map((plan) => {
+      const reminderStatus = resolvePlanReminderStatus(plan, timerNow)
+      return {
+        id: plan.id,
+        title: plan.title,
+        primaryCategory: plan.primaryCategory,
+        secondaryProject: plan.secondaryProject,
+        startTime: plan.plannedStartTime,
+        endTime: plan.plannedEndTime,
+        durationMinutes: calculateDurationMinutes(plan.plannedStartTime, plan.plannedEndTime),
+        status: reminderStatus === 'missed' ? 'missed' : 'planned',
+        meta: `${planReminder(plan, timerNow)} / 计划 ${formatTimeOnly(plan.plannedStartTime)}-${formatTimeOnly(plan.plannedEndTime)}`,
+        plan
+      } satisfies CalendarBlock
+    })
   const activePlans: CalendarBlock[] = plans
     .filter((plan) => plan.status === 'active' && plan.id !== runningTimer?.planId)
     .map((plan) => {
@@ -1285,6 +1476,19 @@ function blocksOverlap(first: CalendarBlock, second: CalendarBlock): boolean {
   const secondStart = minutesFromDateTime(second.startTime)
   const secondEnd = secondStart + Math.max(second.durationMinutes, 1)
   return firstStart < secondEnd && secondStart < firstEnd
+}
+
+function blockDetail(block: CalendarBlock): string {
+  if (block.status === 'active') {
+    return `实际开始 ${formatTimeOnly(block.startTime)}，当前已记录 ${formatMinutes(block.durationMinutes)}。`
+  }
+  if (block.status === 'completed') {
+    return `实际时间 ${formatTimeOnly(block.startTime)} - ${formatTimeOnly(block.endTime)}，实际时长 ${formatMinutes(block.durationMinutes)}。`
+  }
+  if (block.status === 'missed') {
+    return `原计划 ${formatTimeOnly(block.startTime)} - ${formatTimeOnly(block.endTime)}，已错过，可转为补记或忽略。`
+  }
+  return `原计划 ${formatTimeOnly(block.startTime)} - ${formatTimeOnly(block.endTime)}，开始后会保留计划时间并写入真实开始。`
 }
 
 function buildCategoryRows(logs: TimeDebtLog[]): Array<{ label: string; minutes: number; color: string }> {
@@ -1576,5 +1780,7 @@ const activeTabClass =
 export const timeDebtStorageLocation = {
   ...timeDebtStorageKeys,
   options: timeDebtOptionsStorageKey,
-  plans: timeDebtPlansStorageKey
+  plans: timeDebtPlansStorageKey,
+  timePlanReminders: timePlanReminderStorageKeys.reminders,
+  navigationIntent: timePlanReminderStorageKeys.navigationIntent
 }
