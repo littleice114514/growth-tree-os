@@ -10,6 +10,7 @@ export type TimeDebtPlan = {
   plannedStartTime: string
   plannedEndTime: string
   plannedDurationMinutes: number
+  note?: string
   actualStartTime?: string
   actualEndTime?: string
   actualDurationMinutes?: number
@@ -27,6 +28,7 @@ export type TimeDebtPlanDraft = {
   secondaryProject: string
   plannedStartTime: string
   plannedEndTime: string
+  note?: string
 }
 
 export function loadTimeDebtPlans(): TimeDebtPlan[] {
@@ -61,6 +63,7 @@ export function createTimeDebtPlan(draft: TimeDebtPlanDraft): TimeDebtPlan {
     plannedStartTime: draft.plannedStartTime,
     plannedEndTime: draft.plannedEndTime,
     plannedDurationMinutes,
+    note: draft.note?.trim() || undefined,
     reminderHint: 'Time Debt planned task can later be bridged into the reminders module.',
     status: 'planned',
     createdAt: timestamp,

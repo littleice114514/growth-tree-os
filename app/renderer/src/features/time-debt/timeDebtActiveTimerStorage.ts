@@ -13,6 +13,8 @@ export type ActiveTimeDebtTimer = {
   plannedEnd?: string
   plannedDuration?: number
   suggestedEnd?: string
+  aiEnableRatio?: number
+  resultNote?: string
   status: 'active'
   createdAt: string
   updatedAt: string
@@ -63,6 +65,8 @@ export function createActiveTimeDebtTimer(input: {
   plannedEnd?: string
   plannedDuration?: number
   suggestedEnd?: string
+  aiEnableRatio?: number
+  resultNote?: string
 }): ActiveTimeDebtTimer {
   const timestamp = new Date().toISOString()
   return {
@@ -78,6 +82,8 @@ export function createActiveTimeDebtTimer(input: {
     plannedEnd: input.plannedEnd,
     plannedDuration: input.plannedDuration,
     suggestedEnd: input.suggestedEnd,
+    aiEnableRatio: input.aiEnableRatio,
+    resultNote: input.resultNote?.trim() || undefined,
     status: 'active',
     createdAt: timestamp,
     updatedAt: timestamp

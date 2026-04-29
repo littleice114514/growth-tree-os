@@ -204,6 +204,7 @@ function TimePlanReminderCard({
   onManual: () => void
   onDismiss: () => void
 }) {
+  const canStart = status === 'due' || status === 'missed'
   return (
     <article className={`rounded-3xl border p-5 ${timePlanCardClass(status)}`}>
       <div className="flex items-start justify-between gap-4">
@@ -232,8 +233,8 @@ function TimePlanReminderCard({
         <button type="button" onClick={onFocus} className={secondaryActionClass}>
           去处理
         </button>
-        <button type="button" onClick={onStart} className={primaryActionClass}>
-          开始计时
+        <button type="button" onClick={onStart} disabled={!canStart} className={`${primaryActionClass} disabled:cursor-not-allowed disabled:opacity-45`}>
+          {canStart ? (status === 'missed' ? '现在开始' : '开始计时') : '未到开始时间'}
         </button>
         <button type="button" onClick={onSnooze} className={secondaryActionClass}>
           延后 10 分钟
