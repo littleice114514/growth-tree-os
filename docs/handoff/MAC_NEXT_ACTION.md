@@ -3,74 +3,65 @@
 ## 1. 项目信息
 
 - 项目名：growth-tree-os
-- GitHub 仓库：git@github.com:littleice114514/growth-tree-os.git
-- HTTPS 备选：https://github.com/littleice114514/growth-tree-os.git
-- 分支：main
-- 最新 commit：以 Windows 端最终汇报和 Mac 端 `git rev-parse --short HEAD` 输出为准
-- 当前设备完成时间：2026-04-28
+- GitHub 仓库：https://github.com/Littleice114514/growth-tree-os.git
+- 分支：feature/mac-time-debt-today-ui
+- 最新 commit：以最终汇报和 Mac 端 `git rev-parse --short HEAD` 输出为准
+- 当前设备完成时间：2026-04-29
 
 ## 2. 本轮已完成
 
-- 已恢复 Windows 端中断前的 rebase 状态，合并保留 Mac / Windows 两段 `DEVELOPMENT_LOG.md` 记录。
-- 已建立 `.ai-workflow/` 作为跨设备 AI 工作流统一入口。
-- 已同步 Win 端可复用本地 skills：`concise-dev`、`frontend-skill`、`handoff-card`、`repo-map`。
-- 已建立 commands / docs / handoff 索引，说明当前未发现 repo 内 command 文件。
-- 已记录敏感信息扫描口径和排除项，未纳入 `.env`、日志、pid、缓存、构建产物或本地密钥。
+- 将 Time Debt 主 tab 精简为 `今日台 / 时间轴 / 洞察`。
+- 将工作时间标准、时间负债参数和分类配置移入右上角 `时间标准设置`。
+- 将 Today 页面重构为今日时间操作中心：今日状态、当前焦点、待开始任务、诊断微摘要、今日时间日志表。
+- 实现三种入口：开始计时、补记时间、规划任务。
+- 新增 Planned 计划任务本地存储，开始后可转 Active，结束后生成 Completed 日志。
+- Insights 增加 CSS 分类时间分布条形图，并将诊断改为结论卡、原因卡、行动建议卡。
 
 ## 3. 本轮修改文件
 
-- `.ai-workflow/README.md`
-- `.ai-workflow/skills/concise-dev/SKILL.md`
-- `.ai-workflow/skills/frontend-skill/SKILL.md`
-- `.ai-workflow/skills/handoff-card/SKILL.md`
-- `.ai-workflow/skills/repo-map/SKILL.md`
-- `.ai-workflow/commands/README.md`
-- `.ai-workflow/docs/README.md`
-- `.ai-workflow/handoff/README.md`
-- `docs/handoff/DEVELOPMENT_LOG.md`
-- `docs/handoff/SYNC_LOG.md`
+- `app/renderer/src/features/time-debt/TimeDebtDashboard.tsx`
+- `app/renderer/src/features/time-debt/timeDebtPlansStorage.ts`
+- `docs/dev-log/2026-04/2026-04-29/mac-time-debt-today-ui.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
 
 ## 4. 当前验证结果
 
 ### 已验证
 
-- `git rebase --continue` 已成功完成，当前分支回到 `main`。
-- `.ai-workflow/README.md` 已创建，并包含 skills / commands / docs / handoff / Mac 使用说明 / 排除项。
-- 已扫描候选内容关键词：`OPENAI_API_KEY`、`ANTHROPIC_API_KEY`、`GITHUB_TOKEN`、`token`、`secret`、`password`、`cookie`、`authorization`、`api_key`、`sk-`。
-- `docs/P2_VISUAL_UPGRADE_LOG.md` 中的 `token` 为主题 token 语义；`pnpm-lock.yaml` 中的 `token` 为依赖名命中，均不作为密钥提交。
-- 本轮未提交 `codex-live-dev.pid`。
+- TypeScript 检查通过。
+- 使用 bundled Node runtime 执行 `electron-vite build` 通过。
+- 未修改 3D、skills、`.codex`、`.claude`、脚本工具链和 `docs/dev-protocol/**`。
 
 ### 未验证 / 风险
 
-- Mac 端尚未 pull 验收。
-- `.ai-workflow/skills/` 当前同步的是 Win 端可复用用户层 skills；系统/plugin/provider skills 只在 README 中索引，没有复制。
-- 本轮不验证业务 UI，不运行 Electron smoke；范围仅限 AI workflow 资产同步。
+- 当前 shell 没有全局 `pnpm`，需要 Mac 端确认 `pnpm install/typecheck/build/dev`。
+- 真实 Electron 页面点击流尚需 Mac 端运行后验收。
+- 计划任务暂存于 `growth-tree-os:time-debt-plans:v1`，不参与跨设备同步。
 
 ## 5. Mac 端第一步操作
 
 如果 Mac 上还没有项目：
 
 ```bash
-mkdir -p ~/Developer
-cd ~/Developer
-git clone git@github.com:littleice114514/growth-tree-os.git
+mkdir -p ~/Desktop/vibe-coding-projects
+cd ~/Desktop/vibe-coding-projects
+git clone https://github.com/Littleice114514/growth-tree-os.git
 cd growth-tree-os
-git checkout main
+git checkout feature/mac-time-debt-today-ui
 ```
 
 如果 Mac 上已经有项目：
 
 ```bash
-cd ~/Developer/growth-tree-os
+cd <Mac上的项目目录>
 git status
 git fetch origin
-git checkout main
-git pull origin main
+git checkout feature/mac-time-debt-today-ui
+git pull origin feature/mac-time-debt-today-ui
 git rev-parse --short HEAD
 ```
 
-确认输出的 commit 应与 Windows 端最终汇报一致。
+确认输出的 commit 应与本轮最终汇报一致。
 
 ## 6. Mac 端环境准备
 
@@ -81,49 +72,49 @@ pnpm build
 pnpm dev
 ```
 
-如需把同步的 skills 安装到 Mac Codex：
+如果 `pnpm` 不存在：
 
 ```bash
-mkdir -p "$HOME/.codex/skills"
-cp -R .ai-workflow/skills/concise-dev "$HOME/.codex/skills/"
-cp -R .ai-workflow/skills/frontend-skill "$HOME/.codex/skills/"
-cp -R .ai-workflow/skills/handoff-card "$HOME/.codex/skills/"
-cp -R .ai-workflow/skills/repo-map "$HOME/.codex/skills/"
+corepack enable
+corepack prepare pnpm@latest --activate
+pnpm install
 ```
 
 ## 7. Mac 端验收方式
 
 请在 Mac 端检查：
 
-- `git branch --show-current` 输出 `main`。
-- `git status` clean。
-- `ls -la .ai-workflow` 能看到 `README.md`、`skills/`、`commands/`、`docs/`、`handoff/`。
-- `cat .ai-workflow/README.md` 能看到 skills / commands / docs / handoff 索引。
-- `.ai-workflow/skills` 下能看到 `concise-dev`、`frontend-skill`、`handoff-card`、`repo-map`。
-- `.ai-workflow/README.md` 没有真实 API key、token、cookie、password 或 authorization 值。
+- 打开 Time Debt，主 tab 只显示 `今日台 / 时间轴 / 洞察`。
+- 点击 `时间标准设置`，确认工作时间标准、时间负债参数、分类配置仍可访问。
+- 在 Today 点击 `补记时间`，创建一条日志，确认右侧时间轴出现 Completed 时间块。
+- 点击 `规划任务`，创建一条计划，确认右侧时间轴出现 Planned 时间块，左侧待开始任务出现该任务。
+- 点击计划任务的 `开始`，确认当前焦点进入计时中，右侧出现 Active 时间块。
+- 点击 `结束计时并生成日志`，确认生成 Completed 日志块。
+- 进入 `时间轴`，确认按日期筛选和日志列表正常。
+- 进入 `洞察`，确认分类条形图、标准/实际工时对比、结论/原因/行动建议卡片正常显示。
+- 快速检查成长树、财富、提醒、周回看页面无明显报错或布局崩坏。
 
 ## 8. Mac 端下一轮任务
 
 请让 Mac 端 Codex 接着完成：
 
-拉取 Windows 端 AI workflow 同步 commit 后，确认 `.ai-workflow/README.md` 和 `.ai-workflow/skills/*/SKILL.md` 可读，并按需把 4 个同步 skills 安装到 Mac 的 `$HOME/.codex/skills`。验收后再继续推进 Dashboard Preview 真实数据融合，不要直接改数据库或 IPC。
+运行真实 Electron smoke，按上述验收路径截图检查 Time Debt Today、今日时间日志表、开始计时入口、补记时间弹窗、规划任务弹窗、Insights 图表统计、诊断卡片和时间标准设置入口。如验收通过，下一轮再拆分 Time Debt 子组件；如失败，优先修复页面点击流和横向溢出问题。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
 请截图或粘贴：
 
 - `git status` 输出
-- `git branch --show-current` 输出
 - `git rev-parse --short HEAD` 输出
-- `ls -la .ai-workflow` 输出
-- `find .ai-workflow -maxdepth 3 -type f | sort` 输出
-- `cat .ai-workflow/README.md` 的关键报错或缺失段落
 - `pnpm install`、`pnpm typecheck`、`pnpm build`、`pnpm dev` 的完整报错
+- Time Debt 页面异常截图
+- 开发者控制台首个关键错误
+- 发生问题前点击了哪个入口：开始计时 / 补记时间 / 规划任务 / 设置 / Insights
 
 ## 10. 注意事项
 
-- 不要直接覆盖 Mac 本地未提交改动。
+- 不要直接覆盖本地未提交改动。
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
-- `.env`、SQLite、本地 runtime、依赖和构建产物不要提交。
-- `.ai-workflow/` 是跨设备 AI workflow 入口；项目真实状态仍以 `docs/` 和代码为准。
+- 本轮没有修改 3D 模块、Windows skills、`.codex`、`.claude` 或协议文件。
+- Planned 计划任务是 V1 前端本地能力，不代表已实现跨设备同步或外部日历接入。
