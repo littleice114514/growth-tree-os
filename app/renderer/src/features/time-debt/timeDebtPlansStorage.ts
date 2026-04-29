@@ -1,6 +1,6 @@
 const PLANS_KEY = 'growth-tree-os:time-debt-plans:v1'
 
-export type TimeDebtPlanStatus = 'planned' | 'active' | 'completed'
+export type TimeDebtPlanStatus = 'planned' | 'active' | 'completed' | 'abandoned'
 
 export type TimeDebtPlan = {
   id: string
@@ -9,6 +9,13 @@ export type TimeDebtPlan = {
   secondaryProject: string
   plannedStartTime: string
   plannedEndTime: string
+  plannedDurationMinutes: number
+  actualStartTime?: string
+  actualEndTime?: string
+  actualDurationMinutes?: number
+  suggestedEndTime?: string
+  completedLogId?: string
+  reminderHint?: string
   status: TimeDebtPlanStatus
   createdAt: string
   updatedAt: string
@@ -33,7 +40,7 @@ export function loadTimeDebtPlans(): TimeDebtPlan[] {
       return []
     }
     const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed.filter(isTimeDebtPlan) : []
+    return Array.isArray(parsed) ? parsed.filter(isTimeDebtPlan).map(normalizeTimeDebtPlan) : []
   } catch {
     return []
   }
@@ -45,6 +52,7 @@ export function saveTimeDebtPlans(plans: TimeDebtPlan[]): void {
 
 export function createTimeDebtPlan(draft: TimeDebtPlanDraft): TimeDebtPlan {
   const timestamp = new Date().toISOString()
+  const plannedDurationMinutes = calculateDurationMinutes(draft.plannedStartTime, draft.plannedEndTime)
   return {
     id: `time-debt-plan-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     title: draft.title.trim(),
@@ -52,6 +60,8 @@ export function createTimeDebtPlan(draft: TimeDebtPlanDraft): TimeDebtPlan {
     secondaryProject: draft.secondaryProject.trim(),
     plannedStartTime: draft.plannedStartTime,
     plannedEndTime: draft.plannedEndTime,
+    plannedDurationMinutes,
+    reminderHint: 'Time Debt planned task can later be bridged into the reminders module.',
     status: 'planned',
     createdAt: timestamp,
     updatedAt: timestamp
@@ -73,6 +83,14 @@ export function updateTimeDebtPlan(planId: string, patch: Partial<TimeDebtPlan>)
 
 export const timeDebtPlansStorageKey = PLANS_KEY
 
+function normalizeTimeDebtPlan(plan: TimeDebtPlan): TimeDebtPlan {
+  return {
+    ...plan,
+    plannedDurationMinutes: plan.plannedDurationMinutes || calculateDurationMinutes(plan.plannedStartTime, plan.plannedEndTime),
+    reminderHint: plan.reminderHint ?? 'Time Debt planned task can later be bridged into the reminders module.'
+  }
+}
+
 function isTimeDebtPlan(value: unknown): value is TimeDebtPlan {
   if (!value || typeof value !== 'object') {
     return false
@@ -85,6 +103,15 @@ function isTimeDebtPlan(value: unknown): value is TimeDebtPlan {
     typeof candidate.secondaryProject === 'string' &&
     typeof candidate.plannedStartTime === 'string' &&
     typeof candidate.plannedEndTime === 'string' &&
-    (candidate.status === 'planned' || candidate.status === 'active' || candidate.status === 'completed')
+    (candidate.status === 'planned' || candidate.status === 'active' || candidate.status === 'completed' || candidate.status === 'abandoned')
   )
+}
+
+function calculateDurationMinutes(startTime: string, endTime: string): number {
+  const start = new Date(startTime).getTime()
+  const end = new Date(endTime).getTime()
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+    return 0
+  }
+  return Math.round((end - start) / 60000)
 }

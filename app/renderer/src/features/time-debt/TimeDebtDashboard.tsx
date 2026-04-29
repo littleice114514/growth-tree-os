@@ -45,6 +45,7 @@ import {
 type TimeDebtView = 'today' | 'timeline' | 'insights'
 type EntryMode = 'timer' | 'manual' | 'plan'
 type SettingsTab = 'standard' | 'params' | 'options'
+type PlanReminderStatus = 'scheduled' | 'soon' | 'due' | 'missed'
 
 type LogDraft = {
   title: string
@@ -82,6 +83,10 @@ type RunningTimer = {
   startTime: string
   startTimestampMs: number
   planId?: string
+  plannedStartTime?: string
+  plannedEndTime?: string
+  plannedDurationMinutes?: number
+  suggestedEndTime?: string
 }
 
 type CalendarBlock = {
@@ -95,6 +100,8 @@ type CalendarBlock = {
   status: 'planned' | 'active' | 'completed'
   meta: string
   plan?: TimeDebtPlan
+  leftPercent?: number
+  widthPercent?: number
 }
 
 const today = new Date().toISOString().slice(0, 10)
@@ -138,22 +145,19 @@ export function TimeDebtDashboard() {
   const stats = overview.stats
   const diagnosis = useMemo(() => buildTimeDebtDiagnosis(stats), [stats])
   const todayPlans = useMemo(
-    () => plans.filter((plan) => plan.plannedStartTime.slice(0, 10) === selectedDate && plan.status !== 'completed'),
+    () => plans.filter((plan) => plan.plannedStartTime.slice(0, 10) === selectedDate && plan.status !== 'completed' && plan.status !== 'abandoned'),
     [plans, selectedDate]
   )
   const todayLogs = useMemo(() => logs.filter((log) => log.startTime.slice(0, 10) === selectedDate), [logs, selectedDate])
 
   useEffect(() => {
-    if (!runningTimer) {
-      return undefined
-    }
-    const intervalId = window.setInterval(() => setTimerNow(Date.now()), 1000)
+    const intervalId = window.setInterval(() => setTimerNow(Date.now()), runningTimer ? 1000 : 30000)
     return () => window.clearInterval(intervalId)
   }, [runningTimer])
 
-  const persistLog = (draft: LogDraft): boolean => {
+  const persistLog = (draft: LogDraft): TimeDebtLog | null => {
     if (!draft.title.trim() || !draft.startTime || !draft.endTime || calculateDurationMinutes(draft.startTime, draft.endTime) <= 0) {
-      return false
+      return null
     }
     const log = createTimeDebtLog(
       {
@@ -173,7 +177,7 @@ export function TimeDebtDashboard() {
     )
     setLogs(appendTimeDebtLog(log))
     rememberOptions(draft.primaryCategory, draft.secondaryProject, draft.workloadUnit)
-    return true
+    return log
   }
 
   const rememberOptions = (category: string, project: string, unit?: string) => {
@@ -203,7 +207,10 @@ export function TimeDebtDashboard() {
       return
     }
     const now = new Date()
-    const startTime = draft.startTime || formatLocalDateTimeInput(now)
+    const sourcePlan = planId ? plans.find((plan) => plan.id === planId) : undefined
+    const startTime = planId ? formatLocalDateTimeInput(now) : draft.startTime || formatLocalDateTimeInput(now)
+    const plannedDurationMinutes = sourcePlan?.plannedDurationMinutes || (sourcePlan ? calculateDurationMinutes(sourcePlan.plannedStartTime, sourcePlan.plannedEndTime) : undefined)
+    const suggestedEndTime = plannedDurationMinutes ? formatLocalDateTimeInput(new Date(now.getTime() + plannedDurationMinutes * 60000)) : undefined
     const workloadUnit = draft.workloadUnit || 'min'
     setRunningTimer({
       title: draft.title.trim(),
@@ -211,13 +218,17 @@ export function TimeDebtDashboard() {
       secondaryProject: draft.secondaryProject.trim(),
       workloadUnit,
       startTime,
-      startTimestampMs: new Date(startTime).getTime() || now.getTime(),
-      planId
+      startTimestampMs: now.getTime(),
+      planId,
+      plannedStartTime: sourcePlan?.plannedStartTime,
+      plannedEndTime: sourcePlan?.plannedEndTime,
+      plannedDurationMinutes,
+      suggestedEndTime
     })
     setTimerNow(now.getTime())
     rememberOptions(draft.primaryCategory, draft.secondaryProject, workloadUnit)
     if (planId) {
-      setPlans(updateTimeDebtPlan(planId, { status: 'active' }))
+      setPlans(updateTimeDebtPlan(planId, { status: 'active', actualStartTime: startTime, suggestedEndTime }))
     }
     setEntryMode(null)
   }
@@ -242,12 +253,29 @@ export function TimeDebtDashboard() {
       workloadUnit: runningTimer.workloadUnit || 'min',
       resultNote: runningTimer.planId ? '由今日规划任务开始计时后生成。' : ''
     }
-    if (persistLog(nextDraft)) {
+    const log = persistLog(nextDraft)
+    if (log) {
       if (runningTimer.planId) {
-        setPlans(updateTimeDebtPlan(runningTimer.planId, { status: 'completed' }))
+        setPlans(
+          updateTimeDebtPlan(runningTimer.planId, {
+            status: 'completed',
+            actualEndTime: endTime,
+            actualDurationMinutes: durationMinutes,
+            completedLogId: log.id
+          })
+        )
       }
       setRunningTimer(null)
     }
+  }
+
+  const abandonPlan = (planId: string) => {
+    setPlans(updateTimeDebtPlan(planId, { status: 'abandoned' }))
+  }
+
+  const convertPlanToManualLog = (plan: TimeDebtPlan) => {
+    setLogDraft(planToManualDraft(plan))
+    setEntryMode('manual')
   }
 
   const savePlan = () => {
@@ -334,6 +362,8 @@ export function TimeDebtDashboard() {
             timerNow={timerNow}
             onOpenEntry={openEntry}
             onStartPlan={(plan) => startTimer(planToLogDraft(plan), plan.id)}
+            onConvertPlanToManual={convertPlanToManualLog}
+            onAbandonPlan={abandonPlan}
             onFinishTimer={finishTimer}
           />
         ) : null}
@@ -402,6 +432,8 @@ function TodayView({
   timerNow,
   onOpenEntry,
   onStartPlan,
+  onConvertPlanToManual,
+  onAbandonPlan,
   onFinishTimer
 }: {
   overview: TimeDebtOverview
@@ -412,14 +444,23 @@ function TodayView({
   timerNow: number
   onOpenEntry: (mode: EntryMode, sourcePlan?: TimeDebtPlan) => void
   onStartPlan: (plan: TimeDebtPlan) => void
+  onConvertPlanToManual: (plan: TimeDebtPlan) => void
+  onAbandonPlan: (planId: string) => void
   onFinishTimer: () => void
 }) {
   return (
-    <div className="grid min-h-[720px] gap-4 xl:grid-cols-[minmax(320px,0.38fr)_minmax(0,0.62fr)]">
-      <div className="flex min-w-0 flex-col gap-4">
+    <div className="grid min-h-[720px] gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="flex min-w-0 flex-col gap-5">
         <HealthStatusCard overview={overview} />
         <ActiveTimerWidget runningTimer={runningTimer} timerNow={timerNow} onOpenEntry={onOpenEntry} onFinishTimer={onFinishTimer} />
-        <UpNextList plans={plans} onStartPlan={onStartPlan} onOpenPlan={(plan) => onOpenEntry('timer', plan)} />
+        <UpNextList
+          plans={plans}
+          timerNow={timerNow}
+          onStartPlan={onStartPlan}
+          onOpenPlan={(plan) => onOpenEntry('timer', plan)}
+          onConvertPlanToManual={onConvertPlanToManual}
+          onAbandonPlan={onAbandonPlan}
+        />
         <Panel title="今日诊断微摘要" eyebrow="Time Doctor">
           <p className="text-sm leading-6 text-[color:var(--text-secondary)]">{diagnosis.summary}</p>
           <p className="mt-3 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3 text-sm font-medium leading-6 text-[color:var(--text-primary)]">
@@ -475,8 +516,14 @@ function ActiveTimerWidget({
             <span>/</span>
             <span>{runningTimer.secondaryProject}</span>
             <span>/</span>
-            <span>开始 {formatTimeOnly(runningTimer.startTime)}</span>
+            <span>实际开始 {formatTimeOnly(runningTimer.startTime)}</span>
           </div>
+          {runningTimer.plannedStartTime && runningTimer.plannedEndTime ? (
+            <div className="mt-3 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-xs leading-6 text-[color:var(--text-secondary)]">
+              <div>原计划：{formatTimeOnly(runningTimer.plannedStartTime)} - {formatTimeOnly(runningTimer.plannedEndTime)}</div>
+              <div>建议结束：{runningTimer.suggestedEndTime ? formatTimeOnly(runningTimer.suggestedEndTime) : '按实际结束计算'}</div>
+            </div>
+          ) : null}
           <button type="button" onClick={onFinishTimer} className={`mt-4 w-full ${primaryButtonClass}`}>
             结束计时并生成日志
           </button>
@@ -500,35 +547,58 @@ function ActiveTimerWidget({
 
 function UpNextList({
   plans,
+  timerNow,
   onStartPlan,
-  onOpenPlan
+  onOpenPlan,
+  onConvertPlanToManual,
+  onAbandonPlan
 }: {
   plans: TimeDebtPlan[]
+  timerNow: number
   onStartPlan: (plan: TimeDebtPlan) => void
   onOpenPlan: (plan: TimeDebtPlan) => void
+  onConvertPlanToManual: (plan: TimeDebtPlan) => void
+  onAbandonPlan: (planId: string) => void
 }) {
-  const planned = plans.filter((plan) => plan.status === 'planned').sort((a, b) => a.plannedStartTime.localeCompare(b.plannedStartTime))
+  const planned = plans
+    .filter((plan) => plan.status === 'planned')
+    .sort((a, b) => reminderRank(resolvePlanReminderStatus(a, timerNow)) - reminderRank(resolvePlanReminderStatus(b, timerNow)) || a.plannedStartTime.localeCompare(b.plannedStartTime))
   return (
     <Panel title="今日待开始任务" eyebrow={`${planned.length} planned`}>
-      {planned.length === 0 ? <Empty text="暂无今日计划。可以先规划一个下一段任务。" /> : null}
-      <div className="space-y-2">
+      {planned.length === 0 ? <Empty text="今天还没有待开始任务。先安排一个最小可执行的下一段时间块。" /> : null}
+      <div className="space-y-3">
         {planned.slice(0, 5).map((plan) => (
-          <div key={plan.id} className="rounded-2xl border border-dashed border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
+          <div key={plan.id} className={`rounded-2xl border p-3 ${planReminderCardClass(resolvePlanReminderStatus(plan, timerNow))}`}>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-[color:var(--text-primary)]">{plan.title}</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="truncate text-sm font-semibold text-[color:var(--text-primary)]">{plan.title}</div>
+                  <span className={`rounded-full border px-2 py-0.5 text-[10px] ${planReminderPillClass(resolvePlanReminderStatus(plan, timerNow))}`}>
+                    {planReminder(plan, timerNow)}
+                  </span>
+                </div>
                 <div className="mt-1 text-xs text-[color:var(--text-secondary)]">
                   {formatTimeOnly(plan.plannedStartTime)} - {formatTimeOnly(plan.plannedEndTime)} / {plan.primaryCategory}
                 </div>
-                <div className="mt-2 text-xs text-[color:var(--text-muted)]">{planReminder(plan)}</div>
+                <div className="mt-2 text-xs text-[color:var(--text-muted)]">{planReminderDetail(plan, timerNow)}</div>
               </div>
-              <div className="flex shrink-0 gap-2">
+              <div className="flex shrink-0 flex-wrap justify-end gap-2">
                 <button type="button" onClick={() => onOpenPlan(plan)} className={tinyButtonClass}>
-                  填写
+                  编辑后开始
                 </button>
                 <button type="button" onClick={() => onStartPlan(plan)} className={tinyPrimaryButtonClass}>
-                  开始
+                  {resolvePlanReminderStatus(plan, timerNow) === 'missed' ? '现在开始' : '开始计时'}
                 </button>
+                {resolvePlanReminderStatus(plan, timerNow) === 'missed' ? (
+                  <>
+                    <button type="button" onClick={() => onConvertPlanToManual(plan)} className={tinyButtonClass}>
+                      转为补记
+                    </button>
+                    <button type="button" onClick={() => onAbandonPlan(plan.id)} className={tinyButtonClass}>
+                      放弃
+                    </button>
+                  </>
+                ) : null}
               </div>
             </div>
           </div>
@@ -588,9 +658,13 @@ function DailyCalendarView({
 function CalendarBlockCard({ block, onStartPlan }: { block: CalendarBlock; onStartPlan: (plan: TimeDebtPlan) => void }) {
   const startMinute = minutesFromDateTime(block.startTime)
   const heightMinutes = Math.max(block.durationMinutes, 25)
+  const widthFactor = (block.widthPercent ?? 100) / 100
+  const leftFactor = (block.leftPercent ?? 0) / 100
   const style = {
     top: `${(startMinute / 1440) * 100}%`,
-    height: `${(heightMinutes / 1440) * 100}%`
+    height: `${(heightMinutes / 1440) * 100}%`,
+    left: `calc(92px + (100% - 112px) * ${leftFactor})`,
+    width: `calc((100% - 112px) * ${widthFactor})`
   }
   const blockClass =
     block.status === 'planned'
@@ -599,7 +673,7 @@ function CalendarBlockCard({ block, onStartPlan }: { block: CalendarBlock; onSta
         ? 'border-emerald-400/45 bg-emerald-400/18 text-[color:var(--text-primary)] shadow-[0_12px_28px_rgba(16,185,129,0.14)]'
         : `${categoryBlockClass(block.primaryCategory)} text-[color:var(--text-primary)]`
   return (
-    <div className={`absolute left-[92px] right-5 overflow-hidden rounded-2xl border px-3 py-2 ${blockClass}`} style={style}>
+    <div className={`absolute overflow-hidden rounded-2xl border px-3 py-2 ${blockClass}`} style={style} title={`${block.title} / ${block.meta}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold">{block.title}</div>
@@ -610,7 +684,7 @@ function CalendarBlockCard({ block, onStartPlan }: { block: CalendarBlock; onSta
         </div>
         {block.status === 'planned' && block.plan ? (
           <button type="button" onClick={() => onStartPlan(block.plan as TimeDebtPlan)} className={tinyPrimaryButtonClass}>
-            开始
+            开始计时
           </button>
         ) : (
           <span className="rounded-full border border-current/20 px-2 py-1 text-[10px] uppercase opacity-75">{block.status}</span>
@@ -929,7 +1003,7 @@ function SettingsModal({
       ) : null}
       {activeTab === 'options' ? (
         <div className="grid gap-4 xl:grid-cols-[0.75fr_1.25fr]">
-          <Panel title="新增常用配置" eyebrow="Dictionary">
+          <Panel title="新增常用配置" eyebrow="分类配置">
             <div className="grid gap-4">
               <TextField label="一级分类" value={optionDraft.category} onChange={(category) => onOptionDraftChange({ category })} />
               <TextField label="二级项目" value={optionDraft.project} onChange={(project) => onOptionDraftChange({ project })} />
@@ -1045,7 +1119,7 @@ function CategorySelect({
 }) {
   return (
     <SelectField
-      label="分类字典"
+      label="一级分类 / 二级项目"
       value={value}
       onChange={(nextValue) => {
         const [primaryCategory, secondaryProject] = nextValue.split('::')
@@ -1143,9 +1217,26 @@ function buildCalendarBlocks(logs: TimeDebtLog[], plans: TimeDebtPlan[], running
       endTime: plan.plannedEndTime,
       durationMinutes: calculateDurationMinutes(plan.plannedStartTime, plan.plannedEndTime),
       status: 'planned',
-      meta: `计划中 / ${planReminder(plan)}`,
+      meta: `${planReminder(plan, timerNow)} / 计划 ${formatTimeOnly(plan.plannedStartTime)}-${formatTimeOnly(plan.plannedEndTime)}`,
       plan
     }))
+  const activePlans: CalendarBlock[] = plans
+    .filter((plan) => plan.status === 'active' && plan.id !== runningTimer?.planId)
+    .map((plan) => {
+      const startTime = plan.actualStartTime || plan.plannedStartTime
+      return {
+        id: `${plan.id}-active`,
+        title: plan.title,
+        primaryCategory: plan.primaryCategory,
+        secondaryProject: plan.secondaryProject,
+        startTime,
+        endTime: formatLocalDateTimeInput(new Date(timerNow)),
+        durationMinutes: Math.max(1, calculateDurationMinutes(startTime, formatLocalDateTimeInput(new Date(timerNow)))),
+        status: 'active',
+        meta: `进行中 / 原计划 ${formatTimeOnly(plan.plannedStartTime)}-${formatTimeOnly(plan.plannedEndTime)} / 实际开始 ${formatTimeOnly(startTime)}`,
+        plan
+      } satisfies CalendarBlock
+    })
   const active: CalendarBlock[] = runningTimer
     ? [
         {
@@ -1157,11 +1248,43 @@ function buildCalendarBlocks(logs: TimeDebtLog[], plans: TimeDebtPlan[], running
           endTime: formatLocalDateTimeInput(new Date(timerNow)),
           durationMinutes: Math.max(1, Math.round((timerNow - runningTimer.startTimestampMs) / 60000)),
           status: 'active',
-          meta: '进行中'
+          meta: runningTimer.plannedStartTime
+            ? `进行中 / 原计划 ${formatTimeOnly(runningTimer.plannedStartTime)}-${formatTimeOnly(runningTimer.plannedEndTime ?? '')} / 建议结束 ${runningTimer.suggestedEndTime ? formatTimeOnly(runningTimer.suggestedEndTime) : '--:--'}`
+            : '进行中'
         }
       ]
     : []
-  return [...planned, ...completed, ...active].sort((a, b) => a.startTime.localeCompare(b.startTime))
+  return applyOverlapLayout([...planned, ...activePlans, ...completed, ...active].sort((a, b) => a.startTime.localeCompare(b.startTime)))
+}
+
+function applyOverlapLayout(blocks: CalendarBlock[]): CalendarBlock[] {
+  const positioned = blocks.map((block) => ({ ...block, leftPercent: 0, widthPercent: 100 }))
+  for (let index = 0; index < positioned.length; index += 1) {
+    const block = positioned[index]
+    const overlappingIndexes = positioned
+      .map((candidate, candidateIndex) => (blocksOverlap(block, candidate) ? candidateIndex : -1))
+      .filter((candidateIndex) => candidateIndex >= 0)
+    if (overlappingIndexes.length <= 1) {
+      continue
+    }
+    const columnCount = Math.min(overlappingIndexes.length, 4)
+    const widthPercent = Math.max(22, 96 / columnCount)
+    const columnIndex = overlappingIndexes.indexOf(index) % columnCount
+    positioned[index] = {
+      ...block,
+      leftPercent: columnIndex * (100 / columnCount),
+      widthPercent
+    }
+  }
+  return positioned
+}
+
+function blocksOverlap(first: CalendarBlock, second: CalendarBlock): boolean {
+  const firstStart = minutesFromDateTime(first.startTime)
+  const firstEnd = firstStart + Math.max(first.durationMinutes, 1)
+  const secondStart = minutesFromDateTime(second.startTime)
+  const secondEnd = secondStart + Math.max(second.durationMinutes, 1)
+  return firstStart < secondEnd && secondStart < firstEnd
 }
 
 function buildCategoryRows(logs: TimeDebtLog[]): Array<{ label: string; minutes: number; color: string }> {
@@ -1246,13 +1369,82 @@ function planToLogDraft(plan: TimeDebtPlan): LogDraft {
   }
 }
 
-function planReminder(plan: TimeDebtPlan): string {
+function planToManualDraft(plan: TimeDebtPlan): LogDraft {
+  return {
+    ...createDefaultLogDraft(),
+    title: plan.title,
+    primaryCategory: plan.primaryCategory,
+    secondaryProject: plan.secondaryProject,
+    startTime: plan.plannedStartTime,
+    endTime: plan.plannedEndTime,
+    workload: String(plan.plannedDurationMinutes || calculateDurationMinutes(plan.plannedStartTime, plan.plannedEndTime)),
+    resultNote: '由错过的计划任务转为补记。'
+  }
+}
+
+function resolvePlanReminderStatus(plan: TimeDebtPlan, nowMs: number): PlanReminderStatus {
   const start = new Date(plan.plannedStartTime).getTime()
-  const now = Date.now()
-  const delta = Math.round((start - now) / 60000)
-  if (delta > 0 && delta <= 30) return '即将开始'
-  if (delta <= 0) return '已到点，可以开始计时'
+  const end = new Date(plan.plannedEndTime).getTime()
+  const delta = Math.round((start - nowMs) / 60000)
+  if (nowMs > end) return 'missed'
+  if (nowMs >= start) return 'due'
+  if (delta <= 10) return 'soon'
+  return 'scheduled'
+}
+
+function planReminder(plan: TimeDebtPlan, nowMs: number): string {
+  const status = resolvePlanReminderStatus(plan, nowMs)
+  if (status === 'missed') return '已错过'
+  if (status === 'due') return '已到点'
+  if (status === 'soon') return '即将开始'
   return '计划中'
+}
+
+function planReminderDetail(plan: TimeDebtPlan, nowMs: number): string {
+  const status = resolvePlanReminderStatus(plan, nowMs)
+  const start = new Date(plan.plannedStartTime).getTime()
+  const end = new Date(plan.plannedEndTime).getTime()
+  if (status === 'missed') return `计划已过 ${formatRelativeMinutes(nowMs - end)}，可现在开始、转为补记或放弃。`
+  if (status === 'due') return '计划时间已到，点击开始计时后会记录真实开始时间。'
+  if (status === 'soon') return `距离开始还有 ${formatRelativeMinutes(start - nowMs)}。`
+  return `距离开始还有 ${formatRelativeMinutes(start - nowMs)}。`
+}
+
+function reminderRank(status: PlanReminderStatus): number {
+  return {
+    due: 0,
+    soon: 1,
+    missed: 2,
+    scheduled: 3
+  }[status]
+}
+
+function planReminderCardClass(status: PlanReminderStatus): string {
+  return {
+    scheduled: 'border-dashed border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)]',
+    soon: 'border-amber-400/25 bg-amber-400/10',
+    due: 'border-emerald-400/35 bg-emerald-400/12 shadow-[0_14px_30px_rgba(16,185,129,0.10)]',
+    missed: 'border-rose-400/25 bg-rose-400/10'
+  }[status]
+}
+
+function planReminderPillClass(status: PlanReminderStatus): string {
+  return {
+    scheduled: 'border-[color:var(--panel-border)] text-[color:var(--text-muted)]',
+    soon: 'border-amber-400/30 text-accent-amber',
+    due: 'border-emerald-400/35 text-accent-green',
+    missed: 'border-rose-400/30 text-accent-rose'
+  }[status]
+}
+
+function formatRelativeMinutes(milliseconds: number): string {
+  const totalMinutes = Math.max(1, Math.round(Math.abs(milliseconds) / 60000))
+  if (totalMinutes >= 60) {
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+    return minutes > 0 ? `${hours} 小时 ${minutes} 分钟` : `${hours} 小时`
+  }
+  return `${totalMinutes} 分钟`
 }
 
 function minutesFromDateTime(value: string): number {
