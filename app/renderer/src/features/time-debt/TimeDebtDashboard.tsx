@@ -57,6 +57,9 @@ import {
   upsertTimePlanReminder
 } from '@/features/reminders/timePlanReminderStorage'
 import { timeDebtFieldConfigs, timeDebtReservedFieldTypes, timeDebtSupportedFieldTypes } from './timeDebtFieldConfig'
+import { CalendarViewShell } from './calendar/CalendarViewShell'
+import type { CalendarBlock, CalendarViewMode } from './calendar/calendarTypes'
+import { layoutOverlappingEvents } from './calendar/calendarOverlapLayoutUtils'
 
 type TimeDebtView = 'today' | 'timeline' | 'insights'
 type EntryMode = 'timer' | 'manual' | 'plan'
@@ -109,32 +112,10 @@ type RunningTimer = {
   suggestedEndTime?: string
 }
 
-type CalendarBlock = {
-  id: string
-  title: string
-  primaryCategory: string
-  secondaryProject: string
-  startTime: string
-  endTime: string
-  durationMinutes: number
-  status: 'planned' | 'active' | 'completed' | 'missed'
-  meta: string
-  dayKey: string
-  tags?: string[]
-  distractionSource?: string
-  aiEnableRatio?: number
-  statusScore?: number
-  note?: string
-  log?: TimeDebtLog
-  plan?: TimeDebtPlan
-  leftPercent?: number
-  widthPercent?: number
-}
-
 const today = new Date().toISOString().slice(0, 10)
 const viewLabels: Record<TimeDebtView, string> = {
   today: '今日台',
-  timeline: '周视图',
+  timeline: '日历',
   insights: '洞察'
 }
 
@@ -148,7 +129,9 @@ export function TimeDebtDashboard() {
   const [entryMode, setEntryMode] = useState<EntryMode | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState<SettingsTab>('standard')
-  const [timelineDate, setTimelineDate] = useState(today)
+  const [calendarViewMode, setCalendarViewMode] = useState<CalendarViewMode>('week')
+  const [calendarAnchorDate, setCalendarAnchorDate] = useState(today)
+  const [customDayCount, setCustomDayCount] = useState(3)
   const [logDraft, setLogDraft] = useState<LogDraft>(() => createDefaultLogDraft())
   const [planDraft, setPlanDraft] = useState<PlanDraft>(() => createDefaultPlanDraft())
   const [runningTimer, setRunningTimer] = useState<RunningTimer | null>(() => activeTimerToRunningTimer(loadActiveTimeDebtTimer()))
@@ -177,6 +160,7 @@ export function TimeDebtDashboard() {
     [plans, selectedDate]
   )
   const todayLogs = useMemo(() => logs.filter((log) => log.startTime.slice(0, 10) === selectedDate), [logs, selectedDate])
+  const calendarBlocks = useMemo(() => buildCalendarBlocks(logs, plans, runningTimer, timerNow), [logs, plans, runningTimer, timerNow])
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setTimerNow(Date.now()), runningTimer ? 1000 : 30000)
@@ -467,13 +451,15 @@ export function TimeDebtDashboard() {
           />
         ) : null}
         {currentView === 'timeline' ? (
-          <TimelineView
-            date={timelineDate}
-            logs={logs}
-            plans={plans}
-            runningTimer={runningTimer}
+          <CalendarViewShell
+            mode={calendarViewMode}
+            anchorDate={calendarAnchorDate}
+            customDayCount={customDayCount}
+            blocks={calendarBlocks}
             timerNow={timerNow}
-            onDateChange={setTimelineDate}
+            onModeChange={setCalendarViewMode}
+            onAnchorDateChange={setCalendarAnchorDate}
+            onCustomDayCountChange={setCustomDayCount}
             onOpenManual={() => openEntry('manual')}
             onDelete={removeLog}
             onStartPlan={(plan) => startTimer(planToLogDraft(plan), plan.id)}
@@ -1790,37 +1776,7 @@ function buildCalendarBlocks(logs: TimeDebtLog[], plans: TimeDebtPlan[], running
         }
       ]
     : []
-  return applyOverlapLayout([...planned, ...activePlans, ...completed, ...active].sort((a, b) => a.startTime.localeCompare(b.startTime)))
-}
-
-function applyOverlapLayout(blocks: CalendarBlock[]): CalendarBlock[] {
-  const positioned = blocks.map((block) => ({ ...block, leftPercent: 0, widthPercent: 100 }))
-  for (let index = 0; index < positioned.length; index += 1) {
-    const block = positioned[index]
-    const overlappingIndexes = positioned
-      .map((candidate, candidateIndex) => (block.dayKey === candidate.dayKey && blocksOverlap(block, candidate) ? candidateIndex : -1))
-      .filter((candidateIndex) => candidateIndex >= 0)
-    if (overlappingIndexes.length <= 1) {
-      continue
-    }
-    const columnCount = Math.min(overlappingIndexes.length, 4)
-    const widthPercent = Math.max(22, 96 / columnCount)
-    const columnIndex = overlappingIndexes.indexOf(index) % columnCount
-    positioned[index] = {
-      ...block,
-      leftPercent: columnIndex * (100 / columnCount),
-      widthPercent
-    }
-  }
-  return positioned
-}
-
-function blocksOverlap(first: CalendarBlock, second: CalendarBlock): boolean {
-  const firstStart = minutesFromDateTime(first.startTime)
-  const firstEnd = firstStart + Math.max(first.durationMinutes, 1)
-  const secondStart = minutesFromDateTime(second.startTime)
-  const secondEnd = secondStart + Math.max(second.durationMinutes, 1)
-  return firstStart < secondEnd && secondStart < firstEnd
+  return layoutOverlappingEvents([...planned, ...activePlans, ...completed, ...active].sort((a, b) => a.startTime.localeCompare(b.startTime)))
 }
 
 function blockDetail(block: CalendarBlock): string {
