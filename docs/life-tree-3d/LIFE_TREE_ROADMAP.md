@@ -64,23 +64,29 @@ Win / Mac 分工：
 
 阶段目标：
 
-- 不使用 3D，用表格、JSON 或 debug 文档验证生长规则。
+- 不使用 3D，用纯数据模拟器验证生长规则。
 
 主要产物：
 
-- 无 3D snapshot diff 模拟器。
-- daily / weekly / monthly / phase 样例输出。
+- 已新增 `app/renderer/src/features/life-tree-3d/growth-engine/`。
+- 已能用 `mockTreeSnapshot`、`mockGrowthEvents` 和 `defaultGrowthRules` 生成 `nextSnapshot`。
+- 已能输出 `GrowthTransition`，包含枝干变化、叶子、果实、裂痕、生命力和季节变化。
+- 已能输出 `GrowthDeltaSummary`，用于调试阶段的人类可读摘要。
+- 已新增 `mockGrowthSimulationResult`，方便后续 M3D-3 读取模拟结果。
 
 不做什么：
 
 - 不写 3D Canvas。
 - 不导入模型或贴图。
 - 不做最终视觉效果。
+- 不把生长判断写入 renderer。
 
 验收标准：
 
 - 能从 mock GrowthEvents 生成新 TreeSnapshot。
 - 能解释每条变化来自哪些 GrowthRule。
+- TypeScript 类型检查通过。
+- 仍未安装 Three.js / React Three Fiber / Drei。
 
 Win / Mac 分工：
 
@@ -226,11 +232,10 @@ Win / Mac 分工：
 
 ## 下一阶段建议
 
-M3D-1 完成后，下一阶段进入 M3D-2：
+M3D-2 完成后，下一阶段进入 M3D-3：
 
-- 使用 M3D-1 的 `TreeSnapshot`、`GrowthEvent`、`GrowthRule` 类型；
-- 基于 `mockTreeSnapshot`、`mockGrowthEvents` 和 `defaultGrowthRules` 实现纯函数模拟器；
-- 输出 daily / weekly / monthly / phase 的 snapshot diff 样例；
+- 使用 M3D-2 的 `createNextTreeSnapshot` 或 `mockGrowthSimulationResult.nextSnapshot` 作为 3D POC 输入；
+- 3D POC 只读取 `TreeSnapshot`，不读取 `GrowthEvent` / `GrowthRule`；
 - 不引入 3D 依赖；
 - 不改主页面 UI；
-- 为 M3D-3 的程序化 3D POC 准备稳定 `TreeSnapshot` 输入。
+- 为程序化树干、枝干、叶片、果实、裂痕占位建立最小 renderer 边界。

@@ -1,0 +1,8 @@
+export { applyGrowthEvents } from './applyGrowthEvents'
+export { applyGrowthRule } from './applyGrowthRule'
+export { calculateBranchHealth } from './calculateBranchHealth'
+export { calculateTreeVitality } from './calculateTreeVitality'
+export { createGrowthTransition } from './createGrowthTransition'
+export { createNextTreeSnapshot } from './createNextTreeSnapshot'
+export { runMockGrowthSimulation } from './runMockGrowthSimulation'
+export { summarizeGrowthDelta } from './summarizeGrowthDelta'

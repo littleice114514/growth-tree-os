@@ -1,4 +1,5 @@
 export type * from './growthEvent.types'
+export type * from './growthEngine.types'
 export type * from './growthRule.types'
 export type * from './qualityProfile.types'
 export type * from './renderer.types'

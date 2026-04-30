@@ -1,13 +1,13 @@
-# Life Tree 3D Contracts
+# Life Tree 3D Growth Engine
 
-当前模块处于 M3D-1：类型与规则草案。
+当前模块处于 M3D-2：无 3D 纯数据生长模拟器。
 
 ## 当前做了什么
 
-- 定义 `TreeSnapshot`、`GrowthEvent`、`GrowthRule`、时间线、渲染模式和质量档位类型。
-- 新增 `defaultGrowthRules`，把 M3D-0 文档中的成长事件落成静态规则草案。
-- 新增 `mockTreeSnapshot` 和 `mockGrowthEvents`，为 M3D-2 的无 3D 生长模拟器准备输入样例。
-- 新增 `clamp` 和 `normalizeScore`，作为后续纯函数模拟器的基础工具。
+- 保留 M3D-1 的 `TreeSnapshot`、`GrowthEvent`、`GrowthRule`、时间线、渲染模式和质量档位类型。
+- 新增 `growth-engine/`，用纯函数模拟 `previous TreeSnapshot + GrowthEvent[] + GrowthRule[] = next TreeSnapshot`。
+- 新增 `GrowthTransition` 和 `GrowthDeltaSummary`，为后续动画和调试摘要准备结构化变化描述。
+- 新增 `mockGrowthSimulationResult`，使用 `mockTreeSnapshot`、`mockGrowthEvents` 和 `defaultGrowthRules` 生成一次可检查的模拟结果。
 
 ## 当前没有做什么
 
@@ -16,23 +16,42 @@
 - 不导入 glb / glTF / 图片贴图等重资源。
 - 不接真实数据库，不修改主页面 UI。
 
-## 数据关系
+## GrowthEngine 输入输出
 
 ```text
-previous TreeSnapshot + GrowthEvent[] + GrowthRule[] = next TreeSnapshot
+baseSnapshot
++ growthEvents
++ growthRules
++ options
+= nextSnapshot + transition + deltaSummary + warnings
 ```
 
-- `GrowthEvent` 描述发生了什么。
-- `GrowthRule` 描述事件如何影响树。
-- `TreeSnapshot` 保存某个时间点的树状态。
-- 后续 renderer 只读取 `TreeSnapshot`、`QualityProfile` 和 `RendererMode`。
+- `createNextTreeSnapshot` 是当前核心入口。
+- `applyGrowthEvents` 负责事件排序、规则匹配、忽略事件和 warning 收集。
+- `applyGrowthRule` 负责单条规则对快照的局部影响。
+- `calculateTreeVitality` 和 `calculateBranchHealth` 负责可替换的 M3D-2 评分逻辑。
+- `createGrowthTransition` 输出后续动画层可读取的变化清单。
+- `summarizeGrowthDelta` 输出调试用变化摘要，不是最终 UI 文案。
+
+## Renderer 边界
+
+后续 M3D-3 的 3D POC 只能读取 `TreeSnapshot`、`GrowthTransition` 或调试摘要，不允许把生长判断写进 renderer。
+
+Renderer 不应直接读取：
+
+- `GrowthEvent`
+- `GrowthRule`
+- 真实复盘、时间负债、财富或数据库模块
+
+Renderer 只负责把已经生成的 `TreeSnapshot` 展示出来。
 
 ## 后续阶段
 
-- M3D-2：实现无 3D 生长模拟器，用纯数据验证快照变化。
-- M3D-3：才开始基于 `TreeSnapshot` 做程序化 3D POC。
+- M3D-3：基于 `TreeSnapshot` 做程序化 3D POC。
+- M3D-3 仍需保持业务生长逻辑与 renderer 分离。
+- Mac low profile 后续可使用 `suggestedAnimationLevel` 的 `none` / `subtle` 降级动画。
 
 ## Win / Mac 分工
 
-- Windows 本轮负责类型契约、规则草案、mock 数据和 3D 前置数据边界。
-- Mac 本轮不参与实现，不修改 UI 页面；后续可只读验收类型命名和输出可读性。
+- Windows 本轮负责纯数据模拟器、mock 输出、文档同步和 dev-log。
+- Mac 本轮不参与实现，不修改 UI 页面；后续可只读验收输出可读性和 M3D-3 接入边界。

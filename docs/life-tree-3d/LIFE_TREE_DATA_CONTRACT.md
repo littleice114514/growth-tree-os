@@ -263,3 +263,32 @@ interface AnnualRingState {
 - 快照可以重新生成；
 - 渲染层不依赖业务原始数据；
 - Mac fallback 可以使用同一份快照。
+
+## 15. GrowthEngine Contract
+
+M3D-2 已把数据流中的生长计算层落为代码：
+
+```ts
+interface GrowthEngineInput {
+  baseSnapshot: TreeSnapshot
+  growthEvents: GrowthEvent[]
+  growthRules: GrowthRule[]
+  options?: GrowthEngineOptions
+}
+
+interface CreateNextTreeSnapshotResult {
+  nextSnapshot: TreeSnapshot
+  transition: GrowthTransition
+  deltaSummary: GrowthDeltaSummary
+  appliedEffects: GrowthAppliedEffect[]
+  ignoredEvents: GrowthIgnoredEvent[]
+  warnings: GrowthEngineWarning[]
+}
+```
+
+边界要求：
+
+- `GrowthEngine` 可以读取 `TreeSnapshot`、`GrowthEvent[]`、`GrowthRule[]`。
+- `GrowthEngine` 输出新的 `TreeSnapshot`，以及后续动画可读的 `GrowthTransition`。
+- Renderer 只能读取 `TreeSnapshot` / `GrowthTransition`，不能直接执行生长判断。
+- M3D-2 的生命力和枝干健康公式是可替换版本，不代表最终科学模型。
