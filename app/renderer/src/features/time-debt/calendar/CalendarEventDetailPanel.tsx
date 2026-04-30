@@ -33,6 +33,9 @@ export function CalendarEventDetailPanel({
   }
   const canStart = block.plan ? canStartPlan(block.plan, timerNow) : false
   const activePreview = dragPreview?.blockId === block.id ? dragPreview : null
+  const plannedRange = block.plan ? `${formatDateTimeReadable(block.plan.plannedStartTime)} - ${formatTimeOnly(block.plan.plannedEndTime)}` : ''
+  const actualStart = block.log?.startTime ?? block.plan?.actualStartTime ?? (block.status === 'active' || block.status === 'completed' ? block.startTime : '')
+  const actualEnd = block.log?.endTime ?? block.plan?.actualEndTime ?? (block.status === 'completed' ? block.endTime : '')
   return (
     <aside className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
       <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">{activePreview ? 'Adjusting' : calendarStatusLabel(block.status)}</div>
@@ -50,13 +53,23 @@ export function CalendarEventDetailPanel({
         <DetailRow label="状态" value={calendarStatusLabel(block.status)} />
         <DetailRow label="一级分类" value={block.primaryCategory} />
         <DetailRow label="二级项目" value={block.secondaryProject} />
-        <DetailRow label="开始时间" value={formatDateTimeReadable(block.startTime)} />
-        <DetailRow label="结束时间" value={formatDateTimeReadable(block.endTime)} />
+        {block.plan ? <DetailRow label="计划时间" value={plannedRange} /> : null}
+        {block.status === 'planned' && block.plan ? <DetailRow label="距离开始" value={formatDistanceToStart(block.plan.plannedStartTime, timerNow)} /> : null}
+        {block.status === 'active' ? <DetailRow label="实际开始" value={formatDateTimeReadable(actualStart)} /> : null}
+        {block.status === 'completed' ? <DetailRow label="实际开始" value={formatDateTimeReadable(actualStart)} /> : null}
+        {block.status === 'completed' ? <DetailRow label="实际结束" value={formatDateTimeReadable(actualEnd)} /> : null}
+        {!block.plan && block.status !== 'active' && block.status !== 'completed' ? <DetailRow label="开始时间" value={formatDateTimeReadable(block.startTime)} /> : null}
+        {!block.plan && block.status !== 'active' && block.status !== 'completed' ? <DetailRow label="结束时间" value={formatDateTimeReadable(block.endTime)} /> : null}
         <DetailRow label={block.status === 'active' ? '当前已计时' : '实际时长'} value={formatMinutes(block.durationMinutes)} />
         <DetailRow label="AI 赋能比例" value={typeof block.aiEnableRatio === 'number' ? `${block.aiEnableRatio}%` : '待补'} />
         <DetailRow label="状态分" value={typeof block.statusScore === 'number' ? String(block.statusScore) : '待补'} />
         <DetailRow label="标签" value={block.tags?.length ? block.tags.join(' / ') : '无'} />
-        <DetailRow label="备注" value={block.note || '无'} />
+        <DetailRow label="干扰源" value={block.distractionSource || '无'} />
+        {block.plan ? <DetailRow label="Reminder" value={block.status === 'active' ? '任务正在执行' : planReminderDetail(block.plan, timerNow)} /> : null}
+        <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3 text-xs leading-6 text-[color:var(--text-secondary)]">
+          <div className="mb-1 text-[10px] uppercase tracking-[0.16em] text-[color:var(--text-muted)]">{block.log ? '结果记录' : '备注'}</div>
+          {block.note || '无'}
+        </div>
         <div className="flex flex-wrap gap-2 pt-1">
           {block.plan && (block.status === 'planned' || block.status === 'missed') ? (
             <>
@@ -92,6 +105,31 @@ function canStartPlan(plan: TimeDebtPlan, nowMs: number): boolean {
   const start = new Date(plan.plannedStartTime).getTime()
   const end = new Date(plan.plannedEndTime).getTime()
   return nowMs >= start || nowMs > end
+}
+
+function planReminderDetail(plan: TimeDebtPlan, nowMs: number): string {
+  const start = new Date(plan.plannedStartTime).getTime()
+  const end = new Date(plan.plannedEndTime).getTime()
+  if (nowMs > end) return `计划已过 ${formatRelativeMinutes(nowMs - end)}。`
+  if (nowMs >= start) return '计划时间已到，可以开始计时。'
+  return `距离开始还有 ${formatRelativeMinutes(start - nowMs)}。`
+}
+
+function formatDistanceToStart(plannedStartTime: string, nowMs: number): string {
+  const start = new Date(plannedStartTime).getTime()
+  if (!Number.isFinite(start)) return '待补'
+  if (nowMs >= start) return '已到开始时间'
+  return formatRelativeMinutes(start - nowMs)
+}
+
+function formatRelativeMinutes(milliseconds: number): string {
+  const totalMinutes = Math.max(1, Math.round(Math.abs(milliseconds) / 60000))
+  if (totalMinutes >= 60) {
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+    return minutes > 0 ? `${hours} 小时 ${minutes} 分钟` : `${hours} 小时`
+  }
+  return `${totalMinutes} 分钟`
 }
 
 function formatDateTimeReadable(value: string): string {

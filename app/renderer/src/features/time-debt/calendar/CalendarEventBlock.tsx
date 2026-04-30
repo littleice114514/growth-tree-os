@@ -28,12 +28,14 @@ export function CalendarEventBlock({
         : block.status === 'missed'
           ? 'border-rose-400/35 bg-rose-400/10'
           : categoryBlockClass(block.primaryCategory)
+  const showTimeRange = block.height >= 34
+  const showStatus = block.height >= 58
 
   return (
     <>
       <button
         type="button"
-        className={`absolute z-20 cursor-grab overflow-hidden rounded-lg border border-l-4 p-2 text-left text-[color:var(--text-primary)] transition active:cursor-grabbing hover:z-30 hover:ring-1 hover:ring-white/20 ${selected ? 'z-40 ring-2 ring-[color:var(--node-selected-border)]' : ''} ${blockClass}`}
+        className={`absolute z-20 cursor-grab overflow-hidden rounded-lg border border-l-4 px-2 py-1.5 text-left text-[color:var(--text-primary)] transition active:cursor-grabbing hover:z-30 hover:ring-1 hover:ring-white/20 ${selected ? 'z-40 ring-2 ring-[color:var(--node-selected-border)]' : ''} ${blockClass}`}
         style={style}
         title={`${block.title} / ${block.meta}`}
         onClick={() => onSelect(block)}
@@ -43,17 +45,18 @@ export function CalendarEventBlock({
         }}
       >
         <div className="truncate text-xs font-semibold">{block.title}</div>
-        <div className="mt-1 truncate text-[10px] tabular-nums opacity-80">
-          {formatTimeOnly(block.startTime)} - {formatTimeOnly(block.endTime)}
-        </div>
-        <div className="mt-1 truncate text-[10px] opacity-75">{calendarStatusLabel(block.status)}</div>
-        <div className="mt-1 truncate text-[10px] opacity-70">{block.primaryCategory} / {block.secondaryProject}</div>
+        {showTimeRange ? (
+          <div className="mt-0.5 truncate text-[10px] tabular-nums opacity-80">
+            {formatTimeOnly(block.startTime)} - {formatTimeOnly(block.endTime)}
+          </div>
+        ) : null}
+        {showStatus ? <div className="mt-0.5 inline-flex max-w-full truncate rounded-full border border-current/15 px-1.5 py-0.5 text-[9px] uppercase opacity-75">{calendarStatusLabel(block.status)}</div> : null}
       </button>
       {dragPreview?.blockId === block.id ? (
         <div
           className="pointer-events-none absolute z-50 rounded-lg border border-[color:var(--node-selected-border)] bg-cyan-300/20 shadow-[0_0_0_1px_rgba(255,255,255,0.14)]"
           style={{
-            top: timeToTop(dragPreview.startMinutes, { visibleStartHour: 0, visibleEndHour: 24, pixelsPerMinute: 0.8, minuteStep: 30, showHalfHourLine: true, minEventHeight: 24, snapMinutes: 15 }),
+            top: timeToTop(dragPreview.startMinutes, { visibleStartHour: 0, visibleEndHour: 24, pixelsPerMinute: 0.8, minuteStep: 30, showHalfHourLine: true, showHalfHourLabel: true, minEventHeight: 24, snapMinutes: 15 }),
             height: Math.max((dragPreview.endMinutes - dragPreview.startMinutes) * 0.8, 24),
             left: style.left,
             width: style.width

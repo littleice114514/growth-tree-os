@@ -114,7 +114,7 @@ type RunningTimer = {
 
 const today = new Date().toISOString().slice(0, 10)
 const viewLabels: Record<TimeDebtView, string> = {
-  today: '今日台',
+  today: '执行台',
   timeline: '日历',
   insights: '洞察'
 }
@@ -438,12 +438,11 @@ export function TimeDebtDashboard() {
           <TodayView
             overview={overview}
             diagnosis={diagnosis}
-            logs={todayLogs}
             plans={todayPlans}
             runningTimer={runningTimer}
             timerNow={timerNow}
-            highlightedPlanId={highlightedPlanId}
             onOpenEntry={openEntry}
+            onOpenCalendar={() => setCurrentView('timeline')}
             onStartPlan={(plan) => startTimer(planToLogDraft(plan), plan.id)}
             onConvertPlanToManual={convertPlanToManualLog}
             onAbandonPlan={abandonPlan}
@@ -517,12 +516,11 @@ export function TimeDebtDashboard() {
 function TodayView({
   overview,
   diagnosis,
-  logs,
   plans,
   runningTimer,
   timerNow,
-  highlightedPlanId,
   onOpenEntry,
+  onOpenCalendar,
   onStartPlan,
   onConvertPlanToManual,
   onAbandonPlan,
@@ -530,12 +528,11 @@ function TodayView({
 }: {
   overview: TimeDebtOverview
   diagnosis: TimeDebtDiagnosis
-  logs: TimeDebtLog[]
   plans: TimeDebtPlan[]
   runningTimer: RunningTimer | null
   timerNow: number
-  highlightedPlanId: string | null
   onOpenEntry: (mode: EntryMode, sourcePlan?: TimeDebtPlan) => void
+  onOpenCalendar: () => void
   onStartPlan: (plan: TimeDebtPlan) => void
   onConvertPlanToManual: (plan: TimeDebtPlan) => void
   onAbandonPlan: (planId: string) => void
@@ -560,17 +557,82 @@ function TodayView({
           </p>
         </Panel>
       </div>
-      <DailyCalendarView
-        logs={logs}
-        plans={plans}
-        runningTimer={runningTimer}
-        timerNow={timerNow}
-        highlightedPlanId={highlightedPlanId}
-        onStartPlan={onStartPlan}
-        onConvertPlanToManual={onConvertPlanToManual}
-        onAbandonPlan={onAbandonPlan}
-      />
+      <ExecutionSummaryPanel overview={overview} diagnosis={diagnosis} plans={plans} runningTimer={runningTimer} timerNow={timerNow} onOpenEntry={onOpenEntry} onOpenCalendar={onOpenCalendar} />
     </div>
+  )
+}
+
+function ExecutionSummaryPanel({
+  overview,
+  diagnosis,
+  plans,
+  runningTimer,
+  timerNow,
+  onOpenEntry,
+  onOpenCalendar
+}: {
+  overview: TimeDebtOverview
+  diagnosis: TimeDebtDiagnosis
+  plans: TimeDebtPlan[]
+  runningTimer: RunningTimer | null
+  timerNow: number
+  onOpenEntry: (mode: EntryMode) => void
+  onOpenCalendar: () => void
+}) {
+  const plannedCount = plans.filter((plan) => plan.status === 'planned').length
+  const dueCount = plans.filter((plan) => plan.status === 'planned' && canStartPlan(plan, timerNow)).length
+  const nextPlan = plans
+    .filter((plan) => plan.status === 'planned')
+    .sort((a, b) => a.plannedStartTime.localeCompare(b.plannedStartTime))[0]
+  return (
+    <section className="min-w-0 rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Execution</div>
+          <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">执行台摘要</h3>
+        </div>
+        <button type="button" onClick={onOpenCalendar} className={secondaryButtonClass}>
+          查看日历
+        </button>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <Metric label="今日记录" value={`${overview.stats.totalLogs} 条`} />
+        <Metric label="总记录时间" value={formatMinutes(overview.totalMinutes)} />
+        <Metric label="待开始任务" value={`${plannedCount} 个`} />
+        <Metric label="可开始" value={`${dueCount} 个`} tone={dueCount > 0 ? 'warn' : 'neutral'} />
+      </div>
+      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-4">
+          <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--text-muted)]">Next Action</div>
+          <div className="mt-2 text-base font-semibold text-[color:var(--text-primary)]">
+            {runningTimer ? runningTimer.title : nextPlan ? nextPlan.title : '安排下一段时间块'}
+          </div>
+          <p className="mt-2 text-sm leading-6 text-[color:var(--text-secondary)]">
+            {runningTimer
+              ? `正在执行，已计时 ${formatElapsedTime(timerNow - runningTimer.startTimestampMs)}。`
+              : nextPlan
+                ? `${formatTimeOnly(nextPlan.plannedStartTime)} - ${formatTimeOnly(nextPlan.plannedEndTime)} / ${planReminderDetail(nextPlan, timerNow)}`
+                : '执行台只保留行动入口和摘要，完整时间块请在日历页查看。'}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-4">
+          <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--text-muted)]">Today Brief</div>
+          <div className="mt-2 text-base font-semibold text-[color:var(--text-primary)]">{diagnosis.title}</div>
+          <p className="mt-2 text-sm leading-6 text-[color:var(--text-secondary)]">{diagnosis.summary}</p>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button type="button" onClick={() => onOpenEntry('timer')} className={primaryButtonClass}>
+          开始计时
+        </button>
+        <button type="button" onClick={() => onOpenEntry('manual')} className={secondaryButtonClass}>
+          补记时间
+        </button>
+        <button type="button" onClick={() => onOpenEntry('plan')} className={secondaryButtonClass}>
+          规划任务
+        </button>
+      </div>
+    </section>
   )
 }
 

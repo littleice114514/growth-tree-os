@@ -49,6 +49,7 @@ export type CalendarTimeScale = {
   pixelsPerMinute: number
   minuteStep: number
   showHalfHourLine: boolean
+  showHalfHourLabel: boolean
   minEventHeight: number
   snapMinutes: number
 }
@@ -76,6 +77,7 @@ export const defaultCalendarTimeScale: CalendarTimeScale = {
   pixelsPerMinute: 0.8,
   minuteStep: 30,
   showHalfHourLine: true,
+  showHalfHourLabel: true,
   minEventHeight: 24,
   snapMinutes: 15
 }
