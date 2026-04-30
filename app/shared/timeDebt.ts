@@ -17,6 +17,8 @@ export type TimeDebtLog = {
   efficiencyMinutesPerUnit?: number
   efficiencyText?: string
   resultNote?: string
+  tags?: string[]
+  distractionSource?: string
   aiEnableRatio?: number
   statusScore?: number
   dimension?: string
@@ -138,6 +140,8 @@ export type TimeDebtLogDraft = {
   workload?: number
   workloadUnit?: string
   resultNote?: string
+  tags?: string[]
+  distractionSource?: string
   aiEnableRatio?: number
   statusScore?: number
   dimension?: string
@@ -232,6 +236,8 @@ export function createTimeDebtLog(
       workload: draft.workload,
       workloadUnit: draft.workloadUnit?.trim() || undefined,
       resultNote: draft.resultNote?.trim() || undefined,
+      tags: normalizeTags(draft.tags),
+      distractionSource: draft.distractionSource?.trim() || undefined,
       aiEnableRatio: draft.aiEnableRatio,
       statusScore: draft.statusScore,
       dimension: draft.dimension?.trim() || undefined,
@@ -240,6 +246,14 @@ export function createTimeDebtLog(
     },
     params
   )
+}
+
+function normalizeTags(tags: string[] | undefined): string[] | undefined {
+  if (!tags) {
+    return undefined
+  }
+  const normalized = Array.from(new Set(tags.map((tag) => tag.trim()).filter(Boolean)))
+  return normalized.length > 0 ? normalized : undefined
 }
 
 export function enrichTimeDebtLog(log: TimeDebtLog, params: TimeDebtParams = defaultTimeDebtParams): TimeDebtLog {

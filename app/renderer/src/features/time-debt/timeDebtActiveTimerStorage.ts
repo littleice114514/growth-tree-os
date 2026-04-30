@@ -5,7 +5,7 @@ export type ActiveTimeDebtTimer = {
   title: string
   primaryCategory: string
   secondaryProject: string
-  workloadUnit: string
+  workloadUnit?: string
   actualStart: string
   startTimestampMs: number
   sourcePlanId?: string
@@ -14,6 +14,7 @@ export type ActiveTimeDebtTimer = {
   plannedDuration?: number
   suggestedEnd?: string
   aiEnableRatio?: number
+  tags?: string[]
   resultNote?: string
   status: 'active'
   createdAt: string
@@ -57,7 +58,7 @@ export function createActiveTimeDebtTimer(input: {
   title: string
   primaryCategory: string
   secondaryProject: string
-  workloadUnit: string
+  workloadUnit?: string
   actualStart: string
   startTimestampMs: number
   sourcePlanId?: string
@@ -66,6 +67,7 @@ export function createActiveTimeDebtTimer(input: {
   plannedDuration?: number
   suggestedEnd?: string
   aiEnableRatio?: number
+  tags?: string[]
   resultNote?: string
 }): ActiveTimeDebtTimer {
   const timestamp = new Date().toISOString()
@@ -74,7 +76,7 @@ export function createActiveTimeDebtTimer(input: {
     title: input.title.trim(),
     primaryCategory: input.primaryCategory.trim(),
     secondaryProject: input.secondaryProject.trim(),
-    workloadUnit: input.workloadUnit,
+    workloadUnit: input.workloadUnit?.trim() || undefined,
     actualStart: input.actualStart,
     startTimestampMs: input.startTimestampMs,
     sourcePlanId: input.sourcePlanId,
@@ -83,6 +85,7 @@ export function createActiveTimeDebtTimer(input: {
     plannedDuration: input.plannedDuration,
     suggestedEnd: input.suggestedEnd,
     aiEnableRatio: input.aiEnableRatio,
+    tags: normalizeTags(input.tags),
     resultNote: input.resultNote?.trim() || undefined,
     status: 'active',
     createdAt: timestamp,
@@ -114,12 +117,19 @@ function isActiveTimeDebtTimer(value: unknown): value is ActiveTimeDebtTimer {
     typeof candidate.title === 'string' &&
     typeof candidate.primaryCategory === 'string' &&
     typeof candidate.secondaryProject === 'string' &&
-    typeof candidate.workloadUnit === 'string' &&
     typeof candidate.actualStart === 'string' &&
     typeof candidate.startTimestampMs === 'number' &&
     candidate.status === 'active' &&
     typeof candidate.createdAt === 'string'
   )
+}
+
+function normalizeTags(tags: string[] | undefined): string[] | undefined {
+  if (!tags) {
+    return undefined
+  }
+  const normalized = Array.from(new Set(tags.map((tag) => tag.trim()).filter(Boolean)))
+  return normalized.length > 0 ? normalized : undefined
 }
 
 function dispatchActiveTimerChange(): void {

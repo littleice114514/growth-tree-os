@@ -6,12 +6,16 @@ export type TimeDebtOptions = {
   categories: string[]
   projects: string[]
   units: string[]
+  tags: string[]
+  distractions: string[]
 }
 
 export const defaultTimeDebtOptions: TimeDebtOptions = {
   categories: mergeOptions(['工作', '学习', '生活', '运动', '空转', '恢复'], defaultProjectCategories.map((category) => category.primaryCategory)),
   projects: mergeOptions(['growth-tree-os', '公众号文章', 'Codex 推进', '英语学习'], defaultProjectCategories.map((category) => category.secondaryProject)),
-  units: mergeOptions(['min', '小时', '项', '篇', '题', '次', '页', '组'], defaultProjectCategories.map((category) => category.defaultWorkloadUnit ?? ''))
+  units: mergeOptions(['min', '小时', '项', '篇', '题', '次', '页', '组'], defaultProjectCategories.map((category) => category.defaultWorkloadUnit ?? '')),
+  tags: ['深度工作', '协作', '维护', '学习'],
+  distractions: ['消息', '短视频', '临时插入', '环境干扰']
 }
 
 export function loadTimeDebtOptions(): TimeDebtOptions {
@@ -44,12 +48,16 @@ export function upsertTimeDebtOptions(
     category?: string
     project?: string
     unit?: string
+    tags?: string[]
+    distraction?: string
   }
 ): TimeDebtOptions {
   return normalizeTimeDebtOptions({
     categories: addOption(current.categories, values.category),
     projects: addOption(current.projects, values.project),
-    units: addOption(current.units, values.unit)
+    units: addOption(current.units, values.unit),
+    tags: mergeOptions(current.tags, values.tags ?? []),
+    distractions: addOption(current.distractions, values.distraction)
   })
 }
 
@@ -59,7 +67,9 @@ function normalizeTimeDebtOptions(options: TimeDebtOptions): TimeDebtOptions {
   return {
     categories: mergeOptions(defaultTimeDebtOptions.categories, options.categories),
     projects: mergeOptions(defaultTimeDebtOptions.projects, options.projects),
-    units: mergeOptions(defaultTimeDebtOptions.units, options.units)
+    units: mergeOptions(defaultTimeDebtOptions.units, options.units),
+    tags: mergeOptions(defaultTimeDebtOptions.tags, options.tags ?? []),
+    distractions: mergeOptions(defaultTimeDebtOptions.distractions, options.distractions ?? [])
   }
 }
 

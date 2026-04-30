@@ -6,25 +6,27 @@
 - GitHub 仓库：https://github.com/Littleice114514/growth-tree-os.git
 - 分支：feature/mac-time-debt-plan-flow-overlap-ui
 - 最新 commit：以本轮最终汇报中的 `git rev-parse --short HEAD` 为准
-- 当前设备完成时间：2026-04-29 16:59 CST
+- 当前设备完成时间：2026-04-30 CST
 
 ## 2. 本轮已完成
 
-- Time Debt 表单回滚：开始计时、补记时间、规划任务弹窗恢复独立 `一级分类` / `二级项目`。
-- 删除日常表单中的 `分类项目` 合并字段、`工作量` 和 `工作量单位`。
-- `AI 赋能比例（%）` 改为 0-100 百分比输入，空值按 0 处理。
-- 开始计时弹窗恢复 `备注`，备注与 AI 比例会随 active timer 保存到完成日志。
-- 未来计划任务未到 `plannedStart` 前不能开始，Today / Calendar / Reminder / navigation intent 均加了开始守卫。
-- 今日时间统计改为按当天日志的 `primaryCategory` 动态聚合，新一级分类会自动显示。
-- Today 右侧时间日志表继续向 Notion Calendar 日视图优化：紧凑滚动时间轴、当前时间定位、事件块详情、重叠并排和同文件拖拽结构预留。
+- Time Debt 新增轻量字段配置层，集中描述 text / number / percent / select / multi_select / status / datetime / checkbox，并预留 relation / rollup / formula。
+- 开始计时、补记时间、规划任务弹窗统一恢复一级分类 / 二级项目，并移除新 UI 中的分类项目、工作量、工作量单位、分类字典。
+- AI 赋能比例按 0-100 输入和显示，输入 30 显示为 30%。
+- 日志新增标签和干扰源，计划任务新增标签；新增分类、项目、标签、干扰源继续保存在 renderer localStorage options 中。
+- 今日统计继续按当天 Completed 日志的动态一级分类聚合，新分类有时长会自动显示。
+- 时间轴 tab 升级为周视图：7 天日期列、小时刻度、当前时间线、周切换、时间块定位、重叠并排、右侧详情面板。
+- Planned 未到点不能开始；到点可开始；Missed 可现在开始、转为补记或忽略；Active 可在详情面板结束计时。
 
 ## 3. 本轮修改文件
 
+- `app/shared/timeDebt.ts`
+- `app/renderer/src/features/time-debt/timeDebtFieldConfig.ts`
 - `app/renderer/src/features/time-debt/TimeDebtDashboard.tsx`
-- `app/renderer/src/features/time-debt/timeDebtActiveTimerStorage.ts`
+- `app/renderer/src/features/time-debt/timeDebtOptionsStorage.ts`
 - `app/renderer/src/features/time-debt/timeDebtPlansStorage.ts`
-- `app/renderer/src/features/reminders/ReminderPanel.tsx`
-- `docs/dev-log/2026-04/2026-04-29/mac-time-debt-form-plan-stats-calendar-fix.md`
+- `app/renderer/src/features/time-debt/timeDebtActiveTimerStorage.ts`
+- `docs/dev-log/2026-04/2026-04-29/mac-time-debt-fields-weekly-calendar.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
 
 ## 4. 当前验证结果
@@ -33,14 +35,14 @@
 
 - `./node_modules/.bin/tsc --noEmit -p tsconfig.node.json` 通过。
 - `./node_modules/.bin/tsc --noEmit -p app/renderer/tsconfig.json` 通过。
-- 代码搜索确认 Time Debt / Reminder 相关前端中不再出现 `分类项目`、`工作量`、`工作量单位`、`分类配置` 旧 UI 文案。
+- 代码搜索确认新 Time Debt 表单 UI 中没有 `分类项目`、`工作量`、`工作量单位`、`分类字典` 旧文案。
 - 未修改 3D、skills、`.codex`、`.claude`、脚本工具链、协议文件、财富、成长树或周回看业务逻辑。
 
 ### 未验证 / 风险
 
-- `./node_modules/.bin/electron-vite build` 失败，原因是本机 Rollup native optional dependency `@rollup/rollup-darwin-arm64` 动态库签名加载失败，错误为 mapped file 与 process Team ID 不一致。
-- 当前环境 PATH 只暴露 Codex 内置 `node`，没有可直接调用的 `pnpm` / `npm` / `corepack`，因此未完成 `pnpm dev` 真实桌面点击验收。
-- time-plan reminders、plans、active timer 仍是 renderer localStorage 能力，不代表跨设备同步。
+- `./node_modules/.bin/electron-vite build` 失败，原因是当前本机 Rollup native optional dependency `@rollup/rollup-darwin-arm64` 动态库签名 / optional dependency 加载异常。
+- 当前 shell 中 `pnpm`、`npm` 不在 PATH，未完成真实 Electron 桌面点击截图验收。
+- `workload/workloadUnit` 仍作为历史兼容字段保留在共享类型里，但新 UI 不再写入用户输入。
 
 ## 5. Mac 端第一步操作
 
@@ -70,8 +72,6 @@ git rev-parse --short HEAD
 
 ## 6. Mac 端环境准备
 
-优先使用项目 pnpm：
-
 ```bash
 corepack enable
 corepack prepare pnpm@latest --activate
@@ -80,7 +80,7 @@ pnpm typecheck
 pnpm dev
 ```
 
-如果遇到 Rollup native optional dependency 签名或缺失问题，先重装依赖：
+如果遇到 Rollup native optional dependency 签名或缺失问题：
 
 ```bash
 rm -rf node_modules
@@ -94,22 +94,26 @@ pnpm dev
 请在 Mac 端检查：
 
 - 打开 Time Debt，无页面报错。
-- 点击 `开始计时`，确认字段只有：任务名、一级分类、二级项目、开始时间、AI 赋能比例（%）、备注。
-- 点击 `补记时间`，确认字段只有：任务名、一级分类、二级项目、开始时间、结束时间、状态分、AI 赋能比例（%）、结果记录 / 备注。
-- 点击 `规划任务`，确认字段只有：任务名、一级分类、二级项目、计划开始、计划结束、备注。
-- 三类弹窗都不显示：分类项目、工作量、工作量单位。
-- 创建未来 10 分钟后的计划任务，确认 Today 待开始列表、日历块详情和 Reminder 卡片均显示 `未到开始时间` 且不能开始。
-- 创建当前已到点计划，确认可以开始计时。
-- 创建已错过计划，确认显示 `已错过`，并提供现在开始、转为补记、忽略。
+- 开始计时弹窗包含：任务名、一级分类、二级项目、开始时间、AI 赋能比例（%）、标签、备注。
+- 补记时间弹窗包含：任务名、一级分类、二级项目、开始时间、结束时间、状态分、AI 赋能比例（%）、标签、干扰源、备注。
+- 规划任务弹窗包含：任务名、一级分类、二级项目、计划开始、计划结束、标签、备注。
+- 三类弹窗都不显示：分类项目、工作量、工作量单位、分类字典。
+- 输入 AI 赋能比例 `30`，确认显示为 `30%`。
 - 补记一个新一级分类，例如 `公众号`，进入洞察 / 今日时间统计，确认 `公众号` 自动成为统计条。
-- 创建两个重叠时间块，确认日历事件块并排显示且可点击查看详情。
-- 切换 Reminder、成长树、财富、周回看，确认无明显回归。
+- 进入周视图，确认显示当前周范围、上一周 / 下一周 / 今天按钮、7 天日期列、小时刻度和当前时间线。
+- 创建 Completed / Planned / Active 时间块，确认按日期和时间定位。
+- 点击时间块，确认右侧详情面板出现。
+- Planned 未到时间时开始按钮禁用，到点后允许开始。
+- Active 详情中可以结束计时。
+- 两个重叠时间块并排显示，不互相完全遮挡。
+- 切换上一周 / 下一周后只显示对应周数据。
+- 回到今日台、洞察、提醒页面，确认无明显回归。
 
 ## 8. Mac 端下一轮任务
 
 请让 Mac 端 Codex 接着完成：
 
-恢复依赖环境后运行真实 Electron smoke，并截图记录：开始计时弹窗、补记时间弹窗、规划任务弹窗、未到点计划禁用按钮、到点计划允许开始、新一级分类统计、优化后的时间日志表、重叠时间块。若全部通过，再继续拆分 `TimeDebtDashboard.tsx` 到独立 Calendar / Modal / Insights 子组件并补轻量测试。
+修复依赖环境后运行真实 Electron smoke，并截图记录三类弹窗、AI 30% 显示、新增一级分类统计、周视图完整界面、当前时间线、Completed / Planned / Active 时间块、右侧详情面板、重叠时间块和周切换过滤。验收稳定后，再拆分 `TimeDebtDashboard.tsx` 到独立 Calendar / Modal / Insights 子组件。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
@@ -121,7 +125,7 @@ pnpm dev
 - Time Debt 页面异常截图
 - Reminder 页面异常截图
 - 开发者控制台首个关键错误
-- 具体失败入口：开始计时弹窗 / 补记弹窗 / 规划弹窗 / 未到点计划 / 到点计划 / 已错过计划 / 动态统计 / 重叠时间块
+- 具体失败入口：开始计时弹窗 / 补记弹窗 / 规划弹窗 / 周视图 / 详情面板 / 动态统计 / 重叠时间块
 
 ## 10. 注意事项
 
@@ -129,4 +133,4 @@ pnpm dev
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
 - 本轮没有修改 3D 模块、Windows skills、`.codex`、`.claude`、脚本、工具链或协议文件。
-- 本轮不接系统通知、Notion Calendar、Google Calendar、iCal、周视图、月视图或数据库迁移。
+- 本轮不接系统通知、Notion Calendar、Google Calendar、iCal、月视图或数据库迁移。

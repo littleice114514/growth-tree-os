@@ -56,6 +56,7 @@ import {
   updateTimePlanReminderBySource,
   upsertTimePlanReminder
 } from '@/features/reminders/timePlanReminderStorage'
+import { timeDebtFieldConfigs, timeDebtReservedFieldTypes, timeDebtSupportedFieldTypes } from './timeDebtFieldConfig'
 
 type TimeDebtView = 'today' | 'timeline' | 'insights'
 type EntryMode = 'timer' | 'manual' | 'plan'
@@ -68,10 +69,10 @@ type LogDraft = {
   secondaryProject: string
   startTime: string
   endTime: string
-  workload: string
-  workloadUnit: string
   statusScore: string
   aiEnableRatio: string
+  tags: string
+  distractionSource: string
   dimension: string
   resultNote: string
 }
@@ -82,6 +83,7 @@ type PlanDraft = {
   secondaryProject: string
   plannedStartTime: string
   plannedEndTime: string
+  tags: string
   note: string
 }
 
@@ -95,10 +97,10 @@ type RunningTimer = {
   title: string
   primaryCategory: string
   secondaryProject: string
-  workloadUnit: string
   startTime: string
   startTimestampMs: number
   aiEnableRatio?: number
+  tags?: string[]
   resultNote?: string
   planId?: string
   plannedStartTime?: string
@@ -117,6 +119,13 @@ type CalendarBlock = {
   durationMinutes: number
   status: 'planned' | 'active' | 'completed' | 'missed'
   meta: string
+  dayKey: string
+  tags?: string[]
+  distractionSource?: string
+  aiEnableRatio?: number
+  statusScore?: number
+  note?: string
+  log?: TimeDebtLog
   plan?: TimeDebtPlan
   leftPercent?: number
   widthPercent?: number
@@ -125,7 +134,7 @@ type CalendarBlock = {
 const today = new Date().toISOString().slice(0, 10)
 const viewLabels: Record<TimeDebtView, string> = {
   today: '今日台',
-  timeline: '时间轴',
+  timeline: '周视图',
   insights: '洞察'
 }
 
@@ -189,18 +198,20 @@ export function TimeDebtDashboard() {
         workloadUnit: undefined,
         statusScore: optionalNumber(draft.statusScore),
         aiEnableRatio: optionalPercentNumber(draft.aiEnableRatio),
+        tags: parseTagInput(draft.tags),
+        distractionSource: draft.distractionSource,
         dimension: draft.dimension,
         resultNote: draft.resultNote
       },
       params
     )
     setLogs(appendTimeDebtLog(log))
-    rememberOptions(draft.primaryCategory, draft.secondaryProject)
+    rememberOptions(draft.primaryCategory, draft.secondaryProject, parseTagInput(draft.tags), draft.distractionSource)
     return log
   }
 
-  const rememberOptions = (category: string, project: string, unit?: string) => {
-    const nextOptions = upsertTimeDebtOptions(options, { category, project, unit })
+  const rememberOptions = (category: string, project: string, tags?: string[], distraction?: string) => {
+    const nextOptions = upsertTimeDebtOptions(options, { category, project, tags, distraction })
     setOptions(nextOptions)
     saveTimeDebtOptions(nextOptions)
   }
@@ -249,16 +260,16 @@ export function TimeDebtDashboard() {
     const startTime = planId ? formatLocalDateTimeInput(now) : draft.startTime || formatLocalDateTimeInput(now)
     const plannedDurationMinutes = sourcePlan?.plannedDurationMinutes || (sourcePlan ? calculateDurationMinutes(sourcePlan.plannedStartTime, sourcePlan.plannedEndTime) : undefined)
     const suggestedEndTime = plannedDurationMinutes ? formatLocalDateTimeInput(new Date(now.getTime() + plannedDurationMinutes * 60000)) : undefined
-    const workloadUnit = draft.workloadUnit || 'min'
     const aiEnableRatio = optionalPercentNumber(draft.aiEnableRatio)
+    const tags = parseTagInput(draft.tags)
     const nextTimer = {
       title: draft.title.trim(),
       primaryCategory: draft.primaryCategory.trim(),
       secondaryProject: draft.secondaryProject.trim(),
-      workloadUnit,
       startTime,
       startTimestampMs: now.getTime(),
       aiEnableRatio,
+      tags,
       resultNote: draft.resultNote.trim() || undefined,
       planId,
       plannedStartTime: sourcePlan?.plannedStartTime,
@@ -272,7 +283,6 @@ export function TimeDebtDashboard() {
         title: nextTimer.title,
         primaryCategory: nextTimer.primaryCategory,
         secondaryProject: nextTimer.secondaryProject,
-        workloadUnit: nextTimer.workloadUnit,
         actualStart: nextTimer.startTime,
         startTimestampMs: nextTimer.startTimestampMs,
         sourcePlanId: planId,
@@ -281,11 +291,12 @@ export function TimeDebtDashboard() {
         plannedDuration: nextTimer.plannedDurationMinutes,
         suggestedEnd: nextTimer.suggestedEndTime,
         aiEnableRatio: nextTimer.aiEnableRatio,
+        tags: nextTimer.tags,
         resultNote: nextTimer.resultNote
       })
     )
     setTimerNow(now.getTime())
-    rememberOptions(draft.primaryCategory, draft.secondaryProject)
+    rememberOptions(draft.primaryCategory, draft.secondaryProject, tags)
     if (planId) {
       setPlans(updateTimeDebtPlan(planId, { status: 'active', actualStartTime: startTime, suggestedEndTime }))
       updateTimePlanReminderBySource(planId, { status: 'active' })
@@ -309,9 +320,8 @@ export function TimeDebtDashboard() {
       secondaryProject: runningTimer.secondaryProject,
       startTime: runningTimer.startTime,
       endTime,
-      workload: '',
-      workloadUnit: '',
       aiEnableRatio: String(runningTimer.aiEnableRatio ?? 0),
+      tags: formatTags(runningTimer.tags),
       resultNote: runningTimer.resultNote ?? (runningTimer.planId ? '由今日规划任务开始计时后生成。' : '')
     }
     const log = persistLog(nextDraft)
@@ -347,7 +357,8 @@ export function TimeDebtDashboard() {
     if (!planDraft.title.trim() || !planDraft.plannedStartTime || !planDraft.plannedEndTime || calculateDurationMinutes(planDraft.plannedStartTime, planDraft.plannedEndTime) <= 0) {
       return
     }
-    const nextPlan = createTimeDebtPlan(planDraft)
+    const planTags = parseTagInput(planDraft.tags)
+    const nextPlan = createTimeDebtPlan({ ...planDraft, tags: planTags })
     setPlans(appendTimeDebtPlan(nextPlan))
     upsertTimePlanReminder(
       createTimePlanReminder({
@@ -360,7 +371,7 @@ export function TimeDebtDashboard() {
         secondaryProject: nextPlan.secondaryProject
       })
     )
-    rememberOptions(planDraft.primaryCategory, planDraft.secondaryProject)
+    rememberOptions(planDraft.primaryCategory, planDraft.secondaryProject, planTags)
     setPlanDraft(createDefaultPlanDraft())
     setEntryMode(null)
   }
@@ -459,9 +470,16 @@ export function TimeDebtDashboard() {
           <TimelineView
             date={timelineDate}
             logs={logs}
+            plans={plans}
+            runningTimer={runningTimer}
+            timerNow={timerNow}
             onDateChange={setTimelineDate}
             onOpenManual={() => openEntry('manual')}
             onDelete={removeLog}
+            onStartPlan={(plan) => startTimer(planToLogDraft(plan), plan.id)}
+            onConvertPlanToManual={convertPlanToManualLog}
+            onAbandonPlan={abandonPlan}
+            onFinishTimer={finishTimer}
           />
         ) : null}
         {currentView === 'insights' ? <InsightsView overview={overview} stats={stats} diagnosis={diagnosis} logs={todayLogs} /> : null}
@@ -962,62 +980,291 @@ function TimeBlockPopover({
 function TimelineView({
   date,
   logs,
+  plans,
+  runningTimer,
+  timerNow,
   onDateChange,
   onOpenManual,
-  onDelete
+  onDelete,
+  onStartPlan,
+  onConvertPlanToManual,
+  onAbandonPlan,
+  onFinishTimer
 }: {
   date: string
   logs: TimeDebtLog[]
+  plans: TimeDebtPlan[]
+  runningTimer: RunningTimer | null
+  timerNow: number
   onDateChange: (date: string) => void
   onOpenManual: () => void
   onDelete: (logId: string) => void
+  onStartPlan: (plan: TimeDebtPlan) => void
+  onConvertPlanToManual: (plan: TimeDebtPlan) => void
+  onAbandonPlan: (planId: string) => void
+  onFinishTimer: () => void
 }) {
-  const dayLogs = logs.filter((log) => log.startTime.slice(0, 10) === date).sort((a, b) => a.startTime.localeCompare(b.startTime))
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const weekStart = useMemo(() => startOfWeek(new Date(`${date}T00:00`)), [date])
+  const weekDays = useMemo(() => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)), [weekStart])
+  const weekEnd = useMemo(() => addDays(weekStart, 7), [weekStart])
+  const weekBlocks = useMemo(() => {
+    const rangedLogs = logs.filter((log) => dateTimeOverlapsRange(log.startTime, log.endTime, weekStart, weekEnd))
+    const rangedPlans = plans.filter((plan) => dateTimeOverlapsRange(plan.plannedStartTime, plan.plannedEndTime, weekStart, weekEnd) || (plan.actualStartTime && dateTimeOverlapsRange(plan.actualStartTime, formatLocalDateTimeInput(new Date(timerNow)), weekStart, weekEnd)))
+    return buildCalendarBlocks(rangedLogs, rangedPlans, runningTimer, timerNow).filter((block) => dateTimeOverlapsRange(block.startTime, block.endTime, weekStart, weekEnd))
+  }, [logs, plans, runningTimer, timerNow, weekEnd, weekStart])
+  const selectedBlock = weekBlocks.find((block) => block.id === selectedBlockId) ?? null
+  const weekRangeText = `${formatDateSlash(weekStart)} - ${formatDateSlash(addDays(weekStart, 6))}`
+  const todayKey = formatDateKey(new Date(timerNow))
+  const includesToday = weekDays.some((day) => formatDateKey(day) === todayKey)
+  useEffect(() => {
+    const element = scrollRef.current
+    if (!element) {
+      return
+    }
+    const targetMinute = includesToday ? minutesFromDateTime(formatLocalDateTimeInput(new Date(timerNow))) : 8 * 60
+    element.scrollTop = Math.max(0, (targetMinute / 1440) * element.scrollHeight - element.clientHeight * 0.35)
+  }, [includesToday, timerNow, weekStart])
   return (
-    <div className="grid gap-4 xl:grid-cols-[0.72fr_0.28fr]">
-      <Panel title="时间账本" eyebrow={date}>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <TextField label="日期筛选" value={date} onChange={onDateChange} type="date" />
-          <button type="button" onClick={onOpenManual} className={primaryButtonClass}>
-            新增日志
-          </button>
+    <div className="grid min-h-[760px] gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <section className="min-w-0 rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Weekly Calendar</div>
+            <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">本周时间日志</h3>
+            <p className="mt-1 text-sm text-[color:var(--text-secondary)]">{weekRangeText}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => onDateChange(formatDateKey(addDays(weekStart, -7)))} className={tinyButtonClass}>
+              上一周
+            </button>
+            <button type="button" onClick={() => onDateChange(today)} className={tinyPrimaryButtonClass}>
+              今天
+            </button>
+            <button type="button" onClick={() => onDateChange(formatDateKey(addDays(weekStart, 7)))} className={tinyButtonClass}>
+              下一周
+            </button>
+            <button type="button" onClick={onOpenManual} className={primaryButtonClass}>
+              新增日志
+            </button>
+          </div>
         </div>
-        <div className="space-y-3">
-          {dayLogs.length === 0 ? <Empty text="这一天还没有时间日志。" /> : null}
-          {dayLogs.map((log) => (
-            <div key={log.id} className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="text-xs tabular-nums text-[color:var(--text-muted)]">
-                    {formatTimeOnly(log.startTime)} - {formatTimeOnly(log.endTime)}
-                  </div>
-                  <div className="mt-1 truncate text-base font-semibold text-[color:var(--text-primary)]">{log.title}</div>
-                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-[color:var(--text-secondary)]">
-                    <span>{log.primaryCategory}</span>
-                    <span>/</span>
-                    <span>{log.secondaryProject}</span>
-                    <span>/</span>
-                    <span>{formatMinutes(log.durationMinutes)}</span>
-                    <span>/</span>
-                    <span>状态 {typeof log.statusScore === 'number' ? log.statusScore : '待补'}</span>
-                  </div>
-                  {log.resultNote ? <p className="mt-3 text-sm leading-6 text-[color:var(--text-secondary)]">{log.resultNote}</p> : null}
+        <div className="mb-3 flex flex-wrap gap-2 text-xs text-[color:var(--text-secondary)]">
+          <Legend dotClass="border-dashed border-amber-400 bg-amber-400/10" label="Planned" />
+          <Legend dotClass="border-emerald-400 bg-emerald-400/20" label="Active" />
+          <Legend dotClass="border-cyan-400 bg-cyan-400/20" label="Completed" />
+          <Legend dotClass="border-rose-400 bg-rose-400/10" label="Missed" />
+        </div>
+        <div ref={scrollRef} className="max-h-[760px] overflow-auto rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)]">
+          <div className="sticky top-0 z-40 grid min-w-[920px] grid-cols-[72px_repeat(7,minmax(112px,1fr))] border-b border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)]">
+            <div className="border-r border-[color:var(--panel-border)] px-3 py-3 text-[10px] uppercase tracking-[0.16em] text-[color:var(--text-muted)]">Time</div>
+            {weekDays.map((day) => {
+              const dayKey = formatDateKey(day)
+              return (
+                <div key={dayKey} className={`border-r border-[color:var(--panel-border)] px-3 py-3 ${dayKey === todayKey ? 'bg-emerald-400/10' : ''}`}>
+                  <div className="text-[11px] text-[color:var(--text-muted)]">{weekDayLabel(day)}</div>
+                  <div className="mt-1 text-sm font-semibold text-[color:var(--text-primary)]">{formatMonthDay(day)}</div>
                 </div>
-                <button type="button" onClick={() => onDelete(log.id)} className={tinyButtonClass}>
-                  删除
-                </button>
+              )
+            })}
+          </div>
+          <div className="relative grid h-[1152px] min-w-[920px] grid-cols-[72px_repeat(7,minmax(112px,1fr))]">
+            <WeeklyTimeGrid />
+            {weekDays.map((day, dayIndex) => {
+              const dayKey = formatDateKey(day)
+              const dayBlocks = weekBlocks.filter((block) => block.dayKey === dayKey)
+              return (
+                <div key={dayKey} className={`relative border-r border-[color:var(--panel-border)] ${dayKey === todayKey ? 'bg-emerald-400/5' : ''}`} style={{ gridColumnStart: dayIndex + 2 }}>
+                  {dayBlocks.map((block) => (
+                    <WeeklyTimeBlock key={block.id} block={block} selected={selectedBlockId === block.id} onSelect={() => setSelectedBlockId(block.id)} />
+                  ))}
+                  {includesToday && dayKey === todayKey ? (
+                    <div className="absolute left-0 right-0 z-30 border-t border-rose-300/80" style={{ top: timeToTopPercent(formatLocalDateTimeInput(new Date(timerNow))) }}>
+                      <span className="absolute -top-3 left-1 rounded-full border border-rose-300/50 bg-rose-400/20 px-2 py-0.5 text-[10px] text-rose-100">now</span>
+                    </div>
+                  ) : null}
+                </div>
+              )
+            })}
+            {weekBlocks.length === 0 ? (
+              <div className="absolute left-[92px] right-5 top-8 rounded-2xl border border-dashed border-[color:var(--panel-border)] p-5 text-sm text-[color:var(--text-muted)]">
+                当前周还没有时间块。先补记、规划或开始计时。
               </div>
-            </div>
-          ))}
+            ) : null}
+          </div>
         </div>
+      </section>
+      <WeeklyEventDetailPanel
+        block={selectedBlock}
+        timerNow={timerNow}
+        onDelete={onDelete}
+        onStartPlan={onStartPlan}
+        onConvertPlanToManual={onConvertPlanToManual}
+        onAbandonPlan={onAbandonPlan}
+        onFinishTimer={onFinishTimer}
+      />
+    </div>
+  )
+}
+
+function WeeklyTimeGrid() {
+  return (
+    <>
+      <div className="relative border-r border-[color:var(--panel-border)]">
+        {Array.from({ length: 25 }, (_, hour) => (
+          <div key={hour} className="absolute left-0 right-0 border-t border-[color:var(--panel-border)]" style={{ top: `${(hour / 24) * 100}%` }}>
+            {hour < 24 ? <span className="absolute left-3 top-1 text-[11px] tabular-nums text-[color:var(--text-muted)]">{padDatePart(hour)}:00</span> : null}
+          </div>
+        ))}
+      </div>
+      <div className="pointer-events-none absolute bottom-0 left-[72px] right-0 top-0">
+        {Array.from({ length: 25 }, (_, hour) => (
+          <div key={hour} className="absolute left-0 right-0 border-t border-[color:var(--panel-border)]" style={{ top: `${(hour / 24) * 100}%` }} />
+        ))}
+        {Array.from({ length: 24 }, (_, hour) => (
+          <div key={`${hour}-half`} className="absolute left-0 right-0 border-t border-dashed border-[color:var(--panel-border)] opacity-40" style={{ top: `${((hour + 0.5) / 24) * 100}%` }} />
+        ))}
+      </div>
+    </>
+  )
+}
+
+function WeeklyTimeBlock({ block, selected, onSelect }: { block: CalendarBlock; selected: boolean; onSelect: () => void }) {
+  const heightMinutes = Math.max(block.durationMinutes, 25)
+  const widthFactor = (block.widthPercent ?? 100) / 100
+  const leftFactor = (block.leftPercent ?? 0) / 100
+  const style = {
+    top: timeToTopPercent(block.startTime),
+    height: `${(heightMinutes / 1440) * 100}%`,
+    left: `calc(4px + (100% - 10px) * ${leftFactor})`,
+    width: `calc((100% - 10px) * ${widthFactor})`
+  }
+  const blockClass =
+    block.status === 'planned'
+      ? 'border-dashed border-amber-400/45 bg-amber-400/10'
+      : block.status === 'active'
+        ? 'border-emerald-400/45 bg-emerald-400/18 shadow-[0_12px_28px_rgba(16,185,129,0.14)]'
+        : block.status === 'missed'
+          ? 'border-rose-400/35 bg-rose-400/10'
+          : categoryBlockClass(block.primaryCategory)
+  return (
+    <button
+      type="button"
+      className={`absolute z-20 overflow-hidden rounded-lg border border-l-4 p-2 text-left text-[color:var(--text-primary)] transition hover:z-30 hover:ring-1 hover:ring-white/20 ${selected ? 'z-40 ring-2 ring-[color:var(--node-selected-border)]' : ''} ${blockClass}`}
+      style={style}
+      title={`${block.title} / ${block.meta}`}
+      onClick={onSelect}
+    >
+      <div className="truncate text-xs font-semibold">{block.title}</div>
+      <div className="mt-1 truncate text-[10px] tabular-nums opacity-80">{formatTimeOnly(block.startTime)} - {formatTimeOnly(block.endTime)}</div>
+      <div className="mt-1 truncate text-[10px] opacity-75">{calendarStatusLabel(block.status)}</div>
+      <div className="mt-1 truncate text-[10px] opacity-70">{block.primaryCategory} / {block.secondaryProject}</div>
+    </button>
+  )
+}
+
+function WeeklyEventDetailPanel({
+  block,
+  timerNow,
+  onDelete,
+  onStartPlan,
+  onConvertPlanToManual,
+  onAbandonPlan,
+  onFinishTimer
+}: {
+  block: CalendarBlock | null
+  timerNow: number
+  onDelete: (logId: string) => void
+  onStartPlan: (plan: TimeDebtPlan) => void
+  onConvertPlanToManual: (plan: TimeDebtPlan) => void
+  onAbandonPlan: (planId: string) => void
+  onFinishTimer: () => void
+}) {
+  if (!block) {
+    return (
+      <Panel title="时间块详情" eyebrow="Detail">
+        <Empty text="点击周视图中的时间块查看详情。" />
+        <FieldTypeSummary />
       </Panel>
-      <Panel title="当日摘要" eyebrow="Ledger">
-        <Metric label="日志数量" value={`${dayLogs.length} 条`} />
-        <div className="mt-3">
-          <Metric label="总记录时长" value={formatMinutes(sum(dayLogs.map((log) => log.durationMinutes)))} />
+    )
+  }
+  const canStart = block.plan ? canStartPlan(block.plan, timerNow) : false
+  return (
+    <Panel title="时间块详情" eyebrow={calendarStatusLabel(block.status)}>
+      <div className="space-y-3 text-sm">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Task</div>
+          <div className="mt-1 text-lg font-semibold text-[color:var(--text-primary)]">{block.title}</div>
         </div>
-        <p className="mt-4 text-sm leading-6 text-[color:var(--text-secondary)]">时间轴第一版保留日志增删能力，视觉上按时间账本阅读，为后续周/月视图留下入口。</p>
-      </Panel>
+        <DetailRow label="状态" value={calendarStatusLabel(block.status)} />
+        <DetailRow label="一级分类" value={block.primaryCategory} />
+        <DetailRow label="二级项目" value={block.secondaryProject} />
+        <DetailRow label="开始时间" value={formatDateTimeReadable(block.startTime)} />
+        <DetailRow label="结束时间" value={formatDateTimeReadable(block.endTime)} />
+        <DetailRow label={block.status === 'active' ? '当前已计时' : '实际时长'} value={formatMinutes(block.durationMinutes)} />
+        <DetailRow label="AI 赋能比例" value={typeof block.aiEnableRatio === 'number' ? formatPercent(block.aiEnableRatio) : '待补'} />
+        <DetailRow label="状态分" value={typeof block.statusScore === 'number' ? String(block.statusScore) : '待补'} />
+        <DetailRow label="标签" value={block.tags?.length ? block.tags.join(' / ') : '无'} />
+        <DetailRow label="干扰源" value={block.distractionSource || '无'} />
+        {block.note ? <p className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3 leading-6 text-[color:var(--text-secondary)]">{block.note}</p> : null}
+        {block.status === 'planned' && block.plan ? (
+          <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-xs leading-6 text-[color:var(--text-secondary)]">
+            {planReminderDetail(block.plan, timerNow)}
+          </div>
+        ) : null}
+        {block.status === 'missed' && block.plan ? (
+          <div className="rounded-2xl border border-rose-400/20 bg-rose-400/10 p-3 text-xs leading-6 text-[color:var(--text-secondary)]">
+            {planReminderDetail(block.plan, timerNow)}
+          </div>
+        ) : null}
+        <div className="flex flex-wrap gap-2 pt-1">
+          {block.plan && (block.status === 'planned' || block.status === 'missed') ? (
+            <>
+              <button type="button" disabled={!canStart} onClick={() => onStartPlan(block.plan as TimeDebtPlan)} className={`${canStart ? tinyPrimaryButtonClass : tinyButtonClass} disabled:cursor-not-allowed disabled:opacity-50`}>
+                {block.status === 'missed' ? '现在开始' : '开始计时'}
+              </button>
+              {block.status === 'missed' ? (
+                <>
+                  <button type="button" onClick={() => onConvertPlanToManual(block.plan as TimeDebtPlan)} className={tinyButtonClass}>
+                    转为补记
+                  </button>
+                  <button type="button" onClick={() => onAbandonPlan((block.plan as TimeDebtPlan).id)} className={tinyButtonClass}>
+                    忽略
+                  </button>
+                </>
+              ) : null}
+            </>
+          ) : null}
+          {block.status === 'active' ? (
+            <button type="button" onClick={onFinishTimer} className={primaryButtonClass}>
+              结束计时
+            </button>
+          ) : null}
+          {block.log ? (
+            <button type="button" onClick={() => onDelete(block.log?.id ?? block.id)} className={tinyButtonClass}>
+              删除日志
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </Panel>
+  )
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3 border-b border-[color:var(--panel-border)] pb-2 text-xs">
+      <span className="text-[color:var(--text-muted)]">{label}</span>
+      <span className="text-right text-[color:var(--text-primary)]">{value}</span>
+    </div>
+  )
+}
+
+function FieldTypeSummary() {
+  return (
+    <div className="mt-4 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3 text-xs leading-6 text-[color:var(--text-secondary)]">
+      字段层：{timeDebtSupportedFieldTypes.join(' / ')}。预留：{timeDebtReservedFieldTypes.join(' / ')}。
     </div>
   )
 }
@@ -1095,7 +1342,7 @@ function EntryModal({
   onClose: () => void
   onLogChange: (patch: Partial<LogDraft>) => void
   onPlanChange: (patch: Partial<PlanDraft>) => void
-  onCreateOption: (values: { category?: string; project?: string; unit?: string }) => void
+  onCreateOption: (values: { category?: string; project?: string; tags?: string[]; distraction?: string }) => void
   onStartTimer: () => void
   onSaveManual: () => void
   onSavePlan: () => void
@@ -1105,7 +1352,7 @@ function EntryModal({
     <Modal title={title} eyebrow="Time Entry" onClose={onClose}>
       {mode === 'plan' ? (
         <div className="grid gap-3 md:grid-cols-2">
-          <TextField label="任务名" value={planDraft.title} onChange={(title) => onPlanChange({ title })} />
+          <TextField label={timeDebtFieldConfigs.title.label} value={planDraft.title} onChange={(title) => onPlanChange({ title })} placeholder={timeDebtFieldConfigs.title.placeholder} />
           <CategoryFields
             primaryCategory={planDraft.primaryCategory}
             secondaryProject={planDraft.secondaryProject}
@@ -1114,9 +1361,17 @@ function EntryModal({
             onSecondaryChange={(secondaryProject) => onPlanChange({ secondaryProject })}
             onCreateOption={onCreateOption}
           />
-          <TextField label="计划开始" value={planDraft.plannedStartTime} onChange={(plannedStartTime) => onPlanChange({ plannedStartTime })} type="datetime-local" />
-          <TextField label="计划结束" value={planDraft.plannedEndTime} onChange={(plannedEndTime) => onPlanChange({ plannedEndTime })} type="datetime-local" />
-          <Field label="备注">
+          <TextField label={timeDebtFieldConfigs.plannedStartTime.label} value={planDraft.plannedStartTime} onChange={(plannedStartTime) => onPlanChange({ plannedStartTime })} type="datetime-local" />
+          <TextField label={timeDebtFieldConfigs.plannedEndTime.label} value={planDraft.plannedEndTime} onChange={(plannedEndTime) => onPlanChange({ plannedEndTime })} type="datetime-local" />
+          <SmartOptionInput
+            label={timeDebtFieldConfigs.tags.label}
+            value={planDraft.tags}
+            options={options.tags}
+            placeholder={timeDebtFieldConfigs.tags.placeholder}
+            onChange={(tags) => onPlanChange({ tags })}
+            onCreateOption={(tag) => onCreateOption({ tags: parseTagInput(tag) })}
+          />
+          <Field label={timeDebtFieldConfigs.note.label}>
             <textarea value={planDraft.note} onChange={(event) => onPlanChange({ note: event.target.value })} rows={3} className={inputClass} />
           </Field>
           <div className="md:col-span-2">
@@ -1127,7 +1382,7 @@ function EntryModal({
         </div>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          <TextField label="任务名" value={logDraft.title} onChange={(title) => onLogChange({ title })} />
+          <TextField label={timeDebtFieldConfigs.title.label} value={logDraft.title} onChange={(title) => onLogChange({ title })} placeholder={timeDebtFieldConfigs.title.placeholder} />
           <CategoryFields
             primaryCategory={logDraft.primaryCategory}
             secondaryProject={logDraft.secondaryProject}
@@ -1138,19 +1393,43 @@ function EntryModal({
           />
           {mode === 'manual' ? (
             <>
-              <TextField label="开始时间" value={logDraft.startTime} onChange={(startTime) => onLogChange({ startTime })} type="datetime-local" />
-              <TextField label="结束时间" value={logDraft.endTime} onChange={(endTime) => onLogChange({ endTime })} type="datetime-local" />
-              <TextField label="状态分" value={logDraft.statusScore} onChange={(statusScore) => onLogChange({ statusScore })} type="number" />
-              <TextField label="AI 赋能比例（%）" value={logDraft.aiEnableRatio} onChange={(aiEnableRatio) => onLogChange({ aiEnableRatio: clampPercentInput(aiEnableRatio) })} type="number" />
-              <Field label="结果记录 / 备注">
+              <TextField label={timeDebtFieldConfigs.startTime.label} value={logDraft.startTime} onChange={(startTime) => onLogChange({ startTime })} type="datetime-local" />
+              <TextField label={timeDebtFieldConfigs.endTime.label} value={logDraft.endTime} onChange={(endTime) => onLogChange({ endTime })} type="datetime-local" />
+              <TextField label={timeDebtFieldConfigs.statusScore.label} value={logDraft.statusScore} onChange={(statusScore) => onLogChange({ statusScore })} type="number" />
+              <TextField label={timeDebtFieldConfigs.aiEnableRatio.label} value={logDraft.aiEnableRatio} onChange={(aiEnableRatio) => onLogChange({ aiEnableRatio: clampPercentInput(aiEnableRatio) })} type="number" />
+              <SmartOptionInput
+                label={timeDebtFieldConfigs.tags.label}
+                value={logDraft.tags}
+                options={options.tags}
+                placeholder={timeDebtFieldConfigs.tags.placeholder}
+                onChange={(tags) => onLogChange({ tags })}
+                onCreateOption={(tag) => onCreateOption({ tags: parseTagInput(tag) })}
+              />
+              <SmartOptionInput
+                label={timeDebtFieldConfigs.distractionSource.label}
+                value={logDraft.distractionSource}
+                options={options.distractions}
+                placeholder={timeDebtFieldConfigs.distractionSource.placeholder}
+                onChange={(distractionSource) => onLogChange({ distractionSource })}
+                onCreateOption={(distraction) => onCreateOption({ distraction })}
+              />
+              <Field label={timeDebtFieldConfigs.note.label}>
                 <textarea value={logDraft.resultNote} onChange={(event) => onLogChange({ resultNote: event.target.value })} rows={3} className={inputClass} />
               </Field>
             </>
           ) : (
             <>
-              <TextField label="开始时间" value={logDraft.startTime} onChange={(startTime) => onLogChange({ startTime })} type="datetime-local" />
-              <TextField label="AI 赋能比例（%）" value={logDraft.aiEnableRatio} onChange={(aiEnableRatio) => onLogChange({ aiEnableRatio: clampPercentInput(aiEnableRatio) })} type="number" />
-              <Field label="备注">
+              <TextField label={timeDebtFieldConfigs.startTime.label} value={logDraft.startTime} onChange={(startTime) => onLogChange({ startTime })} type="datetime-local" />
+              <TextField label={timeDebtFieldConfigs.aiEnableRatio.label} value={logDraft.aiEnableRatio} onChange={(aiEnableRatio) => onLogChange({ aiEnableRatio: clampPercentInput(aiEnableRatio) })} type="number" />
+              <SmartOptionInput
+                label={timeDebtFieldConfigs.tags.label}
+                value={logDraft.tags}
+                options={options.tags}
+                placeholder={timeDebtFieldConfigs.tags.placeholder}
+                onChange={(tags) => onLogChange({ tags })}
+                onCreateOption={(tag) => onCreateOption({ tags: parseTagInput(tag) })}
+              />
+              <Field label={timeDebtFieldConfigs.note.label}>
                 <textarea value={logDraft.resultNote} onChange={(event) => onLogChange({ resultNote: event.target.value })} rows={3} className={inputClass} />
               </Field>
               <p className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3 text-sm leading-6 text-[color:var(--text-secondary)]">
@@ -1354,7 +1633,7 @@ function CategoryFields({
   options: TimeDebtOptions
   onPrimaryChange: (value: string) => void
   onSecondaryChange: (value: string) => void
-  onCreateOption: (values: { category?: string; project?: string; unit?: string }) => void
+  onCreateOption: (values: { category?: string; project?: string; tags?: string[]; distraction?: string }) => void
 }) {
   const categoryOptions = Array.from(new Set([...options.categories, ...defaultProjectCategories.map((item) => item.primaryCategory)]))
   const projectOptions = Array.from(new Set([...options.projects, ...defaultProjectCategories.map((item) => item.secondaryProject)]))
@@ -1406,16 +1685,18 @@ function TextField({
   label,
   value,
   onChange,
-  type = 'text'
+  type = 'text',
+  placeholder
 }: {
   label: string
   value: string
   onChange: (value: string) => void
   type?: string
+  placeholder?: string
 }) {
   return (
     <Field label={label}>
-      <input value={value} onChange={(event) => onChange(event.target.value)} type={type} className={inputClass} />
+      <input value={value} onChange={(event) => onChange(event.target.value)} type={type} placeholder={placeholder} className={inputClass} />
     </Field>
   )
 }
@@ -1439,7 +1720,14 @@ function buildCalendarBlocks(logs: TimeDebtLog[], plans: TimeDebtPlan[], running
     endTime: log.endTime,
     durationMinutes: Math.max(log.durationMinutes, calculateDurationMinutes(log.startTime, log.endTime)),
     status: 'completed',
-    meta: `${formatMinutes(log.durationMinutes)} / ${log.workload ? `${log.workload}${log.workloadUnit ?? ''}` : '已完成'}`
+    meta: `${formatMinutes(log.durationMinutes)} / 已完成`,
+    dayKey: log.startTime.slice(0, 10),
+    tags: log.tags,
+    distractionSource: log.distractionSource,
+    aiEnableRatio: log.aiEnableRatio,
+    statusScore: log.statusScore,
+    note: log.resultNote,
+    log
   }))
   const planned: CalendarBlock[] = plans
     .filter((plan) => plan.status === 'planned')
@@ -1455,6 +1743,9 @@ function buildCalendarBlocks(logs: TimeDebtLog[], plans: TimeDebtPlan[], running
         durationMinutes: calculateDurationMinutes(plan.plannedStartTime, plan.plannedEndTime),
         status: reminderStatus === 'missed' ? 'missed' : 'planned',
         meta: `${planReminder(plan, timerNow)} / 计划 ${formatTimeOnly(plan.plannedStartTime)}-${formatTimeOnly(plan.plannedEndTime)}`,
+        dayKey: plan.plannedStartTime.slice(0, 10),
+        tags: plan.tags,
+        note: plan.note,
         plan
       } satisfies CalendarBlock
     })
@@ -1472,6 +1763,9 @@ function buildCalendarBlocks(logs: TimeDebtLog[], plans: TimeDebtPlan[], running
         durationMinutes: Math.max(1, calculateDurationMinutes(startTime, formatLocalDateTimeInput(new Date(timerNow)))),
         status: 'active',
         meta: `进行中 / 原计划 ${formatTimeOnly(plan.plannedStartTime)}-${formatTimeOnly(plan.plannedEndTime)} / 实际开始 ${formatTimeOnly(startTime)}`,
+        dayKey: startTime.slice(0, 10),
+        tags: plan.tags,
+        note: plan.note,
         plan
       } satisfies CalendarBlock
     })
@@ -1486,6 +1780,10 @@ function buildCalendarBlocks(logs: TimeDebtLog[], plans: TimeDebtPlan[], running
           endTime: formatLocalDateTimeInput(new Date(timerNow)),
           durationMinutes: Math.max(1, Math.round((timerNow - runningTimer.startTimestampMs) / 60000)),
           status: 'active',
+          dayKey: runningTimer.startTime.slice(0, 10),
+          tags: runningTimer.tags,
+          aiEnableRatio: runningTimer.aiEnableRatio,
+          note: runningTimer.resultNote,
           meta: runningTimer.plannedStartTime
             ? `进行中 / 原计划 ${formatTimeOnly(runningTimer.plannedStartTime)}-${formatTimeOnly(runningTimer.plannedEndTime ?? '')} / 建议结束 ${runningTimer.suggestedEndTime ? formatTimeOnly(runningTimer.suggestedEndTime) : '--:--'}`
             : '进行中'
@@ -1500,7 +1798,7 @@ function applyOverlapLayout(blocks: CalendarBlock[]): CalendarBlock[] {
   for (let index = 0; index < positioned.length; index += 1) {
     const block = positioned[index]
     const overlappingIndexes = positioned
-      .map((candidate, candidateIndex) => (blocksOverlap(block, candidate) ? candidateIndex : -1))
+      .map((candidate, candidateIndex) => (block.dayKey === candidate.dayKey && blocksOverlap(block, candidate) ? candidateIndex : -1))
       .filter((candidateIndex) => candidateIndex >= 0)
     if (overlappingIndexes.length <= 1) {
       continue
@@ -1572,10 +1870,10 @@ function createDefaultLogDraft(): LogDraft {
     secondaryProject: 'growth-tree-os',
     startTime: formatLocalDateTimeInput(start),
     endTime: formatLocalDateTimeInput(end),
-    workload: '',
-    workloadUnit: 'min',
     statusScore: '',
     aiEnableRatio: '',
+    tags: '',
+    distractionSource: '',
     dimension: '时间管理',
     resultNote: ''
   }
@@ -1591,6 +1889,7 @@ function createDefaultPlanDraft(): PlanDraft {
     secondaryProject: 'growth-tree-os',
     plannedStartTime: formatLocalDateTimeInput(start),
     plannedEndTime: formatLocalDateTimeInput(end),
+    tags: '',
     note: ''
   }
 }
@@ -1602,6 +1901,7 @@ function planToDraft(plan: TimeDebtPlan): PlanDraft {
     secondaryProject: plan.secondaryProject,
     plannedStartTime: plan.plannedStartTime,
     plannedEndTime: plan.plannedEndTime,
+    tags: formatTags(plan.tags),
     note: plan.note ?? ''
   }
 }
@@ -1614,6 +1914,7 @@ function planToLogDraft(plan: TimeDebtPlan): LogDraft {
     secondaryProject: plan.secondaryProject,
     startTime: formatLocalDateTimeInput(new Date()),
     endTime: '',
+    tags: formatTags(plan.tags),
     resultNote: plan.note || '由今日计划任务启动。'
   }
 }
@@ -1626,7 +1927,6 @@ function activeTimerToRunningTimer(timer: ReturnType<typeof loadActiveTimeDebtTi
     title: timer.title,
     primaryCategory: timer.primaryCategory,
     secondaryProject: timer.secondaryProject,
-    workloadUnit: timer.workloadUnit,
     startTime: timer.actualStart,
     startTimestampMs: timer.startTimestampMs,
     planId: timer.sourcePlanId,
@@ -1635,6 +1935,7 @@ function activeTimerToRunningTimer(timer: ReturnType<typeof loadActiveTimeDebtTi
     plannedDurationMinutes: timer.plannedDuration,
     suggestedEndTime: timer.suggestedEnd,
     aiEnableRatio: timer.aiEnableRatio,
+    tags: timer.tags,
     resultNote: timer.resultNote
   }
 }
@@ -1647,7 +1948,7 @@ function planToManualDraft(plan: TimeDebtPlan): LogDraft {
     secondaryProject: plan.secondaryProject,
     startTime: plan.plannedStartTime,
     endTime: plan.plannedEndTime,
-    workload: '',
+    tags: formatTags(plan.tags),
     resultNote: plan.note || '由错过的计划任务转为补记。'
   }
 }
@@ -1758,6 +2059,14 @@ function clampPercentInput(value: string): string {
   return String(Math.min(100, Math.max(0, numberValue)))
 }
 
+function parseTagInput(value: string): string[] {
+  return Array.from(new Set(value.split(/[,，]/).map((tag) => tag.trim()).filter(Boolean)))
+}
+
+function formatTags(tags: string[] | undefined): string {
+  return tags?.join(', ') ?? ''
+}
+
 function formatLocalDateTimeInput(date: Date): string {
   const year = date.getFullYear()
   const month = padDatePart(date.getMonth() + 1)
@@ -1767,8 +2076,67 @@ function formatLocalDateTimeInput(date: Date): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`
 }
 
+function startOfWeek(date: Date): Date {
+  const next = new Date(date)
+  const day = next.getDay()
+  next.setDate(next.getDate() - day)
+  next.setHours(0, 0, 0, 0)
+  return next
+}
+
+function addDays(date: Date, days: number): Date {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+function formatDateKey(date: Date): string {
+  const year = date.getFullYear()
+  const month = padDatePart(date.getMonth() + 1)
+  const day = padDatePart(date.getDate())
+  return `${year}-${month}-${day}`
+}
+
+function formatDateSlash(date: Date): string {
+  return `${date.getFullYear()}/${padDatePart(date.getMonth() + 1)}/${padDatePart(date.getDate())}`
+}
+
+function formatMonthDay(date: Date): string {
+  return `${padDatePart(date.getMonth() + 1)}/${padDatePart(date.getDate())}`
+}
+
+function weekDayLabel(date: Date): string {
+  return ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][date.getDay()]
+}
+
+function dateTimeOverlapsRange(startTime: string, endTime: string, rangeStart: Date, rangeEnd: Date): boolean {
+  const start = new Date(startTime).getTime()
+  const end = new Date(endTime || startTime).getTime()
+  return Number.isFinite(start) && Number.isFinite(end) && start < rangeEnd.getTime() && Math.max(end, start + 60000) > rangeStart.getTime()
+}
+
+function formatDateTimeReadable(value: string): string {
+  if (!value) {
+    return '待补'
+  }
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+  return `${formatDateSlash(date)} ${formatTimeOnly(value)}`
+}
+
 function padDatePart(value: number): string {
   return String(value).padStart(2, '0')
+}
+
+function calendarStatusLabel(status: CalendarBlock['status']): string {
+  return {
+    planned: '计划中',
+    active: '进行中',
+    completed: '已完成',
+    missed: '已错过'
+  }[status]
 }
 
 function formatTimeOnly(value: string): string {
@@ -1803,10 +2171,11 @@ function formatMoney(value: number): string {
 }
 
 function formatPercent(value: number): string {
+  const ratio = value > 1 ? value / 100 : value
   return new Intl.NumberFormat('zh-CN', {
     style: 'percent',
     maximumFractionDigits: 0
-  }).format(value)
+  }).format(ratio)
 }
 
 function formatDiagnosisReason(overview: TimeDebtOverview, diagnosis: TimeDebtDiagnosis): string {
