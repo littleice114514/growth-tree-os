@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import type { CalendarBlock, CalendarDragPreview, PositionedCalendarBlock } from './calendarTypes'
+import type { CalendarBlock, CalendarDragPreview, CalendarResizeEdge, CalendarResizePreview, PositionedCalendarBlock } from './calendarTypes'
 
 const CLICK_DRAG_THRESHOLD_PX = 3
 
@@ -7,18 +7,22 @@ export function CalendarEventBlock({
   block,
   selected,
   dragPreview,
+  resizePreview,
   dayIndex,
   columnCount,
   onSelect,
-  onDragStart
+  onDragStart,
+  onResizeStart
 }: {
   block: PositionedCalendarBlock
   selected: boolean
   dragPreview: CalendarDragPreview
+  resizePreview: CalendarResizePreview
   dayIndex: number
   columnCount: number
   onSelect: (block: CalendarBlock) => void
   onDragStart: (block: CalendarBlock, drag: { originClientX: number; originClientY: number; currentClientX: number; currentClientY: number; dayColumnWidth: number; dayIndex: number; columnCount: number }) => void
+  onResizeStart: (block: CalendarBlock, edge: CalendarResizeEdge, originClientY: number) => void
 }) {
   const interactionRef = useRef<{ originClientX: number; originClientY: number; startedDrag: boolean } | null>(null)
   const style = {
@@ -29,21 +33,23 @@ export function CalendarEventBlock({
   }
   const blockClass =
     block.status === 'planned'
-      ? 'border-dashed border-amber-400/45 bg-amber-400/10'
+      ? 'border-dashed border-amber-500/55 border-l-amber-500 bg-amber-100/80 text-amber-950 shadow-[0_8px_20px_rgba(180,83,9,0.08)] dark:bg-amber-300/16 dark:text-amber-50'
       : block.status === 'active'
-        ? 'border-emerald-400/45 bg-emerald-400/18 shadow-[0_12px_28px_rgba(16,185,129,0.14)]'
+        ? 'border-emerald-600/45 border-l-emerald-600 bg-emerald-100/85 text-emerald-950 shadow-[0_12px_28px_rgba(16,185,129,0.12)] dark:bg-emerald-300/18 dark:text-emerald-50'
         : block.status === 'missed'
-          ? 'border-rose-400/35 bg-rose-400/10'
-          : categoryBlockClass(block.primaryCategory)
+          ? 'border-rose-500/45 border-l-rose-500 bg-rose-100/85 text-rose-950 shadow-[0_8px_20px_rgba(225,29,72,0.08)] dark:bg-rose-300/14 dark:text-rose-50'
+          : 'border-sky-600/40 border-l-sky-600 bg-sky-100/85 text-sky-950 shadow-[0_8px_20px_rgba(2,132,199,0.08)] dark:bg-sky-300/14 dark:text-sky-50'
   const showTimeRange = block.height >= 34
   const showStatus = block.height >= 58
   const canDrag = block.status !== 'active'
+  const canResize = block.status !== 'active'
   const isDragging = dragPreview?.blockId === block.id
+  const isResizing = resizePreview?.blockId === block.id
 
   return (
       <button
         type="button"
-        className={`absolute z-20 overflow-hidden rounded-lg border border-l-4 px-2 py-1.5 text-left text-[color:var(--text-primary)] transition hover:z-30 hover:ring-1 hover:ring-white/20 ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} ${selected ? 'z-40 ring-2 ring-sky-300/80' : ''} ${isDragging ? 'opacity-45' : ''} ${blockClass}`}
+        className={`absolute z-20 overflow-hidden rounded-lg border border-l-4 px-2 py-1.5 text-left transition hover:z-30 hover:ring-1 hover:ring-sky-300/35 ${canDrag ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} ${selected ? 'z-40 ring-2 ring-sky-300/80' : ''} ${isDragging || isResizing ? 'opacity-45' : ''} ${blockClass}`}
         style={style}
         title={`${block.title} / ${block.meta}${canDrag ? '' : ' / Active tasks cannot be dragged'}`}
         onClick={(event) => {
@@ -90,6 +96,8 @@ export function CalendarEventBlock({
           window.addEventListener('mouseup', handleUp, { once: true })
         }}
       >
+        {canResize ? <ResizeHandle edge="start" block={block} onResizeStart={onResizeStart} /> : null}
+        {canResize ? <ResizeHandle edge="end" block={block} onResizeStart={onResizeStart} /> : null}
         <div className="truncate text-xs font-semibold">{block.title}</div>
         {showTimeRange ? (
           <div className="mt-0.5 truncate text-[10px] tabular-nums opacity-80">
@@ -117,10 +125,25 @@ export function formatTimeOnly(value: string): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
-function categoryBlockClass(category: string): string {
-  if (category.includes('学习')) return 'border-emerald-300/40 bg-emerald-300/12'
-  if (category.includes('运动')) return 'border-lime-300/40 bg-lime-300/12'
-  if (category.includes('娱乐') || category.includes('空转')) return 'border-violet-300/35 bg-violet-300/12'
-  if (category.includes('生活')) return 'border-sky-300/35 bg-sky-300/12'
-  return 'border-cyan-300/40 bg-cyan-300/12'
+function ResizeHandle({
+  edge,
+  block,
+  onResizeStart
+}: {
+  edge: CalendarResizeEdge
+  block: CalendarBlock
+  onResizeStart: (block: CalendarBlock, edge: CalendarResizeEdge, originClientY: number) => void
+}) {
+  return (
+    <span
+      className={`absolute left-0 right-0 z-10 h-2 cursor-ns-resize ${edge === 'start' ? 'top-0' : 'bottom-0'}`}
+      aria-hidden="true"
+      onMouseDown={(event) => {
+        if (event.button !== 0) return
+        event.preventDefault()
+        event.stopPropagation()
+        onResizeStart(block, edge, event.clientY)
+      }}
+    />
+  )
 }

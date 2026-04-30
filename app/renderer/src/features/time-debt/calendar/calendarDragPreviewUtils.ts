@@ -1,5 +1,7 @@
-import type { CalendarBlock, CalendarDragPreview, CalendarDragState, CalendarTimeScale } from './calendarTypes'
+import type { CalendarBlock, CalendarDragPreview, CalendarDragState, CalendarResizeEdge, CalendarResizePreview, CalendarResizeState, CalendarTimeScale } from './calendarTypes'
 import { formatMinutesAsTime, minutesFromDateTime, pixelToTime, snapToMinute } from './calendarTimePositionUtils'
+
+const MIN_RESIZE_DURATION_MINUTES = 15
 
 export function createDragState(
   block: CalendarBlock,
@@ -55,4 +57,44 @@ export function formatPreviewRange(preview: NonNullable<CalendarDragPreview>): s
 
 export function previewDeltaMinutes(preview: NonNullable<CalendarDragPreview>): number {
   return preview.startMinutes - preview.originalStartMinutes
+}
+
+export function createResizeState(block: CalendarBlock, edge: CalendarResizeEdge, originClientY: number): CalendarResizeState {
+  const start = minutesFromDateTime(block.startTime)
+  const duration = Math.max(block.durationMinutes, MIN_RESIZE_DURATION_MINUTES)
+  return {
+    blockId: block.id,
+    edge,
+    originClientY,
+    originStartMinutes: start,
+    originEndMinutes: Math.min(24 * 60, start + duration),
+    dayKey: block.dayKey
+  }
+}
+
+export function createResizePreview(
+  resizeState: NonNullable<CalendarResizeState>,
+  clientY: number,
+  scale: CalendarTimeScale
+): CalendarResizePreview {
+  const deltaMinutes = snapToMinute(pixelToTime(clientY - resizeState.originClientY, scale) - scale.visibleStartHour * 60, scale.snapMinutes)
+  const startLimit = Math.max(0, resizeState.originEndMinutes - MIN_RESIZE_DURATION_MINUTES)
+  const endLimit = Math.min(24 * 60, resizeState.originStartMinutes + MIN_RESIZE_DURATION_MINUTES)
+  const startMinutes =
+    resizeState.edge === 'start'
+      ? Math.max(0, Math.min(startLimit, resizeState.originStartMinutes + deltaMinutes))
+      : resizeState.originStartMinutes
+  const endMinutes =
+    resizeState.edge === 'end'
+      ? Math.min(24 * 60, Math.max(endLimit, resizeState.originEndMinutes + deltaMinutes))
+      : resizeState.originEndMinutes
+  return {
+    blockId: resizeState.blockId,
+    edge: resizeState.edge,
+    dayKey: resizeState.dayKey,
+    startMinutes,
+    endMinutes,
+    originalStartMinutes: resizeState.originStartMinutes,
+    originalEndMinutes: resizeState.originEndMinutes
+  }
 }

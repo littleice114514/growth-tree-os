@@ -428,6 +428,48 @@ export function TimeDebtDashboard() {
     [logs, plans]
   )
 
+  const resizeCalendarBlock = useCallback(
+    (blockId: string, nextStartTime: string, nextEndTime: string) => {
+      const nextDuration = calculateDurationMinutes(nextStartTime, nextEndTime)
+      if (nextDuration < 15) {
+        return
+      }
+      const logToResize = logs.find((log) => log.id === blockId)
+      if (logToResize) {
+        const nextLogs = logs.map((log) =>
+          log.id === blockId
+            ? {
+                ...log,
+                startTime: nextStartTime,
+                endTime: nextEndTime,
+                durationMinutes: nextDuration
+              }
+            : log
+        )
+        saveTimeDebtLogs(nextLogs)
+        setLogs(nextLogs)
+        return
+      }
+
+      const planToResize = plans.find((plan) => plan.id === blockId && plan.status === 'planned')
+      if (!planToResize) {
+        return
+      }
+      const nextPlans = updateTimeDebtPlan(blockId, {
+        plannedStartTime: nextStartTime,
+        plannedEndTime: nextEndTime,
+        plannedDurationMinutes: nextDuration
+      })
+      updateTimePlanReminderBySource(blockId, {
+        plannedStart: nextStartTime,
+        plannedEnd: nextEndTime,
+        plannedDuration: nextDuration
+      })
+      setPlans(nextPlans)
+    },
+    [logs, plans]
+  )
+
   useEffect(() => {
     const intent = consumeTimeDebtNavigationIntent()
     if (!intent) {
@@ -509,6 +551,7 @@ export function TimeDebtDashboard() {
             onAbandonPlan={abandonPlan}
             onFinishTimer={finishTimer}
             onMoveBlock={moveCalendarBlock}
+            onResizeBlock={resizeCalendarBlock}
           />
         ) : null}
         {currentView === 'insights' ? <InsightsView overview={overview} stats={stats} diagnosis={diagnosis} logs={todayLogs} /> : null}

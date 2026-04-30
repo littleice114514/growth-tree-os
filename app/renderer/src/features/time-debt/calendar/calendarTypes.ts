@@ -78,6 +78,27 @@ export type CalendarDragPreview = {
   deltaDays: number
 } | null
 
+export type CalendarResizeEdge = 'start' | 'end'
+
+export type CalendarResizeState = {
+  blockId: string
+  edge: CalendarResizeEdge
+  originClientY: number
+  originStartMinutes: number
+  originEndMinutes: number
+  dayKey: string
+} | null
+
+export type CalendarResizePreview = {
+  blockId: string
+  edge: CalendarResizeEdge
+  dayKey: string
+  startMinutes: number
+  endMinutes: number
+  originalStartMinutes: number
+  originalEndMinutes: number
+} | null
+
 export const defaultCalendarTimeScale: CalendarTimeScale = {
   visibleStartHour: 0,
   visibleEndHour: 24,

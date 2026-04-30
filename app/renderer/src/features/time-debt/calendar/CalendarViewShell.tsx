@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { TimeDebtPlan } from '../timeDebtPlansStorage'
-import type { CalendarBlock, CalendarDragPreview, CalendarDragState, CalendarViewMode } from './calendarTypes'
+import type { CalendarBlock, CalendarDragPreview, CalendarDragState, CalendarResizeEdge, CalendarResizePreview, CalendarResizeState, CalendarViewMode } from './calendarTypes'
 import { defaultCalendarTimeScale } from './calendarTypes'
 import { buildCalendarRange, dateTimeOverlapsRange, formatDateKey, shiftAnchorDate } from './calendarDateUtils'
-import { createDragPreview, createDragState } from './calendarDragPreviewUtils'
+import { createDragPreview, createDragState, createResizePreview, createResizeState } from './calendarDragPreviewUtils'
 import { CalendarEventDetailPanel } from './CalendarEventDetailPanel'
 import { CalendarViewSwitcher } from './CalendarViewSwitcher'
 import { CustomDaysCalendarView } from './CustomDaysCalendarView'
@@ -29,7 +29,8 @@ export function CalendarViewShell({
   onConvertPlanToManual,
   onAbandonPlan,
   onFinishTimer,
-  onMoveBlock
+  onMoveBlock,
+  onResizeBlock
 }: {
   mode: CalendarViewMode
   anchorDate: string
@@ -46,11 +47,14 @@ export function CalendarViewShell({
   onAbandonPlan: (planId: string) => void
   onFinishTimer: () => void
   onMoveBlock: (blockId: string, nextStartTime: string, nextEndTime: string) => void
+  onResizeBlock: (blockId: string, nextStartTime: string, nextEndTime: string) => void
 }) {
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
   const [calendarNow, setCalendarNow] = useState(() => new Date(timerNow))
   const [dragState, setDragState] = useState<CalendarDragState>(null)
   const [dragPreview, setDragPreview] = useState<CalendarDragPreview>(null)
+  const [resizeState, setResizeState] = useState<CalendarResizeState>(null)
+  const [resizePreview, setResizePreview] = useState<CalendarResizePreview>(null)
   const previousTodayKeyRef = useRef(formatDateKey(new Date(timerNow)))
   const todayKey = formatDateKey(calendarNow)
   const range = useMemo(() => buildCalendarRange(mode, anchorDate, customDayCount), [anchorDate, customDayCount, mode])
@@ -102,6 +106,31 @@ export function CalendarViewShell({
     }
   }, [dayKeys, dragState, onMoveBlock])
 
+  useEffect(() => {
+    if (!resizeState) return
+    const handleMove = (event: MouseEvent) => {
+      setResizePreview(createResizePreview(resizeState, event.clientY, defaultCalendarTimeScale))
+    }
+    const handleUp = (event: MouseEvent) => {
+      const finalPreview = createResizePreview(resizeState, event.clientY, defaultCalendarTimeScale)
+      if (finalPreview) {
+        onResizeBlock(
+          finalPreview.blockId,
+          buildDateTimeFromDayAndMinutes(finalPreview.dayKey, finalPreview.startMinutes),
+          buildDateTimeFromDayAndMinutes(finalPreview.dayKey, finalPreview.endMinutes)
+        )
+      }
+      setResizeState(null)
+      window.setTimeout(() => setResizePreview(null), 300)
+    }
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp, { once: true })
+    return () => {
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
+    }
+  }, [onResizeBlock, resizeState])
+
   const sharedViewProps = {
     days: range.days,
     blocks: visibleBlocks,
@@ -110,6 +139,7 @@ export function CalendarViewShell({
     scale: defaultCalendarTimeScale,
     selectedBlockId,
     dragPreview,
+    resizePreview,
     onSelectBlock: (block: CalendarBlock) => setSelectedBlockId(block.id),
     onClearSelection: () => {
       if (!dragState) {
@@ -125,6 +155,15 @@ export function CalendarViewShell({
       setDragState(nextDragState)
       if (nextDragState) {
         setDragPreview(createDragPreview(nextDragState, drag.currentClientX, drag.currentClientY, defaultCalendarTimeScale, dayKeys))
+      }
+    },
+    onResizeStart: (block: CalendarBlock, edge: CalendarResizeEdge, originClientY: number) => {
+      if (block.status === 'active') return
+      setSelectedBlockId(block.id)
+      const nextResizeState = createResizeState(block, edge, originClientY)
+      setResizeState(nextResizeState)
+      if (nextResizeState) {
+        setResizePreview(createResizePreview(nextResizeState, originClientY, defaultCalendarTimeScale))
       }
     }
   }
@@ -146,10 +185,10 @@ export function CalendarViewShell({
           </div>
         </div>
         <div className="mb-3 flex flex-wrap gap-2 text-xs text-[color:var(--text-secondary)]">
-          <Legend dotClass="border-dashed border-amber-400 bg-amber-400/10" label="Planned" />
-          <Legend dotClass="border-emerald-400 bg-emerald-400/20" label="Active" />
-          <Legend dotClass="border-cyan-400 bg-cyan-400/20" label="Completed" />
-          <Legend dotClass="border-rose-400 bg-rose-400/10" label="Missed" />
+          <Legend dotClass="border-dashed border-amber-500 bg-amber-100" label="Planned" />
+          <Legend dotClass="border-emerald-600 bg-emerald-100" label="Active" />
+          <Legend dotClass="border-sky-600 bg-sky-100" label="Completed" />
+          <Legend dotClass="border-rose-500 bg-rose-100" label="Missed" />
         </div>
         {mode === 'day' ? <DayCalendarView {...sharedViewProps} /> : null}
         {mode === 'week' ? <WeekCalendarView {...sharedViewProps} /> : null}

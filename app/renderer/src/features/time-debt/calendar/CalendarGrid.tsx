@@ -1,4 +1,4 @@
-import type { CalendarBlock, CalendarDragPreview, CalendarTimeScale } from './calendarTypes'
+import type { CalendarBlock, CalendarDragPreview, CalendarResizeEdge, CalendarResizePreview, CalendarTimeScale } from './calendarTypes'
 import { formatDateKey, formatMonthDay, weekDayLabel } from './calendarDateUtils'
 import { CalendarGridLines, CalendarTimeAxis } from './CalendarTimeAxis'
 import { CalendarEventBlock } from './CalendarEventBlock'
@@ -13,8 +13,10 @@ export function CalendarGrid({
   scale,
   selectedBlockId,
   dragPreview,
+  resizePreview,
   onSelectBlock,
   onDragStart,
+  onResizeStart,
   onClearSelection
 }: {
   days: Date[]
@@ -24,8 +26,10 @@ export function CalendarGrid({
   scale: CalendarTimeScale
   selectedBlockId: string | null
   dragPreview: CalendarDragPreview
+  resizePreview: CalendarResizePreview
   onSelectBlock: (block: CalendarBlock) => void
   onDragStart: (block: CalendarBlock, drag: { originClientX: number; originClientY: number; currentClientX: number; currentClientY: number; dayColumnWidth: number; dayIndex: number; columnCount: number }) => void
+  onResizeStart: (block: CalendarBlock, edge: CalendarResizeEdge, originClientY: number) => void
   onClearSelection: () => void
 }) {
   const dayTemplate = `72px repeat(${days.length}, minmax(112px, 1fr))`
@@ -71,10 +75,12 @@ export function CalendarGrid({
                     block={positioned}
                     selected={selectedBlockId === positioned.id}
                     dragPreview={dragPreview}
+                    resizePreview={resizePreview}
                     dayIndex={dayIndex}
                     columnCount={days.length}
                     onSelect={onSelectBlock}
                     onDragStart={onDragStart}
+                    onResizeStart={onResizeStart}
                   />
                 ) : null
               })}
@@ -89,6 +95,19 @@ export function CalendarGrid({
                   }}
                 >
                   <span className="absolute left-2 top-1 truncate text-[10px] tabular-nums text-sky-50">{formatMinutesAsTime(dragPreview.startMinutes)} - {formatMinutesAsTime(dragPreview.endMinutes)}</span>
+                </div>
+              ) : null}
+              {resizePreview?.dayKey === dayKey ? (
+                <div
+                  className="pointer-events-none absolute z-50 rounded-lg border border-rose-300/80 bg-rose-300/18 shadow-[0_0_0_1px_rgba(253,164,175,0.3)]"
+                  style={{
+                    top: timeToTop(resizePreview.startMinutes, scale),
+                    height: Math.max((resizePreview.endMinutes - resizePreview.startMinutes) * scale.pixelsPerMinute, scale.minEventHeight),
+                    left: 4,
+                    right: 4
+                  }}
+                >
+                  <span className="absolute left-2 top-1 truncate text-[10px] tabular-nums text-rose-50">{formatMinutesAsTime(resizePreview.startMinutes)} - {formatMinutesAsTime(resizePreview.endMinutes)}</span>
                 </div>
               ) : null}
             </div>
@@ -119,8 +138,8 @@ function CalendarCurrentTimeLine({
   const top = timeToTop(minutesFromDate(now), scale)
   const dayWidthExpression = `(100% - 72px) / ${Math.max(dayCount, 1)}`
   return (
-    <div className="pointer-events-none absolute left-0 right-0 z-30" style={{ top }}>
-      <div className="absolute left-0 w-[72px] -translate-y-1/2 pr-2 text-right text-[10px] font-medium tabular-nums text-rose-300">
+    <div className="pointer-events-none absolute left-0 right-0 z-[60]" style={{ top }}>
+      <div className="absolute left-1 w-[66px] -translate-y-1/2 rounded-sm bg-[var(--panel-bg-strong)]/90 pr-1.5 text-right text-[10px] font-medium tabular-nums text-rose-300">
         {formatCurrentTime(now)}
       </div>
       <div className="absolute left-[72px] right-0 border-t border-rose-400/75" />
