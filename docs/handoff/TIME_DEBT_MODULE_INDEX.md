@@ -7,6 +7,8 @@
 - Module: Time Debt Calendar
 - Device role: Mac UI / page experience / frontend interaction
 - Last stable base commit before resize round: `a3192fe`
+- Latest local UI commit: `e4ebcff`
+- Push status: pending; Mac currently lacks GitHub CLI and HTTPS push credentials are not configured
 
 ## 2. Entry Points
 
@@ -58,6 +60,8 @@
 - Resize snaps to 15 minutes and enforces a 15-minute minimum duration.
 - Active blocks do not show resize handles.
 - Resize writes back to logs or planned tasks and updates linked reminders for planned tasks.
+- 2026-04-30 sync closeout confirmed branch `feature/mac-time-debt-plan-flow-overlap-ui`, clean worktree, HEAD `e4ebcff`.
+- 2026-04-30 sync closeout reran both TypeScript checks successfully.
 
 ## 8. Backlog Only
 
@@ -69,3 +73,4 @@
 - Next round should first read only this file and `docs/handoff/MAC_NEXT_ACTION.md`.
 - Then read at most 8 related code files.
 - Do not read full dev logs unless the current bug cannot be located from this index.
+- Do not continue UI work until Mac pushes this branch and Win can pull it.
