@@ -3,7 +3,7 @@ import { formatDateKey, formatMonthDay, weekDayLabel } from './calendarDateUtils
 import { CalendarGridLines, CalendarTimeAxis } from './CalendarTimeAxis'
 import { CalendarEventBlock } from './CalendarEventBlock'
 import { layoutOverlappingEvents } from './calendarOverlapLayoutUtils'
-import { minutesFromDate, positionCalendarBlock, timeToTop, visibleGridHeight } from './calendarTimePositionUtils'
+import { formatMinutesAsTime, minutesFromDate, positionCalendarBlock, timeToTop, visibleGridHeight } from './calendarTimePositionUtils'
 
 export function CalendarGrid({
   days,
@@ -14,7 +14,8 @@ export function CalendarGrid({
   selectedBlockId,
   dragPreview,
   onSelectBlock,
-  onDragStart
+  onDragStart,
+  onClearSelection
 }: {
   days: Date[]
   blocks: CalendarBlock[]
@@ -24,11 +25,13 @@ export function CalendarGrid({
   selectedBlockId: string | null
   dragPreview: CalendarDragPreview
   onSelectBlock: (block: CalendarBlock) => void
-  onDragStart: (block: CalendarBlock, clientY: number) => void
+  onDragStart: (block: CalendarBlock, drag: { originClientX: number; originClientY: number; currentClientX: number; currentClientY: number; dayColumnWidth: number; dayIndex: number; columnCount: number }) => void
+  onClearSelection: () => void
 }) {
   const dayTemplate = `72px repeat(${days.length}, minmax(112px, 1fr))`
   const gridHeight = visibleGridHeight(scale)
   const positionedBlocks = layoutOverlappingEvents(blocks)
+  const todayIndex = days.findIndex((day) => formatDateKey(day) === todayKey)
   return (
     <div className="max-h-[760px] overflow-auto rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)]">
       <div className="sticky top-0 z-40 grid border-b border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)]" style={{ minWidth: Math.max(520, 72 + days.length * 126), gridTemplateColumns: dayTemplate }}>
@@ -36,7 +39,7 @@ export function CalendarGrid({
         {days.map((day) => {
           const dayKey = formatDateKey(day)
           return (
-            <div key={dayKey} className={`border-l border-[color:var(--panel-border)]/45 px-3 py-3 ${dayKey === todayKey ? 'bg-emerald-400/10' : ''}`}>
+            <div key={dayKey} className={`border-l border-[color:var(--panel-border)]/45 px-3 py-3 ${dayKey === todayKey ? 'bg-sky-300/[0.06]' : ''}`}>
               <div className="text-[11px] text-[color:var(--text-muted)]">{weekDayLabel(day)}</div>
               <div className="mt-1 text-sm font-semibold text-[color:var(--text-primary)]">{formatMonthDay(day)}</div>
             </div>
@@ -45,11 +48,20 @@ export function CalendarGrid({
       </div>
       <div className="relative grid" style={{ height: gridHeight, minWidth: Math.max(520, 72 + days.length * 126), gridTemplateColumns: dayTemplate }}>
         <CalendarTimeAxis scale={scale} />
-        {days.map((day) => {
+        {days.map((day, dayIndex) => {
           const dayKey = formatDateKey(day)
           const dayBlocks = positionedBlocks.filter((block) => block.dayKey === dayKey)
           return (
-            <div key={dayKey} className={`relative border-l border-[color:var(--panel-border)]/35 ${dayKey === todayKey ? 'bg-emerald-400/5' : ''}`}>
+            <div
+              key={dayKey}
+              data-calendar-day-column="true"
+              className={`relative border-l border-[color:var(--panel-border)]/30 ${dayKey === todayKey ? 'bg-sky-300/[0.035]' : ''}`}
+              onClick={(event) => {
+                if (event.target === event.currentTarget) {
+                  onClearSelection()
+                }
+              }}
+            >
               <CalendarGridLines scale={scale} />
               {dayBlocks.map((block) => {
                 const positioned = positionCalendarBlock(block, dayKey, scale)
@@ -59,23 +71,32 @@ export function CalendarGrid({
                     block={positioned}
                     selected={selectedBlockId === positioned.id}
                     dragPreview={dragPreview}
+                    dayIndex={dayIndex}
+                    columnCount={days.length}
                     onSelect={onSelectBlock}
                     onDragStart={onDragStart}
                   />
                 ) : null
               })}
-              {dayKey === todayKey ? (
-                <div className="absolute left-0 right-0 z-30 border-t border-rose-300/80" style={{ top: timeToTop(minutesFromDate(now), scale) }}>
-                  <span className="absolute -top-3 left-1 rounded-full border border-rose-300/50 bg-rose-400/20 px-2 py-0.5 text-[10px] tabular-nums text-rose-100">
-                    {formatNow(now)}
-                  </span>
+              {dragPreview?.dayKey === dayKey ? (
+                <div
+                  className="pointer-events-none absolute z-50 rounded-lg border border-sky-300/80 bg-sky-300/20 shadow-[0_0_0_1px_rgba(125,211,252,0.35)]"
+                  style={{
+                    top: timeToTop(dragPreview.startMinutes, scale),
+                    height: Math.max((dragPreview.endMinutes - dragPreview.startMinutes) * scale.pixelsPerMinute, scale.minEventHeight),
+                    left: 4,
+                    right: 4
+                  }}
+                >
+                  <span className="absolute left-2 top-1 truncate text-[10px] tabular-nums text-sky-50">{formatMinutesAsTime(dragPreview.startMinutes)} - {formatMinutesAsTime(dragPreview.endMinutes)}</span>
                 </div>
               ) : null}
             </div>
           )
         })}
+        {todayIndex >= 0 ? <CalendarCurrentTimeLine now={now} scale={scale} dayCount={days.length} todayIndex={todayIndex} /> : null}
         {blocks.length === 0 ? (
-          <div className="absolute left-[92px] right-5 top-8 rounded-2xl border border-dashed border-[color:var(--panel-border)] p-5 text-sm text-[color:var(--text-muted)]">
+          <div className="pointer-events-none absolute left-[92px] right-5 top-8 rounded-2xl border border-dashed border-[color:var(--panel-border)] p-5 text-sm text-[color:var(--text-muted)]">
             当前范围还没有时间块。先补记、规划或开始计时。
           </div>
         ) : null}
@@ -84,6 +105,37 @@ export function CalendarGrid({
   )
 }
 
-function formatNow(now: Date): string {
-  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+function CalendarCurrentTimeLine({
+  now,
+  scale,
+  dayCount,
+  todayIndex
+}: {
+  now: Date
+  scale: Parameters<typeof timeToTop>[1]
+  dayCount: number
+  todayIndex: number
+}) {
+  const top = timeToTop(minutesFromDate(now), scale)
+  const dayWidthExpression = `(100% - 72px) / ${Math.max(dayCount, 1)}`
+  return (
+    <div className="pointer-events-none absolute left-0 right-0 z-30" style={{ top }}>
+      <div className="absolute left-0 w-[72px] -translate-y-1/2 pr-2 text-right text-[10px] font-medium tabular-nums text-rose-300">
+        {formatCurrentTime(now)}
+      </div>
+      <div className="absolute left-[72px] right-0 border-t border-rose-400/75" />
+      <span
+        className="absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-rose-400 shadow-[0_0_0_2px_rgba(251,113,133,0.16)]"
+        style={{ left: `calc(72px + (${dayWidthExpression}) * ${todayIndex} + (${dayWidthExpression}) / 2)` }}
+      />
+    </div>
+  )
+}
+
+function formatCurrentTime(now: Date): string {
+  const minutes = now.getMinutes()
+  const rawHour = now.getHours()
+  const suffix = rawHour >= 12 ? 'PM' : 'AM'
+  const hour = rawHour % 12 || 12
+  return `${hour}:${String(minutes).padStart(2, '0')}${suffix}`
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   buildTimeDebtOverview,
   buildTimeDebtDiagnosis,
@@ -22,6 +22,7 @@ import {
   loadTimeDebtLogs,
   loadTimeDebtParams,
   loadWorkTimeStandards,
+  saveTimeDebtLogs,
   saveTimeDebtParams,
   timeDebtStorageKeys
 } from './timeDebtStorage'
@@ -385,6 +386,48 @@ export function TimeDebtDashboard() {
     setLogs(deleteTimeDebtLog(logId))
   }
 
+  const moveCalendarBlock = useCallback(
+    (blockId: string, nextStartTime: string, nextEndTime: string) => {
+      const nextDuration = calculateDurationMinutes(nextStartTime, nextEndTime)
+      if (nextDuration <= 0) {
+        return
+      }
+      const logToMove = logs.find((log) => log.id === blockId)
+      if (logToMove) {
+        const nextLogs = logs.map((log) =>
+          log.id === blockId
+            ? {
+                ...log,
+                startTime: nextStartTime,
+                endTime: nextEndTime,
+                durationMinutes: nextDuration
+              }
+            : log
+        )
+        saveTimeDebtLogs(nextLogs)
+        setLogs(nextLogs)
+        return
+      }
+
+      const planToMove = plans.find((plan) => plan.id === blockId && plan.status === 'planned')
+      if (!planToMove) {
+        return
+      }
+      const nextPlans = updateTimeDebtPlan(blockId, {
+        plannedStartTime: nextStartTime,
+        plannedEndTime: nextEndTime,
+        plannedDurationMinutes: nextDuration
+      })
+      updateTimePlanReminderBySource(blockId, {
+        plannedStart: nextStartTime,
+        plannedEnd: nextEndTime,
+        plannedDuration: nextDuration
+      })
+      setPlans(nextPlans)
+    },
+    [logs, plans]
+  )
+
   useEffect(() => {
     const intent = consumeTimeDebtNavigationIntent()
     if (!intent) {
@@ -465,6 +508,7 @@ export function TimeDebtDashboard() {
             onConvertPlanToManual={convertPlanToManualLog}
             onAbandonPlan={abandonPlan}
             onFinishTimer={finishTimer}
+            onMoveBlock={moveCalendarBlock}
           />
         ) : null}
         {currentView === 'insights' ? <InsightsView overview={overview} stats={stats} diagnosis={diagnosis} logs={todayLogs} /> : null}

@@ -56,19 +56,26 @@ export type CalendarTimeScale = {
 
 export type CalendarDragState = {
   blockId: string
+  originClientX: number
   originClientY: number
+  originDayIndex: number
   originStartMinutes: number
   originEndMinutes: number
+  durationMinutes: number
   dayKey: string
+  dayColumnWidth: number
+  columnCount: number
 } | null
 
 export type CalendarDragPreview = {
   blockId: string
   dayKey: string
+  dayIndex: number
   startMinutes: number
   endMinutes: number
   originalStartMinutes: number
   originalEndMinutes: number
+  deltaDays: number
 } | null
 
 export const defaultCalendarTimeScale: CalendarTimeScale = {

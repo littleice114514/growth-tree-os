@@ -28,7 +28,8 @@ export function CalendarViewShell({
   onStartPlan,
   onConvertPlanToManual,
   onAbandonPlan,
-  onFinishTimer
+  onFinishTimer,
+  onMoveBlock
 }: {
   mode: CalendarViewMode
   anchorDate: string
@@ -44,6 +45,7 @@ export function CalendarViewShell({
   onConvertPlanToManual: (plan: TimeDebtPlan) => void
   onAbandonPlan: (planId: string) => void
   onFinishTimer: () => void
+  onMoveBlock: (blockId: string, nextStartTime: string, nextEndTime: string) => void
 }) {
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
   const [calendarNow, setCalendarNow] = useState(() => new Date(timerNow))
@@ -52,6 +54,7 @@ export function CalendarViewShell({
   const previousTodayKeyRef = useRef(formatDateKey(new Date(timerNow)))
   const todayKey = formatDateKey(calendarNow)
   const range = useMemo(() => buildCalendarRange(mode, anchorDate, customDayCount), [anchorDate, customDayCount, mode])
+  const dayKeys = useMemo(() => range.days.map(formatDateKey), [range.days])
   const visibleBlocks = useMemo(
     () => blocks.filter((block) => dateTimeOverlapsRange(block.startTime, block.endTime, range.start, range.end)),
     [blocks, range.end, range.start]
@@ -77,9 +80,17 @@ export function CalendarViewShell({
   useEffect(() => {
     if (!dragState) return
     const handleMove = (event: MouseEvent) => {
-      setDragPreview(createDragPreview(dragState, event.clientY, defaultCalendarTimeScale))
+      setDragPreview(createDragPreview(dragState, event.clientX, event.clientY, defaultCalendarTimeScale, dayKeys))
     }
-    const handleUp = () => {
+    const handleUp = (event: MouseEvent) => {
+      const finalPreview = createDragPreview(dragState, event.clientX, event.clientY, defaultCalendarTimeScale, dayKeys)
+      if (finalPreview) {
+        onMoveBlock(
+          finalPreview.blockId,
+          buildDateTimeFromDayAndMinutes(finalPreview.dayKey, finalPreview.startMinutes),
+          buildDateTimeFromDayAndMinutes(finalPreview.dayKey, finalPreview.endMinutes)
+        )
+      }
       setDragState(null)
       window.setTimeout(() => setDragPreview(null), 300)
     }
@@ -89,7 +100,7 @@ export function CalendarViewShell({
       window.removeEventListener('mousemove', handleMove)
       window.removeEventListener('mouseup', handleUp)
     }
-  }, [dragState])
+  }, [dayKeys, dragState, onMoveBlock])
 
   const sharedViewProps = {
     days: range.days,
@@ -99,10 +110,22 @@ export function CalendarViewShell({
     scale: defaultCalendarTimeScale,
     selectedBlockId,
     dragPreview,
-    onSelectBlock: (block: CalendarBlock) => setSelectedBlockId((current) => (current === block.id ? null : block.id)),
-    onDragStart: (block: CalendarBlock, clientY: number) => {
+    onSelectBlock: (block: CalendarBlock) => setSelectedBlockId(block.id),
+    onClearSelection: () => {
+      if (!dragState) {
+        setSelectedBlockId(null)
+      }
+    },
+    onDragStart: (
+      block: CalendarBlock,
+      drag: { originClientX: number; originClientY: number; currentClientX: number; currentClientY: number; dayColumnWidth: number; dayIndex: number; columnCount: number }
+    ) => {
       setSelectedBlockId(block.id)
-      setDragState(createDragState(block, clientY))
+      const nextDragState = createDragState(block, drag.originClientX, drag.originClientY, drag.dayIndex, drag.dayColumnWidth, drag.columnCount)
+      setDragState(nextDragState)
+      if (nextDragState) {
+        setDragPreview(createDragPreview(nextDragState, drag.currentClientX, drag.currentClientY, defaultCalendarTimeScale, dayKeys))
+      }
     }
   }
 
@@ -158,6 +181,16 @@ export function CalendarViewShell({
       />
     </div>
   )
+}
+
+function buildDateTimeFromDayAndMinutes(dayKey: string, minutes: number): string {
+  const date = new Date(`${dayKey}T00:00`)
+  date.setMinutes(minutes)
+  return `${date.getFullYear()}-${padDateTimePart(date.getMonth() + 1)}-${padDateTimePart(date.getDate())}T${padDateTimePart(date.getHours())}:${padDateTimePart(date.getMinutes())}`
+}
+
+function padDateTimePart(value: number): string {
+  return String(value).padStart(2, '0')
 }
 
 function Legend({ dotClass, label }: { dotClass: string; label: string }) {

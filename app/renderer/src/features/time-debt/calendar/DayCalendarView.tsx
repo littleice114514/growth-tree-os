@@ -10,7 +10,8 @@ export function DayCalendarView(props: {
   selectedBlockId: string | null
   dragPreview: CalendarDragPreview
   onSelectBlock: (block: CalendarBlock) => void
-  onDragStart: (block: CalendarBlock, clientY: number) => void
+  onDragStart: (block: CalendarBlock, drag: { originClientX: number; originClientY: number; currentClientX: number; currentClientY: number; dayColumnWidth: number; dayIndex: number; columnCount: number }) => void
+  onClearSelection: () => void
 }) {
   return <CalendarGrid {...props} days={props.days.slice(0, 1)} />
 }

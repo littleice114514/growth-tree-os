@@ -42,9 +42,9 @@ export function MonthCalendarView({
                   key={dayKey}
                   type="button"
                   onClick={() => onSelectDay(dayKey)}
-                  className={`min-h-[118px] border-r border-[color:var(--panel-border)]/35 p-2 text-left align-top transition hover:bg-white/[0.03] last:border-r-0 ${inMonth ? '' : 'opacity-45'} ${dayKey === todayKey ? 'bg-emerald-400/8' : ''}`}
+                  className={`min-h-[118px] border-r border-[color:var(--panel-border)]/30 p-2 text-left align-top transition hover:bg-white/[0.03] last:border-r-0 ${inMonth ? '' : 'opacity-45'} ${dayKey === todayKey ? 'bg-sky-300/[0.05]' : ''}`}
                 >
-                  <div className={`mb-2 inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-xs font-semibold ${dayKey === todayKey ? 'bg-emerald-400/20 text-emerald-100 ring-1 ring-emerald-300/30' : 'text-[color:var(--text-primary)]'}`}>
+                  <div className={`mb-2 inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-xs font-semibold ${dayKey === todayKey ? 'bg-sky-300/15 text-sky-100 ring-1 ring-sky-300/25' : 'text-[color:var(--text-primary)]'}`}>
                     {formatMonthDay(day).slice(3)}
                   </div>
                   <div className="space-y-1">

@@ -13,7 +13,7 @@ export function CalendarTimeAxis({ scale }: { scale: CalendarTimeScale }) {
         }
         return (
           <div key={minutes} className="absolute left-0 right-0" style={{ top: timeToTop(minutes, scale) }}>
-            <span className={`absolute right-2 -translate-y-1/2 tabular-nums ${isHour ? 'text-[11px] font-medium text-[color:var(--text-secondary)]' : 'text-[10px] text-[color:var(--text-muted)]/70'}`}>
+            <span className={`absolute right-2 -translate-y-1/2 tabular-nums ${isHour ? 'text-[10px] font-medium text-[color:var(--text-secondary)]/85' : 'text-[10px] text-[color:var(--text-muted)]/55'}`}>
               {formatTimeLabel(minutes)}
             </span>
           </div>
@@ -28,11 +28,11 @@ export function CalendarGridLines({ scale }: { scale: CalendarTimeScale }) {
   return (
     <div className="pointer-events-none absolute inset-0">
       {Array.from({ length: hourCount + 1 }, (_, index) => (
-        <div key={index} className="absolute left-0 right-0 border-t border-[color:var(--panel-border)]/32" style={{ top: timeToTop((scale.visibleStartHour + index) * 60, scale) }} />
+        <div key={index} className="absolute left-0 right-0 border-t border-[color:var(--panel-border)]/24" style={{ top: timeToTop((scale.visibleStartHour + index) * 60, scale) }} />
       ))}
       {scale.showHalfHourLine
         ? Array.from({ length: hourCount }, (_, index) => (
-            <div key={index} className="absolute left-0 right-0 border-t border-[color:var(--panel-border)]/18" style={{ top: timeToTop((scale.visibleStartHour + index) * 60 + 30, scale) }} />
+            <div key={index} className="absolute left-0 right-0 border-t border-[color:var(--panel-border)]/12" style={{ top: timeToTop((scale.visibleStartHour + index) * 60 + 30, scale) }} />
           ))
         : null}
     </div>
