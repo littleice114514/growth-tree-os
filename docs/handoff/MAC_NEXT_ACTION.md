@@ -18,6 +18,7 @@
 - 时间块按真实开始时间、持续时间和可见范围截断计算 top / height。
 - 同一天重叠时间块按 overlap group 分列并排显示。
 - 预留拖拽结构：`dragState`、`dragPreview`、`snapToMinute`、`pixelToTime`、`timeToPixel`，本轮仅预览不保存。
+- 断点续跑已恢复本机依赖环境：临时 pnpm 可用，`typecheck` / `build` / `dev` 已通过或启动。
 
 ## 3. 本轮修改文件
 
@@ -30,15 +31,17 @@
 
 ### 已验证
 
-- `./node_modules/.bin/tsc --noEmit -p tsconfig.node.json`
-- `./node_modules/.bin/tsc --noEmit -p app/renderer/tsconfig.json`
+- `PATH=/Users/ice/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH node /tmp/codex-pnpm-package/bin/pnpm.cjs typecheck`
+- `PATH=/Users/ice/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH node /tmp/codex-pnpm-package/bin/pnpm.cjs build`
+- `PATH=/Users/ice/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH node /tmp/codex-pnpm-package/bin/pnpm.cjs dev`
+- 本地浏览器 smoke：Time Debt 可打开，日历 tab 可打开，日 / 月 / 天数可切换，月视图事件可打开右侧详情，洞察和提醒页面可打开。
 - 未修改 3D、skills、`.codex`、`.claude`、脚本、工具链、协议文件、财富、成长树或周回看业务逻辑。
 
 ### 未验证 / 风险
 
-- `pnpm build` 未运行成功：当前 shell 中 `pnpm` 不在 PATH。
-- `./node_modules/.bin/electron-vite build` 未通过：当前本机 Rollup native optional dependency `@rollup/rollup-darwin-arm64` 动态库签名 / optional dependency 加载异常。
-- 真实桌面点击截图验收需在 Mac 端启动应用后继续完成。
+- 当前 shell 仍没有系统级 `pnpm/npm/corepack`，本轮使用 `/tmp/codex-pnpm-package/bin/pnpm.cjs` 临时运行 pnpm。
+- 普通浏览器访问 `http://localhost:5173/` 会因为缺少 Electron preload 而出现 `window.growthTree` 相关错误；真实 Electron dev app 已可启动。
+- 正式截图归档仍需在 Electron 窗口完成。
 - 完整拖拽保存链路未实现，本轮只做预览结构。
 - 跨天事件仅做基础显示裁剪，不做复杂跨天编辑。
 
@@ -75,16 +78,25 @@ corepack enable
 corepack prepare pnpm@latest --activate
 pnpm install
 pnpm typecheck
+pnpm build
 pnpm dev
 ```
 
-如果遇到 Rollup native optional dependency 签名或缺失问题：
+如果 Mac 端 shell 里没有 `pnpm/npm/corepack`，可临时使用 standalone pnpm：
 
 ```bash
+curl -fsSL https://registry.npmjs.org/pnpm/-/pnpm-10.18.3.tgz -o /tmp/codex-pnpm.tgz
+rm -rf /tmp/codex-pnpm-package
+mkdir -p /tmp/codex-pnpm-package
+tar -xzf /tmp/codex-pnpm.tgz -C /tmp/codex-pnpm-package --strip-components=1
+
+export PATH=/Users/ice/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH
 rm -rf node_modules
-pnpm install
-pnpm build
-pnpm dev
+node /tmp/codex-pnpm-package/bin/pnpm.cjs install --frozen-lockfile --force --ignore-scripts --child-concurrency=1 --reporter=append-only
+node node_modules/electron/install.js
+node /tmp/codex-pnpm-package/bin/pnpm.cjs typecheck
+node /tmp/codex-pnpm-package/bin/pnpm.cjs build
+node /tmp/codex-pnpm-package/bin/pnpm.cjs dev
 ```
 
 ## 7. Mac 端验收方式
@@ -110,7 +122,7 @@ pnpm dev
 
 请让 Mac 端 Codex 接着完成：
 
-启动 Electron 桌面应用并按验收清单截图：日视图、周视图、月视图、天数下拉、当前时间线、半小时刻度、两个重叠事件、三个重叠事件、事件选中态、右侧详情面板、拖拽预览。确认稳定后，再继续瘦身 `TimeDebtDashboard.tsx`，移除旧周视图函数并把 Today 小日历合并到 Calendar 子模块。
+启动 Electron 桌面应用并按验收清单截图：日视图、周视图、月视图、天数下拉、当前时间线、半小时刻度、事件选中态、右侧详情面板、拖拽预览。如需验证两个 / 三个重叠事件，请先补记测试日志。确认稳定后，再继续瘦身 `TimeDebtDashboard.tsx`，移除旧周视图函数并把 Today 小日历合并到 Calendar 子模块。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 

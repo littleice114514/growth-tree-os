@@ -118,3 +118,60 @@
 - Mac 端启动桌面应用，按日 / 周 / 月 / 3 天 / 9 天完成截图验收。
 - 创建 30 分钟、2 小时、2 个重叠、3 个重叠事件，确认高度和并排布局。
 - 确认 Today、洞察、Reminder 和 active timer 无明显回归。
+
+---
+
+## 16. 断点续跑记录｜2026-04-30
+
+### 断点检查结果
+
+- 当前分支：`feature/mac-time-debt-plan-flow-overlap-ui`
+- 断点起始 commit：`8a26a17 feat(time-debt): add unified calendar view modes`
+- 开工前工作树：干净
+- Time Debt Calendar V1 源码已存在，未发现缺失组件。
+- `CalendarViewShell`、日 / 周 / 月 / 自定义天数视图、时间轴、事件块、详情面板、定位工具、重叠布局工具、拖拽预览工具均已落地。
+- `TimeDebtDashboard.tsx` 中仍保留旧 Today 小日历和旧周视图函数，但当前 `日历` tab 已接入新的 `CalendarViewShell`。
+
+### 已完成项
+
+- 日 / 周 / 月 / 天数视图入口可见。
+- 今天 / 上一段 / 下一段按钮可见。
+- 月视图可显示整月网格、事件摘要、今天高亮、非本月日期弱化和 `+N`。
+- 自定义天数视图可显示 2-9 天选择入口，默认 3 天。
+- 时间刻度显示整点、半小时弱线和当前时间标签。
+- 时间块定位、最小高度、可见范围截断工具已实现。
+- 重叠事件分组和分列算法已实现。
+- 拖拽预留结构已实现，本轮仍不保存真实数据。
+
+### 本次续做项
+
+- 使用临时 pnpm standalone 恢复 package manager 能力。
+- 删除并重装 `node_modules`，修复 Rollup native optional dependency 签名 / 加载问题。
+- 单独运行 Electron 安装脚本，恢复 Electron 二进制。
+- 使用 Codex workspace runtime Node 运行 `typecheck`、`build` 和 `dev`。
+- 用本地浏览器对 `http://localhost:5173/` 做轻量 UI smoke：Time Debt 可打开，日历 tab 可打开，日 / 月 / 天数可切换，月视图事件可选中并打开详情，洞察和提醒页面可打开。
+
+### 验收结果
+
+- 通过：`PATH=/Users/ice/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH node /tmp/codex-pnpm-package/bin/pnpm.cjs typecheck`
+- 通过：`PATH=/Users/ice/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH node /tmp/codex-pnpm-package/bin/pnpm.cjs build`
+- 通过：`PATH=/Users/ice/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:$PATH node /tmp/codex-pnpm-package/bin/pnpm.cjs dev` 可启动 dev server 和 Electron app。
+- 浏览器 smoke 通过：Time Debt 页面可打开；`日历` tab 可渲染；日 / 月 / 天数视图可切换；月视图事件点击后右侧详情面板显示任务信息；洞察和提醒页面可打开。
+- 注意：普通浏览器访问 localhost 时会出现 `window.growthTree` preload 缺失错误，这是非 Electron 环境的预期限制；Electron dev 进程本身已启动。
+
+### 未完成项 / TODO
+
+- 未做完整拖拽保存链路，当前仅预览。
+- 未做复杂跨天事件编辑。
+- 未完成正式截图归档。
+- 后续可清理 `TimeDebtDashboard.tsx` 中旧周视图函数，把 Today 小日历也迁入 Calendar 子模块。
+
+### 是否触及双端边界
+
+- 否。本次只处理 Mac 端 Time Debt UI / 前端验收与依赖环境恢复。
+- 未修改 3D、Windows skills、`.codex`、`.claude`、脚本工具链、数据库结构、财富、成长树、周回看业务逻辑或协议文件。
+
+### 下一步建议
+
+- 在 Electron 窗口中补截图：日视图、周视图、月视图、天数入口、当前时间线、事件选中态、右侧详情面板。
+- 如需验证 2/3 个重叠事件，请在 Time Debt 中补记对应测试日志后复查并排布局。
