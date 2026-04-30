@@ -14,6 +14,7 @@ import { LifeCurveDashboard } from '@/features/life-curve/LifeCurveDashboard'
 import { WealthDashboard } from '@/features/wealth/WealthDashboard'
 import { TimeDebtDashboard } from '@/features/time-debt/TimeDebtDashboard'
 import { LifeDashboardPreview } from '@/features/dashboard-preview'
+import { LifeTree3DPreview } from '@/features/life-tree-3d/demo'
 
 export function MainWorkspacePage() {
   const isReviewComposerOpen = useWorkspaceStore((state) => state.isReviewComposerOpen)
@@ -93,6 +94,7 @@ export function MainWorkspacePage() {
         ) : null}
         {currentView === 'lifeDashboard' ? <LifeDashboardPreview /> : null}
         {currentView === 'lifeVitalityTree' ? <LifeVitalityTreeCanvas /> : null}
+        {currentView === 'lifeTree3DPreview' ? <LifeTree3DPreview /> : null}
         {currentView === 'lifeCurve' ? <LifeCurveDashboard /> : null}
         {currentView === 'wealth' ? <WealthDashboard /> : null}
         {currentView === 'timeDebt' ? <TimeDebtDashboard /> : null}

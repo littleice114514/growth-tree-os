@@ -101,9 +101,13 @@ Win / Mac 分工：
 
 主要产物：
 
-- 可关闭的 3D POC。
-- 程序化树干、枝干、叶片、果实、裂痕占位。
-- high / medium / low profile 初始验证。
+- 已安装 `three`、`@react-three/fiber`、`@react-three/drei`，并使用 React 18 兼容版本。
+- 已新增程序化 3D POC：`LifeTree3DPreview`、`LifeTreeCanvas`、`ProceduralTreeRenderer` 和布局转换层。
+- 已能从 mock `TreeSnapshot` / `mockGrowthSimulationResult.nextSnapshot` 渲染基础树。
+- 已支持旋转、缩放、点击节点调试详情和 ESC 取消选中。
+- 已支持 low / medium / high 画质档位，默认不使用 high。
+- 已保留 WebGL fallback，避免 3D 不可用时白屏。
+- 下一步 M3D-4 进入 3D 交互层完善。
 
 不做什么：
 
@@ -116,6 +120,8 @@ Win / Mac 分工：
 - procedural 树能读 `TreeSnapshot`。
 - Mac low profile 可降级。
 - WebGL 失败有 fallback。
+- `pnpm typecheck` 通过。
+- 原有页面仍可访问，3D Preview 不作为默认首页。
 
 Win / Mac 分工：
 
@@ -232,10 +238,9 @@ Win / Mac 分工：
 
 ## 下一阶段建议
 
-M3D-2 完成后，下一阶段进入 M3D-3：
+M3D-3 完成后，下一阶段进入 M3D-4：
 
-- 使用 M3D-2 的 `createNextTreeSnapshot` 或 `mockGrowthSimulationResult.nextSnapshot` 作为 3D POC 输入；
-- 3D POC 只读取 `TreeSnapshot`，不读取 `GrowthEvent` / `GrowthRule`；
-- 不引入 3D 依赖；
-- 不改主页面 UI；
-- 为程序化树干、枝干、叶片、果实、裂痕占位建立最小 renderer 边界。
+- 增加 hover 高亮、视角预设、节点定位和更清晰的调试面板；
+- 继续保持 3D renderer 只读取 `TreeSnapshot`，不读取 `GrowthEvent` / `GrowthRule`；
+- 在 Mac low / medium 档做稳定性和交互验收；
+- 不进入写实模型、Blender、glb / glTF 或贴图资源阶段。

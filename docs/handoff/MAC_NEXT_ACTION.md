@@ -10,39 +10,47 @@
 
 ## 2. 本轮已完成
 
-- 新增 M3D-2 Life Tree 3D 无 3D 纯数据生长模拟器。
-- 新增 `growth-engine/`，支持 GrowthEvent 批量应用、规则执行、生命力重算、枝干健康计算。
-- 新增 `GrowthTransition` 与 `GrowthDeltaSummary`，后续 M3D-3 可读取变化结果做动画。
-- 新增 `mockGrowthSimulationResult`，使用 M3D-1 mock 数据生成 `nextSnapshot`。
-- 更新 README、roadmap、data contract 和 Windows dev-log。
+- 新增 M3D-3 Life Tree 程序化 3D POC。
+- 安装 `three`、`@react-three/fiber`、`@react-three/drei`，并固定到 React 18 兼容版本。
+- 新增 `LifeTree3DPreview` 入口，可从 mock `TreeSnapshot` 渲染基础 3D 树。
+- 支持 OrbitControls 旋转 / 缩放、点击枝干 / 叶子 / 果实显示调试详情、ESC 取消选中。
+- 支持 low / medium / high 画质档位，默认不使用 high。
+- 保留 WebGL fallback，不让 3D 预览成为系统单点故障。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/life-tree-3d/contracts/growthEngine.types.ts`
-- `app/renderer/src/features/life-tree-3d/growth-engine/**`
-- `app/renderer/src/features/life-tree-3d/mock/mockGrowthSimulationResult.ts`
+- `package.json`
+- `pnpm-lock.yaml`
+- `app/renderer/src/types/ui.ts`
+- `app/renderer/src/components/Toolbar.tsx`
+- `app/renderer/src/pages/MainWorkspacePage.tsx`
+- `app/renderer/src/features/life-tree-3d/components/**`
+- `app/renderer/src/features/life-tree-3d/renderers/**`
+- `app/renderer/src/features/life-tree-3d/layout/**`
+- `app/renderer/src/features/life-tree-3d/interaction/**`
+- `app/renderer/src/features/life-tree-3d/performance/**`
+- `app/renderer/src/features/life-tree-3d/demo/**`
 - `app/renderer/src/features/life-tree-3d/README.md`
 - `docs/life-tree-3d/LIFE_TREE_ROADMAP.md`
-- `docs/life-tree-3d/LIFE_TREE_DATA_CONTRACT.md`
-- `docs/dev-log/2026-04/2026-04-30/win-life-tree-3d-growth-engine.md`
+- `docs/dev-log/2026-04/2026-04-30/win-life-tree-3d-procedural-poc.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
 
 ## 4. 当前验证结果
 
 ### 已验证
 
+- `pnpm install` 已完成。
 - `pnpm typecheck` 已通过。
-- `pnpm dev` 已启动 Electron/Vite dev server。
-- `http://localhost:5173/` 返回 HTTP 200。
-- `package.json` 未新增 `three`、`@react-three/fiber`、`@react-three/drei`。
-- `app`、`docs`、`public`、`resources` 范围内未新增 `.glb` / `.gltf` 资源。
-- 未修改主页面 UI 文件。
+- 依赖只新增 `three`、`@react-three/fiber`、`@react-three/drei`。
+- 3D Preview 没有设为默认首页。
+- 未新增 glb / glTF / 模型文件 / 贴图资源。
+- Renderer 只读取 `TreeSnapshot`，不读取 `GrowthEvent` / `GrowthRule`。
 
 ### 未验证 / 风险
 
-- M3D-2 不实现 3D renderer。
-- M3D-2 不接真实数据库。
-- 生命力和枝干健康公式是可替换版本。
+- Mac 端 low / medium 实机帧率尚未验收。
+- 当前是程序化 POC，不是最终视觉版。
+- 写实模型、Blender、glb / glTF 和贴图资源仍未进入本阶段。
 
 ## 5. Mac 端第一步操作
 
@@ -81,21 +89,23 @@ pnpm dev
 
 请在 Mac 端检查：
 
-- `app/renderer/src/features/life-tree-3d/growth-engine/` 是否存在。
-- `createNextTreeSnapshot.ts`、`applyGrowthEvents.ts`、`createGrowthTransition.ts` 是否存在。
-- `mockGrowthSimulationResult.ts` 是否能静态导入模拟结果。
-- `pnpm typecheck` 是否通过。
-- `pnpm dev` 是否能启动现有应用。
+- 顶部导航是否出现 `Life Tree 3D Preview`。
+- 进入后是否能看到基础 3D 树。
+- 鼠标拖拽是否能旋转，滚轮是否能缩放。
+- 点击枝干 / 叶子 / 果实是否显示 nodeId 调试详情。
+- ESC 是否能取消选中。
+- low / medium / high 是否可切换，默认是否不是 high。
 
 预期结果：
 
-- 不出现 Three.js / React Three Fiber / Drei 依赖。
+- Mac 可优先使用 low 或 medium。
 - 不出现 glb / glTF / 图片贴图等大型资源。
-- 主页面 UI 不应因为 M3D-2 数据模拟器而变化。
+- 不接真实数据库。
+- 原有 2D 页面仍可访问。
 
 ## 8. Mac 端下一轮任务
 
-请让 Mac 端 Codex 只读验收 M3D-2 输出，确认 M3D-3 只能从 `TreeSnapshot` / `GrowthTransition` 读取数据；不要修改主页面 UI。
+请让 Mac 端 Codex 做 M3D-4 交互层验收与体验完善：hover 高亮、视角预设、节点定位、调试面板可读性和 low / medium 稳定性反馈。不要进入写实模型或资源导入。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
@@ -103,10 +113,10 @@ pnpm dev
 
 - `git status` 输出；
 - `git rev-parse --short HEAD` 输出；
-- `pnpm typecheck` 完整报错；
-- `pnpm dev` 完整报错；
+- `pnpm install` / `pnpm typecheck` / `pnpm dev` 完整报错；
 - 页面异常截图；
-- 控制台首个关键错误。
+- 控制台首个关键错误；
+- 当前选择的 quality profile。
 
 ## 10. 注意事项
 
