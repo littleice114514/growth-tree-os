@@ -30,7 +30,8 @@ export function CalendarViewShell({
   onAbandonPlan,
   onFinishTimer,
   onMoveBlock,
-  onResizeBlock
+  onResizeBlock,
+  onEditTimeRange
 }: {
   mode: CalendarViewMode
   anchorDate: string
@@ -48,6 +49,7 @@ export function CalendarViewShell({
   onFinishTimer: () => void
   onMoveBlock: (blockId: string, nextStartTime: string, nextEndTime: string) => void
   onResizeBlock: (blockId: string, nextStartTime: string, nextEndTime: string) => void
+  onEditTimeRange: (blockId: string, nextStartTime: string, nextEndTime: string) => void
 }) {
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
   const [calendarNow, setCalendarNow] = useState(() => new Date(timerNow))
@@ -211,12 +213,14 @@ export function CalendarViewShell({
       <CalendarEventDetailPanel
         block={selectedBlock}
         dragPreview={dragPreview}
+        resizePreview={resizePreview}
         timerNow={timerNow}
         onDelete={onDelete}
         onStartPlan={onStartPlan}
         onConvertPlanToManual={onConvertPlanToManual}
         onAbandonPlan={onAbandonPlan}
         onFinishTimer={onFinishTimer}
+        onEditTimeRange={onEditTimeRange}
       />
     </div>
   )

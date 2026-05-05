@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import type { CalendarBlock, CalendarDragPreview, CalendarResizeEdge, CalendarResizePreview, PositionedCalendarBlock } from './calendarTypes'
 
 const CLICK_DRAG_THRESHOLD_PX = 3
+const RESIZE_HIT_AREA_PX = 12
 
 export function CalendarEventBlock({
   block,
@@ -60,6 +61,14 @@ export function CalendarEventBlock({
           if (event.button !== 0) return
           event.preventDefault()
           event.stopPropagation()
+          if (canResize) {
+            const blockRect = event.currentTarget.getBoundingClientRect()
+            const offsetY = event.clientY - blockRect.top
+            if (offsetY <= RESIZE_HIT_AREA_PX || offsetY >= blockRect.height - RESIZE_HIT_AREA_PX) {
+              onResizeStart(block, offsetY <= RESIZE_HIT_AREA_PX ? 'start' : 'end', event.clientY)
+              return
+            }
+          }
           interactionRef.current = {
             originClientX: event.clientX,
             originClientY: event.clientY,
@@ -136,7 +145,7 @@ function ResizeHandle({
 }) {
   return (
     <span
-      className={`absolute left-0 right-0 z-10 h-2 cursor-ns-resize ${edge === 'start' ? 'top-0' : 'bottom-0'}`}
+      className={`absolute left-0 right-0 z-30 block h-4 cursor-ns-resize ${edge === 'start' ? 'top-0' : 'bottom-0'}`}
       aria-hidden="true"
       onMouseDown={(event) => {
         if (event.button !== 0) return

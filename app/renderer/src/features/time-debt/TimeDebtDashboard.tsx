@@ -552,6 +552,7 @@ export function TimeDebtDashboard() {
             onFinishTimer={finishTimer}
             onMoveBlock={moveCalendarBlock}
             onResizeBlock={resizeCalendarBlock}
+            onEditTimeRange={resizeCalendarBlock}
           />
         ) : null}
         {currentView === 'insights' ? <InsightsView overview={overview} stats={stats} diagnosis={diagnosis} logs={todayLogs} /> : null}

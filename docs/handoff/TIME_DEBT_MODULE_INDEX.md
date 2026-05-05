@@ -62,6 +62,10 @@
 - Resize writes back to logs or planned tasks and updates linked reminders for planned tasks.
 - 2026-04-30 sync closeout confirmed branch `feature/mac-time-debt-plan-flow-overlap-ui`, clean worktree, HEAD `e4ebcff`.
 - 2026-04-30 sync closeout reran both TypeScript checks successfully.
+- 2026-05-05 detail edit round: `CalendarEventDetailPanel.tsx` now edits Completed actual start/end and Planned/Missed planned start/end through the same `resizeCalendarBlock` persistence path.
+- 2026-05-05 detail edit round: Active blocks stay read-only with the required warning, and resize previews are shown in the right detail panel while dragging a resize handle.
+- 2026-05-05 smoke fix: `CalendarEventDetailPanel.tsx` syncs datetime-local draft on input/change, and `CalendarEventBlock.tsx` detects top/bottom edge hits in the parent mouse handler so resize does not lose to normal block dragging.
+- Validation: both TypeScript checks passed; direct dev startup is blocked by Codex App Node versus Rollup native package signing, but Electron's bundled Node workaround successfully starts the app at `http://localhost:5173/`.
 
 ## 8. Backlog Only
 

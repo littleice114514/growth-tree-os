@@ -1,26 +1,30 @@
+import { useEffect, useState } from 'react'
 import type { TimeDebtPlan } from '../timeDebtPlansStorage'
-import type { CalendarBlock, CalendarDragPreview } from './calendarTypes'
-import { formatPreviewRange, previewDeltaMinutes } from './calendarDragPreviewUtils'
+import type { CalendarBlock, CalendarDragPreview, CalendarResizePreview } from './calendarTypes'
 import { calendarStatusLabel, formatTimeOnly } from './CalendarEventBlock'
 
 export function CalendarEventDetailPanel({
   block,
   dragPreview,
+  resizePreview,
   timerNow,
   onDelete,
   onStartPlan,
   onConvertPlanToManual,
   onAbandonPlan,
-  onFinishTimer
+  onFinishTimer,
+  onEditTimeRange
 }: {
   block: CalendarBlock | null
   dragPreview: CalendarDragPreview
+  resizePreview: CalendarResizePreview
   timerNow: number
   onDelete: (logId: string) => void
   onStartPlan: (plan: TimeDebtPlan) => void
   onConvertPlanToManual: (plan: TimeDebtPlan) => void
   onAbandonPlan: (planId: string) => void
   onFinishTimer: () => void
+  onEditTimeRange: (blockId: string, nextStartTime: string, nextEndTime: string) => void
 }) {
   if (!block) {
     return (
@@ -32,10 +36,11 @@ export function CalendarEventDetailPanel({
     )
   }
   const canStart = block.plan ? canStartPlan(block.plan, timerNow) : false
-  const activePreview = dragPreview?.blockId === block.id ? dragPreview : null
+  const activePreview = dragPreview?.blockId === block.id ? dragPreview : resizePreview?.blockId === block.id ? resizePreview : null
   const plannedRange = block.plan ? `${formatDateTimeReadable(block.plan.plannedStartTime)} - ${formatTimeOnly(block.plan.plannedEndTime)}` : ''
   const actualStart = block.log?.startTime ?? block.plan?.actualStartTime ?? (block.status === 'active' || block.status === 'completed' ? block.startTime : '')
   const actualEnd = block.log?.endTime ?? block.plan?.actualEndTime ?? (block.status === 'completed' ? block.endTime : '')
+  const editableLabel = block.status === 'completed' ? '实际时间段' : block.plan && (block.status === 'planned' || block.status === 'missed') ? '计划时间段' : null
   return (
     <aside className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
       <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">{activePreview ? 'Adjusting' : calendarStatusLabel(block.status)}</div>
@@ -44,9 +49,9 @@ export function CalendarEventDetailPanel({
         <div className="mt-4 rounded-2xl border border-cyan-300/25 bg-cyan-300/10 p-3 text-xs leading-6 text-[color:var(--text-secondary)]">
           <div className="font-semibold text-[color:var(--text-primary)]">调整中</div>
           <div>原时间段：{formatTimeOnly(block.startTime)} - {formatTimeOnly(block.endTime)}</div>
-          <div>预览时间段：{formatPreviewRange(activePreview)}</div>
-          <div>变化量：{formatSignedMinutes(previewDeltaMinutes(activePreview))}</div>
-          <div className="mt-1 text-[color:var(--text-muted)]">本轮仅预览，不保存真实数据。</div>
+          <div>预览时间段：{formatMinutesAsTime(activePreview.startMinutes)} - {formatMinutesAsTime(activePreview.endMinutes)}</div>
+          <div>时长变化：{formatSignedMinutes(activePreview.endMinutes - activePreview.startMinutes - (activePreview.originalEndMinutes - activePreview.originalStartMinutes))}</div>
+          <div className="mt-1 text-[color:var(--text-muted)]">松手后保存到当前时间块。</div>
         </div>
       ) : null}
       <div className="mt-4 space-y-3 text-sm">
@@ -55,6 +60,8 @@ export function CalendarEventDetailPanel({
         <DetailRow label="二级项目" value={block.secondaryProject} />
         {block.plan ? <DetailRow label="计划时间" value={plannedRange} /> : null}
         {block.status === 'planned' && block.plan ? <DetailRow label="距离开始" value={formatDistanceToStart(block.plan.plannedStartTime, timerNow)} /> : null}
+        {editableLabel ? <TimeRangeEditor label={editableLabel} block={block} onSave={onEditTimeRange} /> : null}
+        {block.status === 'active' ? <ActiveTimeEditNotice /> : null}
         {block.status === 'active' ? <DetailRow label="实际开始" value={formatDateTimeReadable(actualStart)} /> : null}
         {block.status === 'completed' ? <DetailRow label="实际开始" value={formatDateTimeReadable(actualStart)} /> : null}
         {block.status === 'completed' ? <DetailRow label="实际结束" value={formatDateTimeReadable(actualEnd)} /> : null}
@@ -89,6 +96,81 @@ export function CalendarEventDetailPanel({
         </div>
       </div>
     </aside>
+  )
+}
+
+function TimeRangeEditor({
+  label,
+  block,
+  onSave
+}: {
+  label: string
+  block: CalendarBlock
+  onSave: (blockId: string, nextStartTime: string, nextEndTime: string) => void
+}) {
+  const [draft, setDraft] = useState(() => ({ startTime: block.startTime, endTime: block.endTime }))
+  const startId = `${block.id}-start-time`
+  const endId = `${block.id}-end-time`
+  const duration = calculateDurationMinutes(draft.startTime, draft.endTime)
+  const canSave = duration >= 15
+
+  useEffect(() => {
+    setDraft({ startTime: block.startTime, endTime: block.endTime })
+  }, [block.endTime, block.id, block.startTime])
+
+  const saveDraft = () => {
+    if (!canSave) return
+    if (draft.startTime === block.startTime && draft.endTime === block.endTime) return
+    onSave(block.id, draft.startTime, draft.endTime)
+  }
+  const updateStartTime = (value: string) => setDraft((current) => ({ ...current, startTime: value }))
+  const updateEndTime = (value: string) => setDraft((current) => ({ ...current, endTime: value }))
+
+  return (
+    <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
+      <div className="mb-2 text-[10px] uppercase tracking-[0.16em] text-[color:var(--text-muted)]">{label}</div>
+      <div className="grid gap-2">
+        <label className="grid gap-1 text-[11px] text-[color:var(--text-muted)]" htmlFor={startId}>
+          开始时间
+          <input
+            id={startId}
+            type="datetime-local"
+            value={draft.startTime}
+            onBlur={saveDraft}
+            onInput={(event) => updateStartTime(event.currentTarget.value)}
+            onChange={(event) => updateStartTime(event.target.value)}
+            className={inputClass}
+          />
+        </label>
+        <label className="grid gap-1 text-[11px] text-[color:var(--text-muted)]" htmlFor={endId}>
+          结束时间
+          <input
+            id={endId}
+            type="datetime-local"
+            value={draft.endTime}
+            onBlur={saveDraft}
+            onInput={(event) => updateEndTime(event.currentTarget.value)}
+            onChange={(event) => updateEndTime(event.target.value)}
+            className={inputClass}
+          />
+        </label>
+      </div>
+      <button type="button" disabled={!canSave} onClick={saveDraft} className={`mt-3 ${primaryButtonClass} disabled:cursor-not-allowed disabled:opacity-50`}>
+        保存时间段
+      </button>
+      <div className={`mt-2 text-xs ${canSave ? 'text-[color:var(--text-secondary)]' : 'text-rose-300'}`}>
+        {canSave ? `当前时长 ${formatMinutes(duration)}` : '时间段至少需要 15 分钟。'}
+      </div>
+      {block.plan ? <div className="mt-1 text-[11px] text-[color:var(--text-muted)]">TODO：后续同步检查 reminder 更复杂的提醒策略。</div> : null}
+    </div>
+  )
+}
+
+function ActiveTimeEditNotice() {
+  return (
+    <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-xs leading-5 text-[color:var(--text-secondary)]">
+      进行中任务不能直接修改时间段，请先结束计时后再编辑。
+    </div>
   )
 }
 
@@ -153,5 +235,22 @@ function formatSignedMinutes(minutes: number): string {
   return `${minutes > 0 ? '+' : '-'}${Math.abs(minutes)} min`
 }
 
+function formatMinutesAsTime(minutes: number): string {
+  const safeMinutes = Math.max(0, Math.min(24 * 60, minutes))
+  const hour = Math.floor(safeMinutes / 60)
+  const minute = safeMinutes % 60
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+}
+
+function calculateDurationMinutes(startTime: string, endTime: string): number {
+  const start = new Date(startTime).getTime()
+  const end = new Date(endTime).getTime()
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+    return 0
+  }
+  return Math.round((end - start) / 60000)
+}
+
 const buttonClass = 'rounded-full border border-[color:var(--panel-border)] px-3 py-1.5 text-xs text-[color:var(--text-secondary)] transition hover:border-[color:var(--node-selected-border)] hover:text-[color:var(--text-primary)]'
 const primaryButtonClass = 'rounded-full border border-[color:var(--node-selected-border)] bg-[var(--node-selected-bg)] px-3 py-1.5 text-xs font-semibold text-[color:var(--text-primary)] transition hover:border-[color:var(--node-selected-border)]'
+const inputClass = 'w-full rounded-xl border border-[color:var(--panel-border)] bg-[var(--control-bg)] px-3 py-2 text-xs tabular-nums text-[color:var(--text-primary)] outline-none transition focus:border-[color:var(--node-selected-border)]'
