@@ -15,6 +15,8 @@
 - 为当前 SQLite 核心表补 `user_id`，旧数据为空时回填 `local_user`。
 - DB 查询和新增写入默认按 `local_user` 过滤 / 写入。
 - 左侧工作区信息区增加轻量账户展示：当前模式、本机保存、登录同步暂未开放。
+- M12.1 补齐：新增 `getCurrentUserId()` 默认返回 `local_user`，主要查询/写入链路改为通过该封装取当前用户。
+- M12.1 补齐：`applyExtraction` 增加复盘归属检查，SQLite smoke 已验证新增复盘、节点、边、证据、提醒都带 `user_id = local_user`。
 
 ## 3. 本轮修改文件
 
@@ -27,6 +29,7 @@
 - `app/renderer/src/app/store.ts`
 - `app/renderer/src/features/reviews/ReviewSidebar.tsx`
 - `docs/dev-log/2026-05/2026-05-06/mac-account-foundation.md`
+- `docs/dev-log/2026-05/2026-05-06/mac-account-foundation-validation.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
 
 ## 4. 当前验证结果
@@ -37,11 +40,12 @@
 - `./node_modules/.bin/tsc --noEmit -p app/renderer/tsconfig.json` 通过。
 - 临时 SQLite smoke 通过：重复初始化不报错，`users/local_user` 创建成功，新增复盘记录带 `user_id = local_user`。
 - 旧 schema smoke 通过：旧 `reviews / nodes / app_settings` 保留并回填 `user_id = local_user`。
+- M12.1 smoke 通过：新库与旧 schema 重复迁移不报错；`reviews / nodes / edges / node_evidence / reminders / app_settings` 均有 `user_id`，新增记录归属 `local_user`。
 
 ### 未验证 / 风险
 
 - 当前 Codex App shell 没有 `pnpm/npm/corepack`，`electron-vite build/dev` 被 Rollup darwin optional native package 签名问题拦截，未完成真实页面启动验收。
-- Time Debt 与 Wealth 当前使用 renderer `localStorage`，不是 SQLite 表；本轮未改主流程，只记录为后续多账户隔离风险。
+- Time Debt 与 Wealth 当前使用 renderer `localStorage`，不是 SQLite 表；M12.1 按边界未改主流程，只记录为后续多账户隔离风险。
 - `app_settings.key` 仍是全局唯一，本轮只服务 `local_user` 单账户底座。
 
 ## 5. Mac 端第一步操作
