@@ -5,29 +5,23 @@
 - 项目名：growth-tree-os
 - GitHub 仓库：https://github.com/Littleice114514/growth-tree-os.git
 - 分支：feature/mac-time-debt-plan-flow-overlap-ui
-- 最新 commit：提交后以 `git rev-parse --short HEAD` 为准
+- 最新 commit：本轮 push 后以 `git rev-parse --short HEAD` 为准
 - 当前设备完成时间：2026-05-06
 
 ## 2. 本轮已完成
 
-- 增加本地账户身份层底座，只预留 `local_user` 和 `user_id`。
-- 新增 SQLite `users` 表，并幂等初始化 `id = local_user`、`display_name = 本地账户`、`mode = local`。
-- 为当前 SQLite 核心表补 `user_id`，旧数据为空时回填 `local_user`。
-- DB 查询和新增写入默认按 `local_user` 过滤 / 写入。
-- 左侧工作区信息区增加轻量账户展示：当前模式、本机保存、登录同步暂未开放。
-- M12.1 补齐：新增 `getCurrentUserId()` 默认返回 `local_user`，主要查询/写入链路改为通过该封装取当前用户。
-- M12.1 补齐：`applyExtraction` 增加复盘归属检查，SQLite smoke 已验证新增复盘、节点、边、证据、提醒都带 `user_id = local_user`。
+- M12.1.1 补齐 Time Debt / Wealth renderer localStorage 账户命名空间。
+- 新增 renderer 侧轻量 helper，当前固定账户为 `local_user`。
+- Time Debt logs / standards / params 新 key 改为 `growth-tree-os:local_user:time-debt:*:v1`。
+- Wealth records 新 key 改为 `growth-tree-os:local_user:wealth:records:v1`。
+- 增加旧 key 到新 key 的幂等复制迁移；旧 key 保留，不删除。
 
 ## 3. 本轮修改文件
 
-- `app/main/db.ts`
-- `app/main/ipc.ts`
-- `app/preload/index.ts`
-- `app/shared/contracts.ts`
-- `app/renderer/src/services/api.ts`
-- `app/renderer/src/types/ui.ts`
-- `app/renderer/src/app/store.ts`
-- `app/renderer/src/features/reviews/ReviewSidebar.tsx`
+- `app/renderer/src/lib/accountStorage.ts`
+- `app/renderer/src/features/time-debt/timeDebtStorage.ts`
+- `app/renderer/src/features/wealth/wealthStorage.ts`
+- `docs/dev-log/2026-05/2026-05-06/mac-time-debt-wealth-localstorage-account-namespace.md`
 - `docs/dev-log/2026-05/2026-05-06/mac-account-foundation.md`
 - `docs/dev-log/2026-05/2026-05-06/mac-account-foundation-validation.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
@@ -36,17 +30,15 @@
 
 ### 已验证
 
-- `./node_modules/.bin/tsc --noEmit -p tsconfig.node.json` 通过。
-- `./node_modules/.bin/tsc --noEmit -p app/renderer/tsconfig.json` 通过。
-- 临时 SQLite smoke 通过：重复初始化不报错，`users/local_user` 创建成功，新增复盘记录带 `user_id = local_user`。
-- 旧 schema smoke 通过：旧 `reviews / nodes / app_settings` 保留并回填 `user_id = local_user`。
-- M12.1 smoke 通过：新库与旧 schema 重复迁移不报错；`reviews / nodes / edges / node_evidence / reminders / app_settings` 均有 `user_id`，新增记录归属 `local_user`。
+- `pnpm typecheck` 通过。
+- `pnpm smoke` 通过。
+- `pnpm dev` 可启动到 Electron renderer，`http://localhost:5173/` 可用；验收后已停止 dev 进程。
+- 脚本确认旧 localStorage 数据会复制到新 key，旧 key 保留，重复迁移不会重复追加或破坏已有新 key。
 
 ### 未验证 / 风险
 
-- 当前 Codex App shell 没有 `pnpm/npm/corepack`，`electron-vite build/dev` 被 Rollup darwin optional native package 签名问题拦截，未完成真实页面启动验收。
-- Time Debt 与 Wealth 当前使用 renderer `localStorage`，不是 SQLite 表；M12.1 按边界未改主流程，只记录为后续多账户隔离风险。
-- `app_settings.key` 仍是全局唯一，本轮只服务 `local_user` 单账户底座。
+- 其他 Time Debt 附属 localStorage key，如 plan、timer、options、plan reminder，本轮按任务边界未改。
+- 未做真实登录、云同步、SQLite 迁移或 Time Debt / Wealth UI 改动。
 
 ## 5. Mac 端第一步操作
 
@@ -70,7 +62,7 @@ git pull origin feature/mac-time-debt-plan-flow-overlap-ui
 git rev-parse --short HEAD
 ```
 
-确认输出的 commit 应为本轮最终 commit。
+确认输出的 commit 应为本轮最终汇报中的 commit。
 
 ## 6. Mac 端环境准备
 
@@ -78,6 +70,7 @@ git rev-parse --short HEAD
 corepack enable
 pnpm install
 pnpm typecheck
+pnpm smoke
 pnpm dev
 ```
 
@@ -87,16 +80,21 @@ pnpm dev
 
 请在 Mac 端检查：
 
-- 应用可启动，不因账户 API 崩溃。
-- 左侧工作区信息区显示“当前模式：本地账户”“数据保存：本机”“登录同步：暂未开放”。
-- 新建一条复盘后，SQLite `reviews` 新记录包含 `user_id = local_user`。
-- 旧复盘、旧节点仍能显示。
+- 应用可启动。
+- 打开 Time Debt / Wealth 页面不报错。
+- DevTools Application / Local Storage 中可看到：
+  - `growth-tree-os:local_user:time-debt:logs:v1`
+  - `growth-tree-os:local_user:time-debt:standards:v1`
+  - `growth-tree-os:local_user:time-debt:params:v1`
+  - `growth-tree-os:local_user:wealth:records:v1`
+- 如果旧 key 有数据，新 key 首次读取后应复制到对应新 key；旧 key 仍保留。
+- 重复刷新页面不会产生重复追加。
 
 ## 8. Mac 端下一轮任务
 
 请让 Mac 端 Codex 接着完成：
 
-在正常 pnpm 环境启动项目，做真实页面 smoke，并用实际 app 数据库确认 `users/local_user` 和新增复盘 `user_id = local_user`；若通过，补一条验收日志并推进到集成分支准备。
+做 M12 Account Foundation 最终封板验收：确认 SQLite `local_user/user_id` 底座与 Time Debt / Wealth localStorage `local_user` key 同时生效，然后更新封板日志；不要扩展真实登录或云同步。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
@@ -107,7 +105,7 @@ pnpm dev
 - `pnpm install` / `pnpm dev` 完整报错；
 - 页面异常截图；
 - DevTools 控制台首个关键错误；
-- SQLite 检查中 `users`、`reviews`、`nodes` 的 `PRAGMA table_info` 和样例行输出。
+- DevTools Application / Local Storage 里 Time Debt / Wealth 新旧 key 截图。
 
 ## 10. 注意事项
 
@@ -115,3 +113,4 @@ pnpm dev
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
 - 不要在本轮基础上直接开发注册、登录、验证码、云同步或第三方登录。
+- 不要删除旧 localStorage key；当前策略是复制兼容，旧 key 暂存。

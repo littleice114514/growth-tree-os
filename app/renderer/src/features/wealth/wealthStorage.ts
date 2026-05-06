@@ -1,11 +1,15 @@
 import type { WealthRecord } from '@shared/wealth'
+import { accountLocalStorageKey, migrateLegacyLocalStorageKey } from '@/lib/accountStorage'
 
-const STORAGE_KEY = 'growth-tree-os:wealth-records:v1'
+const LEGACY_STORAGE_KEY = 'growth-tree-os:wealth-records:v1'
+const STORAGE_KEY = accountLocalStorageKey('wealth', 'records')
 
 export function loadWealthRecords(): WealthRecord[] {
   if (typeof window === 'undefined') {
     return []
   }
+
+  migrateWealthLegacyKey()
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
@@ -23,6 +27,7 @@ export function loadWealthRecords(): WealthRecord[] {
 }
 
 export function saveWealthRecords(records: WealthRecord[]): void {
+  migrateWealthLegacyKey()
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(records))
 }
 
@@ -39,6 +44,11 @@ export function deleteWealthRecord(recordId: string): WealthRecord[] {
 }
 
 export { STORAGE_KEY as wealthRecordsStorageKey }
+export { LEGACY_STORAGE_KEY as legacyWealthRecordsStorageKey }
+
+function migrateWealthLegacyKey(): void {
+  migrateLegacyLocalStorageKey(LEGACY_STORAGE_KEY, STORAGE_KEY)
+}
 
 function isWealthRecord(value: unknown): value is WealthRecord {
   if (!value || typeof value !== 'object') {
