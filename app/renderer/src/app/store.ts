@@ -65,25 +65,28 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>((set,
   extractionDrafts: [makeDraft()],
   hoverCard: null,
   dataRoot: '',
+  currentUser: null,
   searchQuery: '',
   searchResults: [],
   searchLoading: false,
   searchError: null,
 
   boot: async () => {
-    const [tree, recentReviews, reminders, weeklyReview, dataRoot] = await Promise.all([
+    const [tree, recentReviews, reminders, weeklyReview, dataRoot, currentUser] = await Promise.all([
       api.getTreeSnapshot(),
       api.listRecentReviews(),
       api.listAllReminders(),
       api.getWeeklyReview(),
-      api.getDataRoot()
+      api.getDataRoot(),
+      api.getCurrentUser()
     ])
     set({
       tree,
       recentReviews,
       reminders,
       weeklyReview,
-      dataRoot
+      dataRoot,
+      currentUser
     })
   },
 

@@ -13,5 +13,6 @@ export const api = {
   completeReminder: (reminderId: string, action: 'complete' | 'reviewed') =>
     window.growthTree.reminders.complete(reminderId, action),
   getWeeklyReview: () => window.growthTree.insights.getWeeklyReview(),
-  getDataRoot: () => window.growthTree.appPaths.getDataRoot()
+  getDataRoot: () => window.growthTree.appPaths.getDataRoot(),
+  getCurrentUser: () => window.growthTree.accounts.getCurrentUser()
 }

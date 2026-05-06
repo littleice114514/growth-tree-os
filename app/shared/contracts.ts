@@ -32,6 +32,14 @@ export type NodeStatus = (typeof NODE_STATUS_OPTIONS)[number]
 export type ReminderType = 'dormant' | 'repeat_problem' | 'review_due'
 export type ReminderStatus = 'open' | 'done'
 
+export type UserRecord = {
+  id: string
+  displayName: string
+  mode: 'local'
+  createdAt: string
+  updatedAt: string
+}
+
 export type ReviewRecord = {
   id: string
   reviewDate: string
@@ -206,5 +214,8 @@ export interface GrowthTreeApi {
   }
   appPaths: {
     getDataRoot(): Promise<string>
+  }
+  accounts: {
+    getCurrentUser(): Promise<UserRecord>
   }
 }
