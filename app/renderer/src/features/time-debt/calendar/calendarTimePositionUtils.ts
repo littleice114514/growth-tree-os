@@ -1,4 +1,4 @@
-import type { CalendarBlock, CalendarTimeScale, PositionedCalendarBlock } from './calendarTypes'
+import { minVisualCalendarEventDurationMinutes, type CalendarBlock, type CalendarTimeScale, type PositionedCalendarBlock } from './calendarTypes'
 
 export function minutesFromDateTime(value: string): number {
   const date = new Date(value)
@@ -26,7 +26,8 @@ export function pixelToTime(pixel: number, scale: CalendarTimeScale): number {
 }
 
 export function durationToHeight(durationMinutes: number, scale: CalendarTimeScale): number {
-  return Math.max(durationMinutes * scale.pixelsPerMinute, scale.minEventHeight)
+  const visualDurationMinutes = Math.max(durationMinutes, minVisualCalendarEventDurationMinutes)
+  return Math.max(visualDurationMinutes * scale.pixelsPerMinute, scale.minEventHeight)
 }
 
 export function snapToMinute(minutes: number, snapMinutes: number): number {

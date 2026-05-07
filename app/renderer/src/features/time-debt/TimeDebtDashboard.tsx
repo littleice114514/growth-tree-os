@@ -124,6 +124,7 @@ type TaskHistoryOption = {
 }
 
 const today = new Date().toISOString().slice(0, 10)
+const minVisualTimeBlockMinutes = 15
 const viewLabels: Record<TimeDebtView, string> = {
   today: '执行台',
   timeline: '日历',
@@ -1033,7 +1034,7 @@ function TimeBlock({
   onAbandonPlan: (planId: string) => void
 }) {
   const startMinute = minutesFromDateTime(block.startTime)
-  const heightMinutes = Math.max(block.durationMinutes, 25)
+  const heightMinutes = Math.max(block.durationMinutes, minVisualTimeBlockMinutes)
   const widthFactor = (block.widthPercent ?? 100) / 100
   const leftFactor = (block.leftPercent ?? 0) / 100
   const style = {
@@ -1327,7 +1328,7 @@ function WeeklyTimeGrid() {
 }
 
 function WeeklyTimeBlock({ block, selected, onSelect }: { block: CalendarBlock; selected: boolean; onSelect: () => void }) {
-  const heightMinutes = Math.max(block.durationMinutes, 25)
+  const heightMinutes = Math.max(block.durationMinutes, minVisualTimeBlockMinutes)
   const widthFactor = (block.widthPercent ?? 100) / 100
   const leftFactor = (block.leftPercent ?? 0) / 100
   const style = {

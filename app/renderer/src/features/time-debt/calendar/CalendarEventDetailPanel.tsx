@@ -114,7 +114,8 @@ function TimeRangeEditor({
   const startId = `${block.id}-start-time`
   const endId = `${block.id}-end-time`
   const duration = calculateDurationMinutes(draft.startTime, draft.endTime)
-  const canSave = duration >= 15
+  const hasChanged = draft.startTime !== block.startTime || draft.endTime !== block.endTime
+  const canSave = hasChanged && duration >= 15
 
   useEffect(() => {
     setDraft({ startTime: block.startTime, endTime: block.endTime })
@@ -122,7 +123,6 @@ function TimeRangeEditor({
 
   const saveDraft = () => {
     if (!canSave) return
-    if (draft.startTime === block.startTime && draft.endTime === block.endTime) return
     onSave(block.id, draft.startTime, draft.endTime)
   }
   const updateStartTime = (value: string) => setDraft((current) => ({ ...current, startTime: value }))
@@ -160,8 +160,12 @@ function TimeRangeEditor({
       <button type="button" disabled={!canSave} onClick={saveDraft} className={`mt-3 ${primaryButtonClass} disabled:cursor-not-allowed disabled:opacity-50`}>
         保存时间段
       </button>
-      <div className={`mt-2 text-xs ${canSave ? 'text-[color:var(--text-secondary)]' : 'text-rose-300'}`}>
-        {canSave ? `当前时长 ${formatMinutes(duration)}` : '时间段至少需要 15 分钟。'}
+      <div className={`mt-2 text-xs ${duration >= 15 || !hasChanged ? 'text-[color:var(--text-secondary)]' : 'text-rose-300'}`}>
+        {duration >= 15
+          ? `当前时长 ${formatMinutes(duration)}`
+          : hasChanged
+            ? '时间段编辑至少需要 15 分钟；短任务请通过计时或补记保存真实时长。'
+            : `真实短任务 ${formatMinutes(duration)}，日历按 15 分钟高度显示。`}
       </div>
       {block.plan ? <div className="mt-1 text-[11px] text-[color:var(--text-muted)]">TODO：后续同步检查 reminder 更复杂的提醒策略。</div> : null}
     </div>

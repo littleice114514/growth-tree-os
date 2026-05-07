@@ -108,6 +108,8 @@ export const defaultCalendarTimeScale: CalendarTimeScale = {
   minuteStep: 30,
   showHalfHourLine: true,
   showHalfHourLabel: true,
-  minEventHeight: 24,
+  minEventHeight: 12,
   snapMinutes: 15
 }
+
+export const minVisualCalendarEventDurationMinutes = 15

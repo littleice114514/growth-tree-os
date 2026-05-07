@@ -72,6 +72,9 @@
 - 2026-05-07 P0 calendar fix: `CalendarViewShell` splits Active and Completed cross-day blocks into daily segments before layout; cross-day segments are displayed read-only for drag/resize safety.
 - 2026-05-07 P0 entry fix: Start Timer, Manual Log, and Plan modals use a searchable historical task Combobox derived from existing logs/plans.
 - Validation: `pnpm typecheck` and `pnpm smoke` passed on 2026-05-07.
+- 2026-05-07 short-task rule fix: real saved `durationMinutes` remains actual duration; calendar positioning uses `minVisualCalendarEventDurationMinutes = 15` only for visual height.
+- 2026-05-07 short-task detail fix: saved short tasks show their real duration in detail, while resize/time-range editing still requires at least 15 minutes.
+- Validation: `pnpm typecheck` and `pnpm smoke` passed after the short-task rule split.
 
 ## 8. Backlog Only
 
