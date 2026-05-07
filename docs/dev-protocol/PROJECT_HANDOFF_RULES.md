@@ -18,6 +18,10 @@
 项目必须遵守双端协同开发标准。
 
 仓库内协议文件：
+- docs/project-state/CURRENT_STATUS.md
+- docs/project-state/LOG_INDEX.md
+- docs/project-state/NEXT_ACTION.md
+- docs/dev-protocol/AI_WORKFLOW_TOKEN_SAVING.md
 - docs/dev-protocol/CODEX_STARTUP_CHECKLIST.md
 - docs/dev-protocol/DUAL_DEVICE_WORKFLOW.md
 - docs/dev-protocol/BRANCH_AND_FILE_BOUNDARY.md
@@ -25,7 +29,16 @@
 - docs/dev-protocol/PROJECT_HANDOFF_RULES.md
 - docs/dev-protocol/FLEXIBLE_OWNERSHIP_RULES.md
 
-以后给 Codex / Claude / Cursor 等开发代理任何开发指令时，必须要求它先读取 CODEX_STARTUP_CHECKLIST.md，再判断当前设备、分支、任务类型、允许修改范围、禁止修改范围和日志路径。
+以后给 Codex / Claude / Cursor 等开发代理任何开发指令时，必须要求它先读取 project-state 三件套，再读取 CODEX_STARTUP_CHECKLIST.md，并判断当前设备、分支、任务类型、允许修改范围、禁止修改范围和日志路径。
+
+省 token 开工读取顺序：
+1. docs/project-state/CURRENT_STATUS.md
+2. docs/project-state/LOG_INDEX.md 最近 5 条
+3. docs/project-state/NEXT_ACTION.md
+4. 与本轮任务直接相关的协议文件
+5. 与本轮任务直接相关的代码文件
+
+禁止默认复制、读取或总结全部历史 dev-log。如需历史依据，只能先从 LOG_INDEX.md 选择相关日志，再按路径读取相关 1 到 3 个原始日志。
 
 不要让 Mac 和 Windows 同时直接改 main。
 不要让两端同时改同一批业务文件。
@@ -131,3 +144,15 @@ feature/win-* = Windows 任务分支
 - 可直接复制到新聊天框的续推文本
 
 交接内容应尽量放进一个完整 Markdown 代码块，方便用户一键复制到新聊天框。
+
+## 6. 新聊天框省 token 交接规则
+
+新聊天框交接时，优先复制或要求读取：
+
+1. `docs/project-state/CURRENT_STATUS.md`
+2. `docs/project-state/NEXT_ACTION.md`
+3. `docs/project-state/LOG_INDEX.md` 最近 5 条
+
+不再默认复制全部历史日志。需要历史依据时，只从 `LOG_INDEX.md` 选择相关日志路径，再读取对应 1 到 3 个原始日志。
+
+如果当前任务处于设备切换状态，还必须附上 `docs/handoff/MAC_NEXT_ACTION.md` 或对应设备的下一步操作卡。

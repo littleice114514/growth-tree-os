@@ -4,53 +4,45 @@
 
 - 项目名：growth-tree-os
 - GitHub 仓库：git@github.com:littleice114514/growth-tree-os.git
-- 分支：feature/win-life-tree-3d-framework
-- 最新 commit：以本轮最终汇报的 `git rev-parse --short HEAD` 为准
-- 当前设备完成时间：2026-04-30
+- 分支：feature/win-ai-workflow-token-saving
+- 最新 commit：以 Windows 最终汇报的 `git rev-parse --short HEAD` 为准
+- 当前设备完成时间：2026-05-07 17:01:33 +08:00
 
 ## 2. 本轮已完成
 
-- 新增 M3D-3 Life Tree 程序化 3D POC。
-- 安装 `three`、`@react-three/fiber`、`@react-three/drei`，并固定到 React 18 兼容版本。
-- 新增 `LifeTree3DPreview` 入口，可从 mock `TreeSnapshot` 渲染基础 3D 树。
-- 支持 OrbitControls 旋转 / 缩放、点击枝干 / 叶子 / 果实显示调试详情、ESC 取消选中。
-- 支持 low / medium / high 画质档位，默认不使用 high。
-- 保留 WebGL fallback，不让 3D 预览成为系统单点故障。
+- 新增 `docs/project-state/` 三件套：`CURRENT_STATUS.md`、`LOG_INDEX.md`、`NEXT_ACTION.md`。
+- 新增 `docs/dev-protocol/AI_WORKFLOW_TOKEN_SAVING.md`，定义省 token 开工读取顺序。
+- 更新 startup、dev-log、dual-device、handoff 协议，把 project-state 三件套接入默认工作流。
+- 新增 Windows 本轮日志，记录 AI workflow 底座改动和 Mac 同步方式。
+- 本轮未推进 3D、Time Debt、数据库或页面重构。
 
 ## 3. 本轮修改文件
 
-- `package.json`
-- `pnpm-lock.yaml`
-- `app/renderer/src/types/ui.ts`
-- `app/renderer/src/components/Toolbar.tsx`
-- `app/renderer/src/pages/MainWorkspacePage.tsx`
-- `app/renderer/src/features/life-tree-3d/components/**`
-- `app/renderer/src/features/life-tree-3d/renderers/**`
-- `app/renderer/src/features/life-tree-3d/layout/**`
-- `app/renderer/src/features/life-tree-3d/interaction/**`
-- `app/renderer/src/features/life-tree-3d/performance/**`
-- `app/renderer/src/features/life-tree-3d/demo/**`
-- `app/renderer/src/features/life-tree-3d/README.md`
-- `docs/life-tree-3d/LIFE_TREE_ROADMAP.md`
-- `docs/dev-log/2026-04/2026-04-30/win-life-tree-3d-procedural-poc.md`
+- `docs/project-state/CURRENT_STATUS.md`
+- `docs/project-state/LOG_INDEX.md`
+- `docs/project-state/NEXT_ACTION.md`
+- `docs/dev-protocol/AI_WORKFLOW_TOKEN_SAVING.md`
+- `docs/dev-protocol/CODEX_STARTUP_CHECKLIST.md`
+- `docs/dev-protocol/DUAL_DEVICE_WORKFLOW.md`
+- `docs/dev-protocol/DEV_LOG_RULES.md`
+- `docs/dev-protocol/PROJECT_HANDOFF_RULES.md`
+- `docs/dev-log/2026-05/2026-05-07/win-ai-workflow-token-saving.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
 
 ## 4. 当前验证结果
 
 ### 已验证
 
-- `pnpm install` 已完成。
-- `pnpm typecheck` 已通过。
-- 依赖只新增 `three`、`@react-three/fiber`、`@react-three/drei`。
-- 3D Preview 没有设为默认首页。
-- 未新增 glb / glTF / 模型文件 / 贴图资源。
-- Renderer 只读取 `TreeSnapshot`，不读取 `GrowthEvent` / `GrowthRule`。
+- Windows 端已确认 project-state 三件套存在。
+- Windows 端已确认 `AI_WORKFLOW_TOKEN_SAVING.md` 存在。
+- Windows 端已确认 startup、dev-log、dual-device、handoff 协议包含省 token / project-state 规则。
+- Windows 端已确认本轮改动只在文档、协议、日志和交接卡范围内。
 
 ### 未验证 / 风险
 
-- Mac 端 low / medium 实机帧率尚未验收。
-- 当前是程序化 POC，不是最终视觉版。
-- 写实模型、Blender、glb / glTF 和贴图资源仍未进入本阶段。
+- Mac 端尚未 pull 并验收。
+- 本轮不改业务代码，因此未运行 UI / 3D / build 验收。
+- 后续任务必须持续维护 `LOG_INDEX.md`，否则省 token 机制会退化。
 
 ## 5. Mac 端第一步操作
 
@@ -61,7 +53,7 @@ mkdir -p ~/Desktop/vibe-coding-projects
 cd ~/Desktop/vibe-coding-projects
 git clone git@github.com:littleice114514/growth-tree-os.git
 cd growth-tree-os
-git checkout feature/win-life-tree-3d-framework
+git checkout feature/win-ai-workflow-token-saving
 ```
 
 如果 Mac 上已经有项目：
@@ -70,56 +62,61 @@ git checkout feature/win-life-tree-3d-framework
 cd <Mac上的项目目录>
 git status
 git fetch origin
-git checkout feature/win-life-tree-3d-framework
-git pull origin feature/win-life-tree-3d-framework
+git checkout feature/win-ai-workflow-token-saving
+git pull origin feature/win-ai-workflow-token-saving
 git rev-parse --short HEAD
 ```
 
-确认输出的 commit 应为本轮最终汇报中的 commit。
+确认输出的 commit 应为 Windows 最终汇报中的 commit。
 
 ## 6. Mac 端环境准备
 
+本轮只做文档同步验收，不需要安装新依赖。若 Mac 后续需要运行应用，再执行：
+
 ```bash
 pnpm install
-pnpm typecheck
 pnpm dev
 ```
 
 ## 7. Mac 端验收方式
 
-请在 Mac 端检查：
+请在 Mac 端检查以下文件是否存在：
 
-- 顶部导航是否出现 `Life Tree 3D Preview`。
-- 进入后是否能看到基础 3D 树。
-- 鼠标拖拽是否能旋转，滚轮是否能缩放。
-- 点击枝干 / 叶子 / 果实是否显示 nodeId 调试详情。
-- ESC 是否能取消选中。
-- low / medium / high 是否可切换，默认是否不是 high。
+- `docs/project-state/CURRENT_STATUS.md`
+- `docs/project-state/LOG_INDEX.md`
+- `docs/project-state/NEXT_ACTION.md`
+- `docs/dev-protocol/AI_WORKFLOW_TOKEN_SAVING.md`
+- `docs/dev-protocol/CODEX_STARTUP_CHECKLIST.md`
+- `docs/dev-protocol/DUAL_DEVICE_WORKFLOW.md`
+- `docs/dev-protocol/DEV_LOG_RULES.md`
+- `docs/dev-protocol/PROJECT_HANDOFF_RULES.md`
 
 预期结果：
 
-- Mac 可优先使用 low 或 medium。
-- 不出现 glb / glTF / 图片贴图等大型资源。
-- 不接真实数据库。
-- 原有 2D 页面仍可访问。
+- project-state 三件套可作为后续开工入口。
+- `CODEX_STARTUP_CHECKLIST.md` 包含先读 project-state 的规则。
+- `LOG_INDEX.md` 明确默认只读最近 5 条索引。
+- Mac 端不重写 Windows 本轮建立的核心协议内容。
 
 ## 8. Mac 端下一轮任务
 
-请让 Mac 端 Codex 做 M3D-4 交互层验收与体验完善：hover 高亮、视角预设、节点定位、调试面板可读性和 low / medium 稳定性反馈。不要进入写实模型或资源导入。
+请让 Mac 端 Codex 完成：同步 Windows 推送的 AI 工作流省 token 底座，只做文件存在检查、读取顺序验收，并新增 `docs/dev-log/2026-05/2026-05-07/mac-ai-workflow-sync-check.md`。不要改 3D、Time Debt、业务代码或 project-state 核心内容。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
 请截图或粘贴：
 
 - `git status` 输出；
+- `git branch --show-current` 输出；
 - `git rev-parse --short HEAD` 输出；
-- `pnpm install` / `pnpm typecheck` / `pnpm dev` 完整报错；
-- 页面异常截图；
-- 控制台首个关键错误；
-- 当前选择的 quality profile。
+- `git fetch` / `git pull` 完整报错；
+- 缺失文件路径；
+- 如果出现冲突，粘贴冲突文件列表。
 
 ## 10. 注意事项
 
-- 不要直接覆盖本地未提交改动。
+- 不要直接覆盖 Mac 本地未提交改动。
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
+- Mac 端本轮只新增同步验收日志，避免双端同时修改协议核心文件。
+
