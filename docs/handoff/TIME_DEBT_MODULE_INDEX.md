@@ -33,6 +33,7 @@
 - Time positioning: `app/renderer/src/features/time-debt/calendar/calendarTimePositionUtils.ts`
 - Overlap layout: `app/renderer/src/features/time-debt/calendar/calendarOverlapLayoutUtils.ts`
 - Drag and resize preview: `app/renderer/src/features/time-debt/calendar/calendarDragPreviewUtils.ts`
+- Daily segment splitting: `app/renderer/src/features/time-debt/calendar/calendarDailySegmentUtils.ts`
 - Calendar types: `app/renderer/src/features/time-debt/calendar/calendarTypes.ts`
 
 ## 5. State and Persistence
@@ -42,6 +43,7 @@
 - Planned tasks storage: `app/renderer/src/features/time-debt/timeDebtPlansStorage.ts`
 - Active timer storage: `app/renderer/src/features/time-debt/timeDebtActiveTimerStorage.ts`
 - Active timer state: `runningTimer` in `TimeDebtDashboard.tsx`
+- Historical task-name options: `buildTaskHistoryOptions` and `TaskNameCombobox` in `TimeDebtDashboard.tsx`
 - Reminder linkage: `updateTimePlanReminderBySource` from `app/renderer/src/features/reminders/timePlanReminderStorage.ts`
 
 ## 6. Current Stable Abilities
@@ -66,6 +68,10 @@
 - 2026-05-05 detail edit round: Active blocks stay read-only with the required warning, and resize previews are shown in the right detail panel while dragging a resize handle.
 - 2026-05-05 smoke fix: `CalendarEventDetailPanel.tsx` syncs datetime-local draft on input/change, and `CalendarEventBlock.tsx` detects top/bottom edge hits in the parent mouse handler so resize does not lose to normal block dragging.
 - Validation: both TypeScript checks passed; direct dev startup is blocked by Codex App Node versus Rollup native package signing, but Electron's bundled Node workaround successfully starts the app at `http://localhost:5173/`.
+- 2026-05-07 P0 active timer fix: `finishTimer` now also completes legacy active plans that no longer have `runningTimer`, writes actual end/duration, archives reminders, and clears active timer localStorage.
+- 2026-05-07 P0 calendar fix: `CalendarViewShell` splits Active and Completed cross-day blocks into daily segments before layout; cross-day segments are displayed read-only for drag/resize safety.
+- 2026-05-07 P0 entry fix: Start Timer, Manual Log, and Plan modals use a searchable historical task Combobox derived from existing logs/plans.
+- Validation: `pnpm typecheck` and `pnpm smoke` passed on 2026-05-07.
 
 ## 8. Backlog Only
 

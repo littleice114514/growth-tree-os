@@ -113,6 +113,16 @@ type RunningTimer = {
   suggestedEndTime?: string
 }
 
+type TaskHistoryOption = {
+  title: string
+  primaryCategory: string
+  secondaryProject: string
+  tags?: string[]
+  aiEnableRatio?: number
+  lastUsedAt: string
+  useCount: number
+}
+
 const today = new Date().toISOString().slice(0, 10)
 const viewLabels: Record<TimeDebtView, string> = {
   today: '执行台',
@@ -162,6 +172,7 @@ export function TimeDebtDashboard() {
   )
   const todayLogs = useMemo(() => logs.filter((log) => log.startTime.slice(0, 10) === selectedDate), [logs, selectedDate])
   const calendarBlocks = useMemo(() => buildCalendarBlocks(logs, plans, runningTimer, timerNow), [logs, plans, runningTimer, timerNow])
+  const taskHistoryOptions = useMemo(() => buildTaskHistoryOptions(logs, plans), [logs, plans])
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setTimerNow(Date.now()), runningTimer ? 1000 : 30000)
@@ -289,8 +300,11 @@ export function TimeDebtDashboard() {
     setEntryMode(null)
   }
 
-  const finishTimer = () => {
+  const finishTimer = (targetBlock?: CalendarBlock | null) => {
     if (!runningTimer) {
+      if (targetBlock?.status === 'active' && targetBlock.plan) {
+        finishActivePlan(targetBlock.plan)
+      }
       return
     }
     const now = new Date()
@@ -315,6 +329,7 @@ export function TimeDebtDashboard() {
         setPlans(
           updateTimeDebtPlan(runningTimer.planId, {
             status: 'completed',
+            actualStartTime: runningTimer.startTime,
             actualEndTime: endTime,
             actualDurationMinutes: durationMinutes,
             completedLogId: log.id
@@ -322,6 +337,42 @@ export function TimeDebtDashboard() {
         )
         archiveTimePlanReminderBySource(runningTimer.planId, 'completed')
       }
+      setRunningTimer(null)
+      clearActiveTimeDebtTimer()
+    }
+  }
+
+  const finishActivePlan = (plan: TimeDebtPlan) => {
+    const actualStartTime = plan.actualStartTime || plan.plannedStartTime
+    const now = new Date()
+    const minimumEndTimestamp = new Date(actualStartTime).getTime() + 60000
+    const endDate = new Date(Math.max(now.getTime(), Number.isFinite(minimumEndTimestamp) ? minimumEndTimestamp : now.getTime()))
+    const actualEndTime = formatLocalDateTimeInput(endDate)
+    const actualDurationMinutes = Math.max(1, calculateDurationMinutes(actualStartTime, actualEndTime))
+    const log = createTimeDebtLog(
+      {
+        title: plan.title,
+        primaryCategory: plan.primaryCategory,
+        secondaryProject: plan.secondaryProject,
+        startTime: actualStartTime,
+        endTime: actualEndTime,
+        tags: plan.tags,
+        resultNote: plan.note || '由进行中的计划任务结束计时后生成。'
+      },
+      params
+    )
+    setLogs(appendTimeDebtLog(log))
+    setPlans(
+      updateTimeDebtPlan(plan.id, {
+        status: 'completed',
+        actualStartTime,
+        actualEndTime,
+        actualDurationMinutes,
+        completedLogId: log.id
+      })
+    )
+    archiveTimePlanReminderBySource(plan.id, 'completed')
+    if (!runningTimer || runningTimer.planId === plan.id) {
       setRunningTimer(null)
       clearActiveTimeDebtTimer()
     }
@@ -564,6 +615,7 @@ export function TimeDebtDashboard() {
           logDraft={logDraft}
           planDraft={planDraft}
           options={options}
+          taskHistoryOptions={taskHistoryOptions}
           runningTimer={runningTimer}
           onClose={() => {
             setEntryMode(null)
@@ -624,7 +676,7 @@ function TodayView({
   onStartPlan: (plan: TimeDebtPlan) => void
   onConvertPlanToManual: (plan: TimeDebtPlan) => void
   onAbandonPlan: (planId: string) => void
-  onFinishTimer: () => void
+  onFinishTimer: (block?: CalendarBlock | null) => void
 }) {
   return (
     <div className="grid min-h-[720px] gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
@@ -753,7 +805,7 @@ function ActiveTimerWidget({
   runningTimer: RunningTimer | null
   timerNow: number
   onOpenEntry: (mode: EntryMode) => void
-  onFinishTimer: () => void
+  onFinishTimer: (block?: CalendarBlock | null) => void
 }) {
   return (
     <Panel title="当前焦点" eyebrow="Now">
@@ -775,7 +827,15 @@ function ActiveTimerWidget({
               <div>建议结束：{runningTimer.suggestedEndTime ? formatTimeOnly(runningTimer.suggestedEndTime) : '按实际结束计算'}</div>
             </div>
           ) : null}
-          <button type="button" onClick={onFinishTimer} className={`mt-4 w-full ${primaryButtonClass}`}>
+          {timerNow - runningTimer.startTimestampMs >= 24 * 60 * 60 * 1000 ? (
+            <div className="mt-3 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-3 text-xs leading-5 text-[color:var(--text-secondary)]">
+              <div className="font-semibold text-[color:var(--text-primary)]">这个计时已超过 24 小时，可能忘记结束。</div>
+              <button type="button" onClick={() => onFinishTimer()} className={`mt-3 w-full ${primaryButtonClass}`}>
+                立即结束计时
+              </button>
+            </div>
+          ) : null}
+          <button type="button" onClick={() => onFinishTimer()} className={`mt-4 w-full ${primaryButtonClass}`}>
             结束计时并生成日志
           </button>
         </div>
@@ -1138,7 +1198,7 @@ function TimelineView({
   onStartPlan: (plan: TimeDebtPlan) => void
   onConvertPlanToManual: (plan: TimeDebtPlan) => void
   onAbandonPlan: (planId: string) => void
-  onFinishTimer: () => void
+  onFinishTimer: (block?: CalendarBlock | null) => void
 }) {
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -1315,7 +1375,7 @@ function WeeklyEventDetailPanel({
   onStartPlan: (plan: TimeDebtPlan) => void
   onConvertPlanToManual: (plan: TimeDebtPlan) => void
   onAbandonPlan: (planId: string) => void
-  onFinishTimer: () => void
+  onFinishTimer: (block?: CalendarBlock | null) => void
 }) {
   if (!block) {
     return (
@@ -1373,7 +1433,7 @@ function WeeklyEventDetailPanel({
             </>
           ) : null}
           {block.status === 'active' ? (
-            <button type="button" onClick={onFinishTimer} className={primaryButtonClass}>
+            <button type="button" onClick={() => onFinishTimer(block)} className={primaryButtonClass}>
               结束计时
             </button>
           ) : null}
@@ -1461,6 +1521,7 @@ function EntryModal({
   logDraft,
   planDraft,
   options,
+  taskHistoryOptions,
   runningTimer,
   onClose,
   onLogChange,
@@ -1474,6 +1535,7 @@ function EntryModal({
   logDraft: LogDraft
   planDraft: PlanDraft
   options: TimeDebtOptions
+  taskHistoryOptions: TaskHistoryOption[]
   runningTimer: RunningTimer | null
   onClose: () => void
   onLogChange: (patch: Partial<LogDraft>) => void
@@ -1488,7 +1550,19 @@ function EntryModal({
     <Modal title={title} eyebrow="Time Entry" onClose={onClose}>
       {mode === 'plan' ? (
         <div className="grid gap-3 md:grid-cols-2">
-          <TextField label={timeDebtFieldConfigs.title.label} value={planDraft.title} onChange={(title) => onPlanChange({ title })} placeholder={timeDebtFieldConfigs.title.placeholder} />
+          <TaskNameCombobox
+            label={timeDebtFieldConfigs.title.label}
+            value={planDraft.title}
+            options={taskHistoryOptions}
+            placeholder={timeDebtFieldConfigs.title.placeholder}
+            onChange={(title) => onPlanChange({ title })}
+            onSelect={(option) => onPlanChange({
+              title: option.title,
+              primaryCategory: option.primaryCategory,
+              secondaryProject: option.secondaryProject,
+              tags: formatTags(option.tags)
+            })}
+          />
           <CategoryFields
             primaryCategory={planDraft.primaryCategory}
             secondaryProject={planDraft.secondaryProject}
@@ -1518,7 +1592,20 @@ function EntryModal({
         </div>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
-          <TextField label={timeDebtFieldConfigs.title.label} value={logDraft.title} onChange={(title) => onLogChange({ title })} placeholder={timeDebtFieldConfigs.title.placeholder} />
+          <TaskNameCombobox
+            label={timeDebtFieldConfigs.title.label}
+            value={logDraft.title}
+            options={taskHistoryOptions}
+            placeholder={timeDebtFieldConfigs.title.placeholder}
+            onChange={(title) => onLogChange({ title })}
+            onSelect={(option) => onLogChange({
+              title: option.title,
+              primaryCategory: option.primaryCategory,
+              secondaryProject: option.secondaryProject,
+              tags: formatTags(option.tags),
+              aiEnableRatio: typeof option.aiEnableRatio === 'number' ? String(option.aiEnableRatio) : logDraft.aiEnableRatio
+            })}
+          />
           <CategoryFields
             primaryCategory={logDraft.primaryCategory}
             secondaryProject={logDraft.secondaryProject}
@@ -1837,6 +1924,84 @@ function TextField({
   )
 }
 
+function TaskNameCombobox({
+  label,
+  value,
+  options,
+  placeholder,
+  onChange,
+  onSelect
+}: {
+  label: string
+  value: string
+  options: TaskHistoryOption[]
+  placeholder?: string
+  onChange: (value: string) => void
+  onSelect: (option: TaskHistoryOption) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const query = value.trim().toLowerCase()
+  const matchedOptions = options
+    .filter((option) => {
+      if (!query) return true
+      return [option.title, option.primaryCategory, option.secondaryProject, ...(option.tags ?? [])].some((item) => item.toLowerCase().includes(query))
+    })
+    .slice(0, 6)
+
+  const selectOption = (option: TaskHistoryOption) => {
+    onSelect(option)
+    setOpen(false)
+  }
+
+  return (
+    <Field label={label}>
+      <div className="relative">
+        <input
+          value={value}
+          onChange={(event) => {
+            onChange(event.target.value)
+            setOpen(true)
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+          type="text"
+          placeholder={placeholder}
+          className={inputClass}
+          role="combobox"
+          aria-expanded={open}
+        />
+        {open ? (
+          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-[70] max-h-64 overflow-auto rounded-2xl border border-[color:var(--panel-border)] bg-[var(--overlay-bg)] p-2 shadow-panel">
+            {matchedOptions.length > 0 ? (
+              matchedOptions.map((option) => (
+                <button
+                  key={`${option.title}-${option.primaryCategory}-${option.secondaryProject}`}
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => selectOption(option)}
+                  className="w-full rounded-xl px-3 py-2 text-left transition hover:bg-[var(--control-bg)]"
+                >
+                  <div className="truncate text-sm font-semibold text-[color:var(--text-primary)]">{option.title}</div>
+                  <div className="mt-1 truncate text-[11px] text-[color:var(--text-muted)]">
+                    {option.primaryCategory || '未分类'} · {option.secondaryProject || '未归属项目'}
+                  </div>
+                  <div className="mt-1 text-[10px] text-[color:var(--text-muted)]">
+                    最近使用 {formatDateSlash(new Date(option.lastUsedAt))} / 使用 {option.useCount} 次
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="rounded-xl border border-dashed border-[color:var(--panel-border)] px-3 py-3 text-xs text-[color:var(--text-muted)]">
+                暂无历史任务，直接输入即可。
+              </div>
+            )}
+          </div>
+        ) : null}
+      </div>
+    </Field>
+  )
+}
+
 function StatusBadge({ overview }: { overview: TimeDebtOverview }) {
   return (
     <div className={`rounded-2xl border px-4 py-3 ${statusToneClass(overview.status)}`}>
@@ -1927,6 +2092,70 @@ function buildCalendarBlocks(logs: TimeDebtLog[], plans: TimeDebtPlan[], running
       ]
     : []
   return layoutOverlappingEvents([...planned, ...activePlans, ...completed, ...active].sort((a, b) => a.startTime.localeCompare(b.startTime)))
+}
+
+function buildTaskHistoryOptions(logs: TimeDebtLog[], plans: TimeDebtPlan[]): TaskHistoryOption[] {
+  const byTitle = new Map<string, TaskHistoryOption>()
+  const remember = (input: {
+    title: string
+    primaryCategory: string
+    secondaryProject: string
+    tags?: string[]
+    aiEnableRatio?: number
+    usedAt: string
+  }) => {
+    const title = input.title.trim()
+    if (!title) return
+    const key = title.toLowerCase()
+    const current = byTitle.get(key)
+    if (!current) {
+      byTitle.set(key, {
+        title,
+        primaryCategory: input.primaryCategory,
+        secondaryProject: input.secondaryProject,
+        tags: input.tags,
+        aiEnableRatio: input.aiEnableRatio,
+        lastUsedAt: input.usedAt,
+        useCount: 1
+      })
+      return
+    }
+    const isNewer = input.usedAt.localeCompare(current.lastUsedAt) > 0
+    byTitle.set(key, {
+      title: isNewer ? title : current.title,
+      primaryCategory: isNewer ? input.primaryCategory : current.primaryCategory,
+      secondaryProject: isNewer ? input.secondaryProject : current.secondaryProject,
+      tags: isNewer ? input.tags : current.tags,
+      aiEnableRatio: typeof input.aiEnableRatio === 'number' ? input.aiEnableRatio : current.aiEnableRatio,
+      lastUsedAt: isNewer ? input.usedAt : current.lastUsedAt,
+      useCount: current.useCount + 1
+    })
+  }
+
+  for (const log of logs) {
+    remember({
+      title: log.title,
+      primaryCategory: log.primaryCategory,
+      secondaryProject: log.secondaryProject,
+      tags: log.tags,
+      aiEnableRatio: log.aiEnableRatio,
+      usedAt: log.endTime || log.startTime
+    })
+  }
+  for (const plan of plans) {
+    remember({
+      title: plan.title,
+      primaryCategory: plan.primaryCategory,
+      secondaryProject: plan.secondaryProject,
+      tags: plan.tags,
+      usedAt: plan.actualEndTime || plan.actualStartTime || plan.plannedStartTime
+    })
+  }
+
+  return Array.from(byTitle.values()).sort((first, second) => {
+    if (first.lastUsedAt !== second.lastUsedAt) return second.lastUsedAt.localeCompare(first.lastUsedAt)
+    return second.useCount - first.useCount
+  })
 }
 
 function blockDetail(block: CalendarBlock): string {

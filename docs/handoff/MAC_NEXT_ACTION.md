@@ -5,40 +5,39 @@
 - 项目名：growth-tree-os
 - GitHub 仓库：https://github.com/Littleice114514/growth-tree-os.git
 - 分支：feature/mac-time-debt-plan-flow-overlap-ui
-- 最新 commit：本轮 push 后以 `git rev-parse --short HEAD` 为准
-- 当前设备完成时间：2026-05-06
+- 最新 commit：以本轮最终汇报的 `git rev-parse --short HEAD` 为准
+- 当前设备完成时间：2026-05-07
 
 ## 2. 本轮已完成
 
-- M12.1.1 补齐 Time Debt / Wealth renderer localStorage 账户命名空间。
-- 新增 renderer 侧轻量 helper，当前固定账户为 `local_user`。
-- Time Debt logs / standards / params 新 key 改为 `growth-tree-os:local_user:time-debt:*:v1`。
-- Wealth records 新 key 改为 `growth-tree-os:local_user:wealth:records:v1`。
-- 增加旧 key 到新 key 的幂等复制迁移；旧 key 保留，不删除。
+- 修复旧 Active plan 点击“结束计时”无效的问题：无 `runningTimer` 时也能按当前时间生成 Completed log，并把 plan 改为 completed。
+- 结束计时会写入 actualEnd / actualDurationMinutes，归档 reminder，并清除 active timer localStorage。
+- 新增跨天日历分段工具，Active / Completed 跨天块在可见范围内按天拆分显示。
+- 开始计时 / 补记时间 / 规划任务的任务名改为历史任务 Combobox，可搜索历史任务，也可直接输入新任务。
+- Active 任务超过 24 小时会显示异常提示和“立即结束计时”按钮；Active 块继续禁止拖拽、resize 和直接编辑时间段。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/lib/accountStorage.ts`
-- `app/renderer/src/features/time-debt/timeDebtStorage.ts`
-- `app/renderer/src/features/wealth/wealthStorage.ts`
-- `docs/dev-log/2026-05/2026-05-06/mac-time-debt-wealth-localstorage-account-namespace.md`
-- `docs/dev-log/2026-05/2026-05-06/mac-account-foundation.md`
-- `docs/dev-log/2026-05/2026-05-06/mac-account-foundation-validation.md`
+- `app/renderer/src/features/time-debt/TimeDebtDashboard.tsx`
+- `app/renderer/src/features/time-debt/calendar/CalendarViewShell.tsx`
+- `app/renderer/src/features/time-debt/calendar/CalendarEventBlock.tsx`
+- `app/renderer/src/features/time-debt/calendar/CalendarEventDetailPanel.tsx`
+- `app/renderer/src/features/time-debt/calendar/calendarTypes.ts`
+- `app/renderer/src/features/time-debt/calendar/calendarDailySegmentUtils.ts`
 - `docs/handoff/MAC_NEXT_ACTION.md`
+- `docs/handoff/TIME_DEBT_MODULE_INDEX.md`
 
 ## 4. 当前验证结果
 
 ### 已验证
 
 - `pnpm typecheck` 通过。
-- `pnpm smoke` 通过。
-- `pnpm dev` 可启动到 Electron renderer，`http://localhost:5173/` 可用；验收后已停止 dev 进程。
-- 脚本确认旧 localStorage 数据会复制到新 key，旧 key 保留，重复迁移不会重复追加或破坏已有新 key。
+- `pnpm smoke` 通过，包含 renderer production build。
 
 ### 未验证 / 风险
 
-- 其他 Time Debt 附属 localStorage key，如 plan、timer、options、plan reminder，本轮按任务边界未改。
-- 未做真实登录、云同步、SQLite 迁移或 Time Debt / Wealth UI 改动。
+- 未在真实 Electron UI 中手动点击那个 188 小时 `vibe coding` 旧 Active 数据。
+- 跨天 segment 的拖拽 / resize 暂不开放；普通同日 Completed / Planned 拖拽 resize 保持原逻辑。
 
 ## 5. Mac 端第一步操作
 
@@ -74,27 +73,21 @@ pnpm smoke
 pnpm dev
 ```
 
-如果 `pnpm` 不可用，先安装 Node.js LTS 或通过 Corepack 恢复 pnpm。
-
 ## 7. Mac 端验收方式
 
 请在 Mac 端检查：
 
-- 应用可启动。
-- 打开 Time Debt / Wealth 页面不报错。
-- DevTools Application / Local Storage 中可看到：
-  - `growth-tree-os:local_user:time-debt:logs:v1`
-  - `growth-tree-os:local_user:time-debt:standards:v1`
-  - `growth-tree-os:local_user:time-debt:params:v1`
-  - `growth-tree-os:local_user:wealth:records:v1`
-- 如果旧 key 有数据，新 key 首次读取后应复制到对应新 key；旧 key 仍保留。
-- 重复刷新页面不会产生重复追加。
+- 打开 Time Debt 页面，点击 188 小时 `vibe coding` Active 任务的“结束计时”或“立即结束计时”。
+- 预期：状态变为 Completed，actualEnd / actualDurationMinutes 写入，顶部和执行台不再显示正在计时。
+- DevTools Local Storage 中 `growth-tree-os:time-debt:active-timer` 被清除，刷新后不会恢复旧 Active。
+- 新建一个跨天 Completed 或 Active 测试块，周视图中应按每天显示 segment。
+- 开始计时 / 补记时间 / 规划任务弹窗中，任务名可搜索历史任务，点击后填入任务名、一级分类、二级项目和标签。
 
 ## 8. Mac 端下一轮任务
 
 请让 Mac 端 Codex 接着完成：
 
-做 M12 Account Foundation 最终封板验收：确认 SQLite `local_user/user_id` 底座与 Time Debt / Wealth localStorage `local_user` key 同时生效，然后更新封板日志；不要扩展真实登录或云同步。
+对本轮 Time Debt Active Timer 修复做真实 UI 验收：用现有 `vibe coding` 异常 Active 数据点击结束计时，确认刷新后不恢复 Active；如通过，只补一条简短验收日志，不扩展洞察页或字段系统。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
@@ -102,15 +95,14 @@ pnpm dev
 
 - `git status` 输出；
 - `git rev-parse --short HEAD` 输出；
-- `pnpm install` / `pnpm dev` 完整报错；
-- 页面异常截图；
+- `pnpm dev` 完整报错；
+- Time Debt 页面异常截图；
 - DevTools 控制台首个关键错误；
-- DevTools Application / Local Storage 里 Time Debt / Wealth 新旧 key 截图。
+- DevTools Local Storage 中 active timer key 的截图或值。
 
 ## 10. 注意事项
 
 - 不要直接覆盖本地未提交改动。
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
-- 不要在本轮基础上直接开发注册、登录、验证码、云同步或第三方登录。
-- 不要删除旧 localStorage key；当前策略是复制兼容，旧 key 暂存。
+- 不要在本轮基础上扩展洞察页、仪表盘、字段系统、Notion API 或外部日历同步。

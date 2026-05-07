@@ -4,6 +4,7 @@ import type { CalendarBlock, CalendarDragPreview, CalendarDragState, CalendarRes
 import { defaultCalendarTimeScale } from './calendarTypes'
 import { buildCalendarRange, dateTimeOverlapsRange, formatDateKey, shiftAnchorDate } from './calendarDateUtils'
 import { createDragPreview, createDragState, createResizePreview, createResizeState } from './calendarDragPreviewUtils'
+import { splitEventsIntoDailySegments } from './calendarDailySegmentUtils'
 import { CalendarEventDetailPanel } from './CalendarEventDetailPanel'
 import { CalendarViewSwitcher } from './CalendarViewSwitcher'
 import { CustomDaysCalendarView } from './CustomDaysCalendarView'
@@ -46,7 +47,7 @@ export function CalendarViewShell({
   onStartPlan: (plan: TimeDebtPlan) => void
   onConvertPlanToManual: (plan: TimeDebtPlan) => void
   onAbandonPlan: (planId: string) => void
-  onFinishTimer: () => void
+  onFinishTimer: (block?: CalendarBlock | null) => void
   onMoveBlock: (blockId: string, nextStartTime: string, nextEndTime: string) => void
   onResizeBlock: (blockId: string, nextStartTime: string, nextEndTime: string) => void
   onEditTimeRange: (blockId: string, nextStartTime: string, nextEndTime: string) => void
@@ -62,7 +63,11 @@ export function CalendarViewShell({
   const range = useMemo(() => buildCalendarRange(mode, anchorDate, customDayCount), [anchorDate, customDayCount, mode])
   const dayKeys = useMemo(() => range.days.map(formatDateKey), [range.days])
   const visibleBlocks = useMemo(
-    () => blocks.filter((block) => dateTimeOverlapsRange(block.startTime, block.endTime, range.start, range.end)),
+    () => splitEventsIntoDailySegments(
+      blocks.filter((block) => dateTimeOverlapsRange(block.startTime, block.endTime, range.start, range.end)),
+      range.start,
+      range.end
+    ),
     [blocks, range.end, range.start]
   )
   const selectedBlock = visibleBlocks.find((block) => block.id === selectedBlockId) ?? blocks.find((block) => block.id === selectedBlockId) ?? null

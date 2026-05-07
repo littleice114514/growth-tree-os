@@ -25,6 +25,8 @@ export type CalendarBlock = {
   plan?: TimeDebtPlan
   leftPercent?: number
   widthPercent?: number
+  sourceBlockId?: string
+  isDailySegment?: boolean
 }
 
 export type PositionedCalendarBlock = CalendarBlock & {

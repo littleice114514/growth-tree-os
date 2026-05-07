@@ -42,8 +42,8 @@ export function CalendarEventBlock({
           : 'border-sky-600/40 border-l-sky-600 bg-sky-100/85 text-sky-950 shadow-[0_8px_20px_rgba(2,132,199,0.08)] dark:bg-sky-300/14 dark:text-sky-50'
   const showTimeRange = block.height >= 34
   const showStatus = block.height >= 58
-  const canDrag = block.status !== 'active'
-  const canResize = block.status !== 'active'
+  const canDrag = block.status !== 'active' && !block.isDailySegment
+  const canResize = block.status !== 'active' && !block.isDailySegment
   const isDragging = dragPreview?.blockId === block.id
   const isResizing = resizePreview?.blockId === block.id
 

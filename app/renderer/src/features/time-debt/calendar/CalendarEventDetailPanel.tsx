@@ -23,7 +23,7 @@ export function CalendarEventDetailPanel({
   onStartPlan: (plan: TimeDebtPlan) => void
   onConvertPlanToManual: (plan: TimeDebtPlan) => void
   onAbandonPlan: (planId: string) => void
-  onFinishTimer: () => void
+  onFinishTimer: (block?: CalendarBlock | null) => void
   onEditTimeRange: (blockId: string, nextStartTime: string, nextEndTime: string) => void
 }) {
   if (!block) {
@@ -41,6 +41,7 @@ export function CalendarEventDetailPanel({
   const actualStart = block.log?.startTime ?? block.plan?.actualStartTime ?? (block.status === 'active' || block.status === 'completed' ? block.startTime : '')
   const actualEnd = block.log?.endTime ?? block.plan?.actualEndTime ?? (block.status === 'completed' ? block.endTime : '')
   const editableLabel = block.status === 'completed' ? '实际时间段' : block.plan && (block.status === 'planned' || block.status === 'missed') ? '计划时间段' : null
+  const isLongActive = block.status === 'active' && block.durationMinutes >= 24 * 60
   return (
     <aside className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
       <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">{activePreview ? 'Adjusting' : calendarStatusLabel(block.status)}</div>
@@ -62,6 +63,7 @@ export function CalendarEventDetailPanel({
         {block.status === 'planned' && block.plan ? <DetailRow label="距离开始" value={formatDistanceToStart(block.plan.plannedStartTime, timerNow)} /> : null}
         {editableLabel ? <TimeRangeEditor label={editableLabel} block={block} onSave={onEditTimeRange} /> : null}
         {block.status === 'active' ? <ActiveTimeEditNotice /> : null}
+        {isLongActive ? <LongActiveTimerNotice onFinishTimer={() => onFinishTimer(block)} /> : null}
         {block.status === 'active' ? <DetailRow label="实际开始" value={formatDateTimeReadable(actualStart)} /> : null}
         {block.status === 'completed' ? <DetailRow label="实际开始" value={formatDateTimeReadable(actualStart)} /> : null}
         {block.status === 'completed' ? <DetailRow label="实际结束" value={formatDateTimeReadable(actualEnd)} /> : null}
@@ -91,7 +93,7 @@ export function CalendarEventDetailPanel({
               ) : null}
             </>
           ) : null}
-          {block.status === 'active' ? <button type="button" onClick={onFinishTimer} className={primaryButtonClass}>结束计时</button> : null}
+          {block.status === 'active' ? <button type="button" onClick={() => onFinishTimer(block)} className={primaryButtonClass}>结束计时</button> : null}
           {block.log ? <button type="button" onClick={() => onDelete(block.log?.id ?? block.id)} className={buttonClass}>删除日志</button> : null}
         </div>
       </div>
@@ -170,6 +172,17 @@ function ActiveTimeEditNotice() {
   return (
     <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-xs leading-5 text-[color:var(--text-secondary)]">
       进行中任务不能直接修改时间段，请先结束计时后再编辑。
+    </div>
+  )
+}
+
+function LongActiveTimerNotice({ onFinishTimer }: { onFinishTimer: () => void }) {
+  return (
+    <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-3 text-xs leading-5 text-[color:var(--text-secondary)]">
+      <div className="font-semibold text-[color:var(--text-primary)]">这个计时已超过 24 小时，可能忘记结束。</div>
+      <button type="button" onClick={onFinishTimer} className={`mt-3 ${primaryButtonClass}`}>
+        立即结束计时
+      </button>
     </div>
   )
 }
