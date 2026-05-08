@@ -4,15 +4,16 @@
 
 ## 1. 当前阶段
 
-M-AI｜AI 工作流省 token 与双端同步优化。
+M-AI｜AI 工作流省 token 与双端同步优化，当前正在把 Codex 工作底座 v4 固化为项目级规则。
 
 ## 2. 当前唯一主线
 
-先建立省 token 的项目状态读取机制，让后续开工优先读取：
+把省 token 的项目状态读取机制固化到仓库根目录 `AGENTS.md` 与 project-state 三件套中，让后续开工优先读取：
 
-1. `docs/project-state/CURRENT_STATUS.md`
-2. `docs/project-state/LOG_INDEX.md` 最近 5 条
+1. `AGENTS.md`
+2. `docs/project-state/CURRENT_STATUS.md`
 3. `docs/project-state/NEXT_ACTION.md`
+4. `docs/project-state/LOG_INDEX.md` 最近 5 条
 
 再按任务需要读取相关协议和代码。
 
@@ -20,29 +21,32 @@ M-AI｜AI 工作流省 token 与双端同步优化。
 
 - 已建立双设备协同协议文件：`docs/dev-protocol/`。
 - 已建立 Windows / Mac 分工规则、分支规则、日志拆分规则。
+- 已在项目根目录新增 `AGENTS.md`，固化 Codex 工作底座 v4。
+- 已建立 project-state 三件套：`CURRENT_STATUS.md`、`NEXT_ACTION.md`、`LOG_INDEX.md`。
+- 已建立 Mac 接续操作卡：`docs/handoff/MAC_NEXT_ACTION.md`。
 - 已完成 Life Tree 3D 的前序阶段性推进，但当前已暂停继续做 3D 业务功能。
 - 已决定本轮优先级：AI 工作流优化 > 3D 交互优化 > 3D 数据联动。
 
 ## 4. 未完成
 
-- Mac 端尚未拉取并验收本轮 AI 工作流底座。
-- 后续开工规则尚需在 Mac 端实际执行一次验证。
-- `LOG_INDEX.md` 需要从本轮开始持续维护最近任务索引。
+- 本轮 v4 项目级固化完成后，需要推送远端并让另一台设备拉取验证。
+- 后续开发任务需要持续按 `AGENTS.md` + project-state 三件套开工。
+- `LOG_INDEX.md` 需要持续维护最近任务索引。
 
 ## 5. 当前卡点
 
-历史 dev-log 已经变多，如果每次开工都扫描完整日志，会浪费 token 并增加误读旧状态的风险。
+历史 dev-log 已经变多，如果每次开工都扫描完整日志，会浪费 token 并增加误读旧状态的风险。当前解决方式是根目录 `AGENTS.md` + project-state 三件套优先。
 
 ## 6. 最近一次验收结果
 
-本轮 Windows 端目标是文档与协议工作流建设。验收以文件存在、协议接入、日志写入、commit 与 push 为准，不运行业务构建。
+本轮目标是项目级固化 Codex 工作底座 v4。验收以文件存在、git diff 范围、未修改业务代码、commit 与 push 为准；不运行业务构建，因为本轮不改业务代码。
 
 ## 7. 当前允许修改范围
 
 - `docs/project-state/**`
 - `docs/dev-protocol/**`
-- `docs/dev-log/YYYY-MM/YYYY-MM-DD/win-*.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
+- `AGENTS.md`
 
 ## 8. 当前禁止修改范围
 
@@ -52,27 +56,28 @@ M-AI｜AI 工作流省 token 与双端同步优化。
 - 不改数据库结构。
 - 不做页面大重构。
 - 不修改 `app/renderer/**` 业务或 UI 文件。
+- 不修改 `app/**`、`src/**`、`public/assets/**`、3D 模型资源、Time Debt / Wealth / Tree 等业务代码。
 
 ## 9. 下一步唯一任务
 
-Mac 端拉取 `feature/win-ai-workflow-token-saving`，检查 project-state 三件套和省 token 协议是否存在，并新增一条 Mac 同步验收日志。
+另一台设备拉取 `feature/mac-sync-ai-workflow-only`，确认 `AGENTS.md`、project-state 三件套和 `docs/handoff/MAC_NEXT_ACTION.md` 存在，并按省 token 开工顺序做一次只读验收。
 
 ## 10. Mac / Windows 双端状态
 
-Windows：
+当前设备：
 
-- 当前负责 AI 工作流底座、协议文件、project-state 三件套、日志索引规则和同步说明。
+- 当前负责把 Codex 工作底座 v4 固化到项目级 `AGENTS.md`、project-state 三件套和 Mac 接续卡。
 - 本轮不触碰业务代码。
 
-Mac：
+另一台设备：
 
-- 本轮后续只负责拉取、检查、验收和写入独立 Mac 同步验收日志。
+- 后续只负责拉取、检查和只读验收。
 - 不在同一轮重写 project-state 和 dev-protocol 核心内容。
 
 ## 11. 当前分支建议
 
-- Windows 本轮分支：`feature/win-ai-workflow-token-saving`
-- Mac 验收同一分支：`feature/win-ai-workflow-token-saving`
+- 当前分支：`feature/mac-sync-ai-workflow-only`
+- 另一台设备验收同一分支：`feature/mac-sync-ai-workflow-only`
 - 不直接在 `main` 开发。
 
 ## 12. 当前日志策略
@@ -99,10 +104,10 @@ Mac：
 
 ## 15. 当前同步纪律
 
-- Windows 完成后必须 push 远端 feature 分支。
-- Mac 接手前必须先 `git status`。
-- Mac 如有未提交改动，先停止并输出文件清单。
-- Mac 验收通过后只新增独立验收日志。
+- 当前设备完成后必须 push 远端 feature 分支。
+- 另一台设备接手前必须先 `git status`。
+- 另一台设备如有未提交改动，先停止并输出文件清单。
+- 另一台设备验收时优先只读检查，不触碰业务代码。
 - 两端不同时重写同一批协议核心文件。
 
 ## 16. 当前候选沉淀项

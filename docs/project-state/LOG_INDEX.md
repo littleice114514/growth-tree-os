@@ -29,6 +29,24 @@
 
 ## 3. 最近日志索引
 
+## 2026-05-08｜Mac｜AI Workflow｜Codex v4 Project Workflow Foundation
+
+- 日期：2026-05-08
+- 设备：Mac
+- 模块：AI Workflow / Project State / Handoff
+- 任务名：codex-v4-project-workflow-foundation
+- 日志文件路径：未新增独立 dev-log；本轮用户限定只固化项目级工作流文件。
+- 修改文件：
+  - `AGENTS.md`
+  - `docs/project-state/CURRENT_STATUS.md`
+  - `docs/project-state/NEXT_ACTION.md`
+  - `docs/project-state/LOG_INDEX.md`
+  - `docs/handoff/MAC_NEXT_ACTION.md`
+- 完成内容：将 Codex 工作底座 v4 固化到项目根目录 `AGENTS.md`，并刷新 project-state 三件套与 Mac 接续卡。
+- 验收结果：以文件存在检查、`git diff --stat`、业务代码路径排除检查、commit 和 push 为准；本轮不运行业务构建，因为未修改业务代码。
+- 遗留问题：另一台设备需要拉取 `feature/mac-sync-ai-workflow-only` 后做只读验收。
+- 下一步：另一台设备按 `AGENTS.md` + project-state 三件套开工，确认不读取完整 dev-log、不扫描业务目录。
+
 ## 2026-05-07｜Windows｜AI Workflow｜Token Saving Project State Workflow
 
 - 日期：2026-05-07
@@ -51,4 +69,3 @@
 - 验收结果：Windows 端完成文件存在检查、关键规则检索、git diff/stat 检查；业务构建未运行，因为本轮不改业务代码。
 - 遗留问题：Mac 端尚未拉取并写入同步验收日志。
 - 下一步：Mac 端拉取 `feature/win-ai-workflow-token-saving`，检查文件存在和读取顺序，然后新增 `mac-ai-workflow-sync-check.md`。
-
