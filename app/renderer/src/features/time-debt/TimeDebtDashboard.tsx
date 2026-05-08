@@ -139,6 +139,7 @@ export function TimeDebtDashboard() {
   const [manualSourcePlanId, setManualSourcePlanId] = useState<string | null>(null)
   const [highlightedPlanId, setHighlightedPlanId] = useState<string | null>(null)
   const [timerNow, setTimerNow] = useState(() => Date.now())
+  const [timerError, setTimerError] = useState<string | null>(null)
   const [standardDraft, setStandardDraft] = useState<StandardDraft>(() => ({
     date: today,
     standardWorkHours: '8',
@@ -166,6 +167,18 @@ export function TimeDebtDashboard() {
   useEffect(() => {
     const intervalId = window.setInterval(() => setTimerNow(Date.now()), runningTimer ? 1000 : 30000)
     return () => window.clearInterval(intervalId)
+  }, [runningTimer])
+
+  useEffect(() => {
+    if (!runningTimer) {
+      return undefined
+    }
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [runningTimer])
 
   const persistLog = (draft: LogDraft): TimeDebtLog | null => {
@@ -262,24 +275,31 @@ export function TimeDebtDashboard() {
       plannedDurationMinutes,
       suggestedEndTime
     }
+    try {
+      saveActiveTimeDebtTimer(
+        createActiveTimeDebtTimer({
+          title: nextTimer.title,
+          primaryCategory: nextTimer.primaryCategory,
+          secondaryProject: nextTimer.secondaryProject,
+          actualStart: nextTimer.startTime,
+          startTimestampMs: nextTimer.startTimestampMs,
+          sourcePlanId: planId,
+          plannedStart: nextTimer.plannedStartTime,
+          plannedEnd: nextTimer.plannedEndTime,
+          plannedDuration: nextTimer.plannedDurationMinutes,
+          suggestedEnd: nextTimer.suggestedEndTime,
+          aiEnableRatio: nextTimer.aiEnableRatio,
+          tags: nextTimer.tags,
+          resultNote: nextTimer.resultNote
+        })
+      )
+    } catch (error) {
+      console.error('Failed to persist active time debt timer.', error)
+      setTimerError('开始计时失败：无法保存当前计时状态。请检查浏览器存储空间后重试。')
+      return
+    }
     setRunningTimer(nextTimer)
-    saveActiveTimeDebtTimer(
-      createActiveTimeDebtTimer({
-        title: nextTimer.title,
-        primaryCategory: nextTimer.primaryCategory,
-        secondaryProject: nextTimer.secondaryProject,
-        actualStart: nextTimer.startTime,
-        startTimestampMs: nextTimer.startTimestampMs,
-        sourcePlanId: planId,
-        plannedStart: nextTimer.plannedStartTime,
-        plannedEnd: nextTimer.plannedEndTime,
-        plannedDuration: nextTimer.plannedDurationMinutes,
-        suggestedEnd: nextTimer.suggestedEndTime,
-        aiEnableRatio: nextTimer.aiEnableRatio,
-        tags: nextTimer.tags,
-        resultNote: nextTimer.resultNote
-      })
-    )
+    setTimerError(null)
     setTimerNow(now.getTime())
     rememberOptions(draft.primaryCategory, draft.secondaryProject, tags)
     if (planId) {
@@ -309,21 +329,39 @@ export function TimeDebtDashboard() {
       tags: formatTags(runningTimer.tags),
       resultNote: runningTimer.resultNote ?? (runningTimer.planId ? '由今日规划任务开始计时后生成。' : '')
     }
-    const log = persistLog(nextDraft)
-    if (log) {
-      if (runningTimer.planId) {
-        setPlans(
-          updateTimeDebtPlan(runningTimer.planId, {
-            status: 'completed',
-            actualEndTime: endTime,
-            actualDurationMinutes: durationMinutes,
-            completedLogId: log.id
-          })
-        )
-        archiveTimePlanReminderBySource(runningTimer.planId, 'completed')
+    try {
+      const log = persistLog(nextDraft)
+      if (!log) {
+        setTimerError('结束计时失败：日志缺少标题、开始时间或结束时间。请检查后重试，或使用安全清理入口取消当前计时。')
+        return
       }
-      setRunningTimer(null)
+      if (runningTimer.planId) {
+        const nextPlans = updateTimeDebtPlan(runningTimer.planId, {
+          status: 'completed',
+          actualEndTime: endTime,
+          actualDurationMinutes: durationMinutes,
+          completedLogId: log.id
+        })
+        archiveTimePlanReminderBySource(runningTimer.planId, 'completed')
+        setPlans(nextPlans)
+      }
       clearActiveTimeDebtTimer()
+      setRunningTimer(null)
+      setTimerError(null)
+    } catch (error) {
+      console.error('Failed to finish time debt timer.', error)
+      setTimerError('保存时间日志失败。当前计时已保留，你可以重试结束计时；如果确认放弃，请使用安全清理入口。')
+    }
+  }
+
+  const clearRunningTimerSafely = () => {
+    try {
+      clearActiveTimeDebtTimer()
+      setRunningTimer(null)
+      setTimerError(null)
+    } catch (error) {
+      console.error('Failed to clear active time debt timer.', error)
+      setTimerError('清理当前计时失败：浏览器存储暂时不可写。请刷新后重试，或手动清理 localStorage 中的 active timer。')
     }
   }
 
@@ -519,6 +557,8 @@ export function TimeDebtDashboard() {
           ))}
         </nav>
 
+        {timerError ? <TimerErrorBanner message={timerError} runningTimer={runningTimer} onClearTimer={clearRunningTimerSafely} /> : null}
+
         {currentView === 'today' ? (
           <TodayView
             overview={overview}
@@ -526,12 +566,14 @@ export function TimeDebtDashboard() {
             plans={todayPlans}
             runningTimer={runningTimer}
             timerNow={timerNow}
+            timerError={timerError}
             onOpenEntry={openEntry}
             onOpenCalendar={() => setCurrentView('timeline')}
             onStartPlan={(plan) => startTimer(planToLogDraft(plan), plan.id)}
             onConvertPlanToManual={convertPlanToManualLog}
             onAbandonPlan={abandonPlan}
             onFinishTimer={finishTimer}
+            onClearTimer={clearRunningTimerSafely}
           />
         ) : null}
         {currentView === 'timeline' ? (
@@ -601,36 +643,53 @@ export function TimeDebtDashboard() {
   )
 }
 
+function TimerErrorBanner({ message, runningTimer, onClearTimer }: { message: string; runningTimer: RunningTimer | null; onClearTimer: () => void }) {
+  return (
+    <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3 text-sm leading-6 text-accent-rose">
+      <div>{message}</div>
+      {runningTimer ? (
+        <button type="button" onClick={onClearTimer} className="mt-3 rounded-xl border border-rose-400/40 px-3 py-1 text-xs font-semibold transition hover:bg-rose-400/10">
+          安全清理当前计时
+        </button>
+      ) : null}
+    </div>
+  )
+}
+
 function TodayView({
   overview,
   diagnosis,
   plans,
   runningTimer,
   timerNow,
+  timerError,
   onOpenEntry,
   onOpenCalendar,
   onStartPlan,
   onConvertPlanToManual,
   onAbandonPlan,
-  onFinishTimer
+  onFinishTimer,
+  onClearTimer
 }: {
   overview: TimeDebtOverview
   diagnosis: TimeDebtDiagnosis
   plans: TimeDebtPlan[]
   runningTimer: RunningTimer | null
   timerNow: number
+  timerError: string | null
   onOpenEntry: (mode: EntryMode, sourcePlan?: TimeDebtPlan) => void
   onOpenCalendar: () => void
   onStartPlan: (plan: TimeDebtPlan) => void
   onConvertPlanToManual: (plan: TimeDebtPlan) => void
   onAbandonPlan: (planId: string) => void
   onFinishTimer: () => void
+  onClearTimer: () => void
 }) {
   return (
     <div className="grid min-h-[720px] gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
       <div className="flex min-w-0 flex-col gap-5">
         <HealthStatusCard overview={overview} />
-        <ActiveTimerWidget runningTimer={runningTimer} timerNow={timerNow} onOpenEntry={onOpenEntry} onFinishTimer={onFinishTimer} />
+        <ActiveTimerWidget runningTimer={runningTimer} timerNow={timerNow} timerError={timerError} onOpenEntry={onOpenEntry} onFinishTimer={onFinishTimer} onClearTimer={onClearTimer} />
         <UpNextList
           plans={plans}
           timerNow={timerNow}
@@ -748,15 +807,29 @@ function ActiveTimerWidget({
   runningTimer,
   timerNow,
   onOpenEntry,
-  onFinishTimer
+  onFinishTimer,
+  timerError,
+  onClearTimer
 }: {
   runningTimer: RunningTimer | null
   timerNow: number
   onOpenEntry: (mode: EntryMode) => void
   onFinishTimer: () => void
+  timerError: string | null
+  onClearTimer: () => void
 }) {
   return (
     <Panel title="当前焦点" eyebrow="Now">
+      {timerError ? (
+        <div className="mb-4 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3 text-sm leading-6 text-accent-rose">
+          <div>{timerError}</div>
+          {runningTimer ? (
+            <button type="button" onClick={onClearTimer} className="mt-3 rounded-xl border border-rose-400/40 px-3 py-1 text-xs font-semibold transition hover:bg-rose-400/10">
+              安全清理当前计时
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {runningTimer ? (
         <div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-accent-green">进行中</div>

@@ -4,26 +4,26 @@
 
 - 项目名：growth-tree-os
 - GitHub 仓库：https://github.com/Littleice114514/growth-tree-os.git
-- 分支：feature/mac-time-debt-plan-flow-overlap-ui
-- 最新 commit：本轮 push 后以 `git rev-parse --short HEAD` 为准
-- 当前设备完成时间：2026-05-06
+- 分支：feature/m13-time-debt-timer-stability-p0-on-latest-ui
+- 最新 commit：以最终汇报中的 commit hash 为准
+- 当前设备完成时间：2026-05-08
 
 ## 2. 本轮已完成
 
-- M12.1.1 补齐 Time Debt / Wealth renderer localStorage 账户命名空间。
-- 新增 renderer 侧轻量 helper，当前固定账户为 `local_user`。
-- Time Debt logs / standards / params 新 key 改为 `growth-tree-os:local_user:time-debt:*:v1`。
-- Wealth records 新 key 改为 `growth-tree-os:local_user:wealth:records:v1`。
-- 增加旧 key 到新 key 的幂等复制迁移；旧 key 保留，不删除。
+- 从 `origin/feature/mac-time-debt-plan-flow-overlap-ui@cfc1689` 新建 P0 修复分支。
+- 手动迁移旧 P0 commit `573e07e` 的 running timer 稳定性能力。
+- 复用新版 `timeDebtActiveTimerStorage.ts`，未新增第二套 storage key。
+- 补齐刷新恢复、计时中离开提醒、结束成功清理、保存失败提示与安全清理入口。
+- 保留最新版 Time Debt UI、计划流、日历视图、重叠布局和 resize/edit calendar 能力。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/lib/accountStorage.ts`
-- `app/renderer/src/features/time-debt/timeDebtStorage.ts`
-- `app/renderer/src/features/wealth/wealthStorage.ts`
-- `docs/dev-log/2026-05/2026-05-06/mac-time-debt-wealth-localstorage-account-namespace.md`
-- `docs/dev-log/2026-05/2026-05-06/mac-account-foundation.md`
-- `docs/dev-log/2026-05/2026-05-06/mac-account-foundation-validation.md`
+- `app/renderer/src/features/time-debt/TimeDebtDashboard.tsx`
+- `app/renderer/src/features/time-debt/timeDebtActiveTimerStorage.ts`
+- `docs/project-state/CURRENT_STATUS.md`
+- `docs/project-state/NEXT_ACTION.md`
+- `docs/project-state/LOG_INDEX.md`
+- `docs/dev-log/2026-05/2026-05-08/mac-time-debt-timer-stability-p0-on-latest-ui.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
 
 ## 4. 当前验证结果
@@ -31,14 +31,17 @@
 ### 已验证
 
 - `pnpm typecheck` 通过。
-- `pnpm smoke` 通过。
-- `pnpm dev` 可启动到 Electron renderer，`http://localhost:5173/` 可用；验收后已停止 dev 进程。
-- 脚本确认旧 localStorage 数据会复制到新 key，旧 key 保留，重复迁移不会重复追加或破坏已有新 key。
+- `pnpm build` 通过。
+- `TimeDebtDashboard.tsx` 当前 2437 行，仍为新版 UI 规模。
+- `app/renderer/src/features/time-debt/calendar/*` 文件仍存在。
+- `timeDebtActiveTimerStorage.ts` 仍存在并被正确使用。
+- 本轮 diff 没有修改 3D / Wealth / Tree 相关文件。
 
 ### 未验证 / 风险
 
-- 其他 Time Debt 附属 localStorage key，如 plan、timer、options、plan reminder，本轮按任务边界未改。
-- 未做真实登录、云同步、SQLite 迁移或 Time Debt / Wealth UI 改动。
+- 未在真实 Electron UI 中逐项点击验收。
+- 未做 P1 跨天拆分。
+- 未做 P2 任务名复用体验。
 
 ## 5. Mac 端第一步操作
 
@@ -49,7 +52,7 @@ mkdir -p ~/Desktop/vibe-coding-projects
 cd ~/Desktop/vibe-coding-projects
 git clone https://github.com/Littleice114514/growth-tree-os.git
 cd growth-tree-os
-git checkout feature/mac-time-debt-plan-flow-overlap-ui
+git checkout feature/m13-time-debt-timer-stability-p0-on-latest-ui
 ```
 
 如果 Mac 上已经有项目：
@@ -57,12 +60,12 @@ git checkout feature/mac-time-debt-plan-flow-overlap-ui
 ```bash
 cd <Mac上的项目目录>
 git fetch origin
-git checkout feature/mac-time-debt-plan-flow-overlap-ui
-git pull origin feature/mac-time-debt-plan-flow-overlap-ui
+git checkout feature/m13-time-debt-timer-stability-p0-on-latest-ui
+git pull origin feature/m13-time-debt-timer-stability-p0-on-latest-ui
 git rev-parse --short HEAD
 ```
 
-确认输出的 commit 应为本轮最终汇报中的 commit。
+确认输出的 commit 应为最终汇报中的 commit hash。
 
 ## 6. Mac 端环境准备
 
@@ -70,31 +73,26 @@ git rev-parse --short HEAD
 corepack enable
 pnpm install
 pnpm typecheck
-pnpm smoke
+pnpm build
 pnpm dev
 ```
-
-如果 `pnpm` 不可用，先安装 Node.js LTS 或通过 Corepack 恢复 pnpm。
 
 ## 7. Mac 端验收方式
 
 请在 Mac 端检查：
 
-- 应用可启动。
-- 打开 Time Debt / Wealth 页面不报错。
-- DevTools Application / Local Storage 中可看到：
-  - `growth-tree-os:local_user:time-debt:logs:v1`
-  - `growth-tree-os:local_user:time-debt:standards:v1`
-  - `growth-tree-os:local_user:time-debt:params:v1`
-  - `growth-tree-os:local_user:wealth:records:v1`
-- 如果旧 key 有数据，新 key 首次读取后应复制到对应新 key；旧 key 仍保留。
-- 重复刷新页面不会产生重复追加。
+- 打开 Time Debt 执行台。
+- 开始计时后，DevTools Local Storage 出现 `growth-tree-os:time-debt:active-timer`。
+- 刷新页面后，当前计时恢复。
+- 计时中刷新或关闭页面，浏览器出现离开确认。
+- 点击结束计时并生成日志后，日志保存成功，active timer storage 被清理。
+- 模拟保存失败时，页面出现错误提示，计时没有静默丢失，并可重试或安全清理。
 
 ## 8. Mac 端下一轮任务
 
 请让 Mac 端 Codex 接着完成：
 
-做 M12 Account Foundation 最终封板验收：确认 SQLite `local_user/user_id` 底座与 Time Debt / Wealth localStorage `local_user` key 同时生效，然后更新封板日志；不要扩展真实登录或云同步。
+M13 P1｜Time Debt 跨天计时拆分。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
@@ -105,12 +103,13 @@ pnpm dev
 - `pnpm install` / `pnpm dev` 完整报错；
 - 页面异常截图；
 - DevTools 控制台首个关键错误；
-- DevTools Application / Local Storage 里 Time Debt / Wealth 新旧 key 截图。
+- DevTools Local Storage 中 `growth-tree-os:time-debt:active-timer` 的状态。
 
 ## 10. 注意事项
 
 - 不要直接覆盖本地未提交改动。
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
-- 不要在本轮基础上直接开发注册、登录、验证码、云同步或第三方登录。
-- 不要删除旧 localStorage key；当前策略是复制兼容，旧 key 暂存。
+- 不要回退到旧版 `TimeDebtDashboard.tsx`。
+- 不要覆盖 `app/renderer/src/features/time-debt/calendar/*`。
+- 不要修改 3D / Wealth / Tree 相关文件。

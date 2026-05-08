@@ -32,8 +32,13 @@ export function loadActiveTimeDebtTimer(): ActiveTimeDebtTimer | null {
       return null
     }
     const parsed = JSON.parse(raw)
-    return isActiveTimeDebtTimer(parsed) ? normalizeActiveTimer(parsed) : null
+    if (isActiveTimeDebtTimer(parsed)) {
+      return normalizeActiveTimer(parsed)
+    }
+    clearActiveTimeDebtTimer()
+    return null
   } catch {
+    clearActiveTimeDebtTimer()
     return null
   }
 }
