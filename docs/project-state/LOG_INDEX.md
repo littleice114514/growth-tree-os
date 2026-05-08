@@ -29,6 +29,22 @@
 
 ## 3. 最近日志索引
 
+## 2026-05-08｜Claude｜AI Workflow｜Claude Onboarding Check
+
+- 日期：2026-05-08
+- 设备：Claude（协同验证任务）
+- 模块：AI Workflow / Handoff
+- 任务名：claude-onboarding-check
+- 日志文件路径：无独立 dev-log；本轮为文档补全验证任务。
+- 修改文件：
+  - `docs/handoff/CLAUDE_ONBOARDING.md`（新建）
+  - `docs/project-state/LOG_INDEX.md`
+  - `docs/handoff/MAC_NEXT_ACTION.md`
+- 完成内容：创建 Claude 接入项目的固定说明文档，包含开工读取顺序、分支规则、协同规则、适合任务类型和首次接入提示词模板。
+- 验收结果：`git diff --stat` 仅包含文档文件，未修改业务代码；分支 `feature/claude-onboarding-check` 已创建并 push。
+- 遗留问题：无。
+- 下一步：回到 M13 P1｜Time Debt 跨天计时拆分（在 `feature/m13-time-debt-timer-stability-p0` 分支上）。
+
 ## 2026-05-08｜Mac｜Time Debt｜Timer Stability P0
 
 - 日期：2026-05-08
