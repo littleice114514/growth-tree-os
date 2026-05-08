@@ -66,6 +66,7 @@ type RunningTimer = {
   startTimestampMs: number
 }
 
+const RUNNING_TIMER_STORAGE_KEY = 'growth-tree-os:time-debt-running-timer:v1'
 const today = new Date().toISOString().slice(0, 10)
 const sampleDate = '2026-03-30'
 const viewLabels: Record<TimeDebtView, string> = {
@@ -84,8 +85,9 @@ export function TimeDebtDashboard() {
   const [options, setOptions] = useState<TimeDebtOptions>(() => loadTimeDebtOptions())
   const [currentView, setCurrentView] = useState<TimeDebtView>('overview')
   const [logDraft, setLogDraft] = useState<LogDraft>(() => createSampleLogDraft())
-  const [runningTimer, setRunningTimer] = useState<RunningTimer | null>(null)
+  const [runningTimer, setRunningTimer] = useState<RunningTimer | null>(() => readStoredRunningTimer())
   const [timerNow, setTimerNow] = useState(() => Date.now())
+  const [timerError, setTimerError] = useState<string | null>(null)
   const [standardDraft, setStandardDraft] = useState<StandardDraft>(() => ({
     date: today,
     standardWorkHours: '8',
@@ -112,6 +114,26 @@ export function TimeDebtDashboard() {
     return () => window.clearInterval(intervalId)
   }, [runningTimer])
 
+  useEffect(() => {
+    if (runningTimer) {
+      writeStoredRunningTimer(runningTimer)
+    } else {
+      clearStoredRunningTimer()
+    }
+  }, [runningTimer])
+
+  useEffect(() => {
+    if (!runningTimer) {
+      return undefined
+    }
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [runningTimer])
+
   const persistLog = (draft: LogDraft): boolean => {
     if (!draft.title.trim() || !draft.startTime || !draft.endTime) {
       return false
@@ -132,14 +154,14 @@ export function TimeDebtDashboard() {
       },
       params
     )
-    setLogs(appendTimeDebtLog(log))
     const nextOptions = upsertTimeDebtOptions(options, {
       category: draft.primaryCategory,
       project: draft.secondaryProject,
       unit: draft.workloadUnit
     })
-    setOptions(nextOptions)
     saveTimeDebtOptions(nextOptions)
+    setLogs(appendTimeDebtLog(log))
+    setOptions(nextOptions)
     return true
   }
 
@@ -154,14 +176,17 @@ export function TimeDebtDashboard() {
     const now = new Date()
     const startTime = formatLocalDateTimeInput(now)
     const workloadUnit = logDraft.workloadUnit || 'min'
-    setRunningTimer({
+    const nextTimer = {
       title: logDraft.title.trim(),
       primaryCategory: logDraft.primaryCategory.trim(),
       secondaryProject: logDraft.secondaryProject.trim(),
       workloadUnit,
       startTime,
       startTimestampMs: now.getTime()
-    })
+    }
+    writeStoredRunningTimer(nextTimer)
+    setRunningTimer(nextTimer)
+    setTimerError(null)
     setTimerNow(now.getTime())
     setLogDraft((current) => ({
       ...current,
@@ -187,13 +212,28 @@ export function TimeDebtDashboard() {
       secondaryProject: runningTimer.secondaryProject,
       startTime: runningTimer.startTime,
       endTime,
-      workload: logDraft.workload || String(durationMinutes),
+      workload: String(durationMinutes),
       workloadUnit: runningTimer.workloadUnit || 'min'
     }
-    if (persistLog(nextDraft)) {
+    try {
+      if (!persistLog(nextDraft)) {
+        setTimerError('结束计时失败：日志缺少标题、开始时间或结束时间。请检查后重试，或使用安全清理入口取消当前计时。')
+        return
+      }
       setLogDraft(nextDraft)
       setRunningTimer(null)
+      clearStoredRunningTimer()
+      setTimerError(null)
+    } catch (error) {
+      console.error('Failed to finish time debt timer.', error)
+      setTimerError('保存时间日志失败。当前计时已保留，你可以重试结束计时；如果确认放弃，请使用安全清理入口。')
     }
+  }
+
+  const clearRunningTimerSafely = () => {
+    setRunningTimer(null)
+    clearStoredRunningTimer()
+    setTimerError(null)
   }
 
   const saveStandard = () => {
@@ -265,11 +305,13 @@ export function TimeDebtDashboard() {
             options={options}
             runningTimer={runningTimer}
             timerNow={timerNow}
+            timerError={timerError}
             onChange={(patch) => setLogDraft((current) => ({ ...current, ...patch }))}
             onSave={saveLog}
             onDelete={removeLog}
             onStartTimer={startTimer}
             onFinishTimer={finishTimer}
+            onClearTimer={clearRunningTimerSafely}
             onCreateOption={(values) => {
               const nextOptions = upsertTimeDebtOptions(options, values)
               setOptions(nextOptions)
@@ -325,11 +367,13 @@ function LogsView({
   options,
   runningTimer,
   timerNow,
+  timerError,
   onChange,
   onSave,
   onDelete,
   onStartTimer,
   onFinishTimer,
+  onClearTimer,
   onCreateOption
 }: {
   draft: LogDraft
@@ -337,11 +381,13 @@ function LogsView({
   options: TimeDebtOptions
   runningTimer: RunningTimer | null
   timerNow: number
+  timerError: string | null
   onChange: (patch: Partial<LogDraft>) => void
   onSave: () => void
   onDelete: (logId: string) => void
   onStartTimer: () => void
   onFinishTimer: () => void
+  onClearTimer: () => void
   onCreateOption: (values: { category?: string; project?: string; unit?: string }) => void
 }) {
   const selectedCategory = defaultProjectCategories.find(
@@ -353,6 +399,16 @@ function LogsView({
     <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
       <Panel title="新增时间日志" eyebrow="Work Logs">
         <div className="mb-4 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-4">
+          {timerError ? (
+            <div className="mb-4 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3 text-sm leading-6 text-accent-rose">
+              <div>{timerError}</div>
+              {runningTimer ? (
+                <button type="button" onClick={onClearTimer} className="mt-3 rounded-xl border border-rose-400/40 px-3 py-1 text-xs font-semibold transition hover:bg-rose-400/10">
+                  安全清理当前计时
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           {runningTimer ? (
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
@@ -738,6 +794,68 @@ function createSampleLogDraft(): LogDraft {
   }
 }
 
+function readStoredRunningTimer(): RunningTimer | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  try {
+    const raw = window.localStorage.getItem(RUNNING_TIMER_STORAGE_KEY)
+    if (!raw) {
+      return null
+    }
+    const parsed = JSON.parse(raw)
+    if (isRunningTimer(parsed)) {
+      return parsed
+    }
+    clearStoredRunningTimer()
+    return null
+  } catch {
+    clearStoredRunningTimer()
+    return null
+  }
+}
+
+function writeStoredRunningTimer(timer: RunningTimer): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  try {
+    window.localStorage.setItem(RUNNING_TIMER_STORAGE_KEY, JSON.stringify(timer))
+  } catch (error) {
+    console.error('Failed to persist time debt running timer.', error)
+  }
+}
+
+function clearStoredRunningTimer(): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  try {
+    window.localStorage.removeItem(RUNNING_TIMER_STORAGE_KEY)
+  } catch (error) {
+    console.error('Failed to clear time debt running timer.', error)
+  }
+}
+
+function isRunningTimer(value: unknown): value is RunningTimer {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const candidate = value as Partial<RunningTimer>
+  return (
+    typeof candidate.title === 'string' &&
+    typeof candidate.primaryCategory === 'string' &&
+    typeof candidate.secondaryProject === 'string' &&
+    typeof candidate.workloadUnit === 'string' &&
+    typeof candidate.startTime === 'string' &&
+    typeof candidate.startTimestampMs === 'number' &&
+    Number.isFinite(candidate.startTimestampMs)
+  )
+}
+
 function optionalNumber(value: string): number | undefined {
   const numberValue = Number(value)
   return Number.isFinite(numberValue) ? numberValue : undefined
@@ -802,5 +920,6 @@ function formatNumber(value: number): string {
 
 export const timeDebtStorageLocation = {
   ...timeDebtStorageKeys,
-  options: timeDebtOptionsStorageKey
+  options: timeDebtOptionsStorageKey,
+  runningTimer: RUNNING_TIMER_STORAGE_KEY
 }

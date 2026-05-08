@@ -2,16 +2,18 @@
 
 ## 1. 下一步唯一任务
 
-开始选择一个业务模块推进。
+M13 P1｜Time Debt 跨天计时拆分。
 
 ## 2. 本轮不做
 
 1. 不继续改 3D 模型。
 2. 不继续改触控板视角控制。
-3. 不改 Time Debt / Wealth / Tree 业务功能。
-4. 不改数据库结构。
-5. 不做页面大重构。
-6. 不修改业务代码。
+3. 不改 Wealth 业务功能。
+4. 不改 Tree / Graph 业务功能。
+5. 不改数据库结构。
+6. 不做页面大重构。
+7. 不做标题选项复用。
+8. 不做全局状态管理重构。
 
 ## 3. 后续开工默认读取顺序
 
@@ -24,17 +26,22 @@
 
 ## 4. 当前允许修改范围
 
-下一轮需要先选定业务模块，再按该模块边界声明允许修改范围。
+- `app/renderer/src/features/time-debt/TimeDebtDashboard.tsx`
+- 必要时可修改 `app/renderer/src/features/time-debt/timeDebtStorage.ts`
+- `docs/project-state/**`
+- `docs/handoff/MAC_NEXT_ACTION.md`
+- 必要 dev-log
 
 ## 5. 当前禁止修改范围
 
-- `app/**`
-- `src/**`
+- 3D 相关文件
+- Wealth 相关文件
+- Tree / Graph 相关文件
 - `public/assets/**`
 - 3D 模型、材质、贴图、渲染实现
-- Time Debt / Wealth / Tree 等业务代码
-- UI 页面
 - 数据库业务逻辑
+- 全局状态管理架构
+- 无关 UI 大改
 
 ## 6. 验收标准
 
@@ -44,8 +51,9 @@
 - `docs/project-state/CURRENT_STATUS.md` 存在。
 - `docs/project-state/NEXT_ACTION.md` 存在。
 - `docs/project-state/LOG_INDEX.md` 存在。
-- 已明确选择一个业务模块。
-- 已声明该业务模块的允许修改范围和禁止修改范围。
+- M13 P0 计时状态持久化修复已在当前分支。
+- 已声明 P1 跨天拆分的允许修改范围和禁止修改范围。
+- 跨天拆分完成后，跨 00:00 的计时记录应按日期拆分为多条日志。
 
 ## 7. 可检验信号
 

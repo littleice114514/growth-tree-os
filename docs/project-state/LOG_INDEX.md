@@ -29,6 +29,25 @@
 
 ## 3. 最近日志索引
 
+## 2026-05-08｜Mac｜Time Debt｜Timer Stability P0
+
+- 日期：2026-05-08
+- 设备：Mac
+- 模块：Time Debt / Timer
+- 任务名：m13-time-debt-timer-stability-p0
+- 日志文件路径：`docs/dev-log/2026-05/2026-05-08/mac-time-debt-timer-stability-p0.md`
+- 修改文件：
+  - `app/renderer/src/features/time-debt/TimeDebtDashboard.tsx`
+  - `docs/project-state/CURRENT_STATUS.md`
+  - `docs/project-state/NEXT_ACTION.md`
+  - `docs/project-state/LOG_INDEX.md`
+  - `docs/handoff/MAC_NEXT_ACTION.md`
+  - `docs/dev-log/2026-05/2026-05-08/mac-time-debt-timer-stability-p0.md`
+- 完成内容：为 Time Debt runningTimer 增加 localStorage 持久化、刷新恢复、beforeunload 提醒、结束成功清理、保存失败错误提示和安全清理入口。
+- 验收结果：`pnpm typecheck` 通过；业务路径排除检查通过；手动浏览器刷新/关闭提醒仍需下一设备或本地 UI 验收。
+- 遗留问题：P1 跨天计时拆分未做；P2 标题选项复用未做。
+- 下一步：M13 P1｜Time Debt 跨天计时拆分。
+
 ## 2026-05-08｜Mac｜AI Workflow｜Merge Workflow Foundation Into Main
 
 - 日期：2026-05-08

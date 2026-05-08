@@ -4,11 +4,11 @@
 
 ## 1. 当前阶段
 
-M-AI｜AI 工作流省 token 与双端同步优化已进入主开发分支。
+M13｜Time Debt Timer Stability｜P0 计时状态持久化与防卡住修复已完成。
 
 ## 2. 当前唯一主线
 
-AI 工作流底座已经从 `feature/mac-sync-ai-workflow-only` 合并到 `main`，后续开工优先读取：
+在已接入 AI 工作流底座的 `main` 上，按 project-state 三件套推进 Time Debt 模块的第一批 P0 稳定性修复。后续开工仍优先读取：
 
 1. `AGENTS.md`
 2. `docs/project-state/CURRENT_STATUS.md`
@@ -25,13 +25,14 @@ AI 工作流底座已经从 `feature/mac-sync-ai-workflow-only` 合并到 `main`
 - 已建立 project-state 三件套：`CURRENT_STATUS.md`、`NEXT_ACTION.md`、`LOG_INDEX.md`。
 - 已建立 Mac 接续操作卡：`docs/handoff/MAC_NEXT_ACTION.md`。
 - 已将 AI 工作流底座合并进入主开发分支 `main`。
+- 已完成 M13 P0：Time Debt 计时器 runningTimer localStorage 持久化、刷新恢复、beforeunload 提醒、结束成功清理、保存失败错误提示与安全清理入口。
 - 已完成 Life Tree 3D 的前序阶段性推进，但当前已暂停继续做 3D 业务功能。
 - 已决定本轮优先级：AI 工作流优化 > 3D 交互优化 > 3D 数据联动。
 
 ## 4. 未完成
 
 - 后续开发任务需要持续按 `AGENTS.md` + project-state 三件套开工。
-- 下一轮需要选择一个业务模块推进。
+- 下一轮进入 M13 P1：Time Debt 跨天计时拆分。
 - `LOG_INDEX.md` 需要持续维护最近任务索引。
 
 ## 5. 当前卡点
@@ -40,45 +41,48 @@ AI 工作流底座已经从 `feature/mac-sync-ai-workflow-only` 合并到 `main`
 
 ## 6. 最近一次验收结果
 
-本轮目标是把 AI 工作流底座合并到主开发分支。验收以文件存在、git diff 范围、未修改业务代码、merge commit 与 push 为准；不运行业务构建，因为本轮不改业务代码。
+本轮目标是修复 Time Debt 计时器基础稳定性。已执行 `pnpm typecheck`；本轮不运行完整 Electron 手动验收，需另一设备或后续本地打开 Time Debt 页面确认刷新恢复、beforeunload 和 localStorage 清理。
 
 ## 7. 当前允许修改范围
 
+- `app/renderer/src/features/time-debt/TimeDebtDashboard.tsx`
+- `app/renderer/src/features/time-debt/timeDebtStorage.ts`
 - `docs/project-state/**`
-- `docs/dev-protocol/**`
 - `docs/handoff/MAC_NEXT_ACTION.md`
-- `AGENTS.md`
+- 必要 dev-log
 
 ## 8. 当前禁止修改范围
 
 - 不继续改 3D 模型。
 - 不继续改触控板视角控制。
-- 不改 Time Debt 业务功能。
 - 不改数据库结构。
 - 不做页面大重构。
-- 不修改 `app/renderer/**` 业务或 UI 文件。
-- 不修改 `app/**`、`src/**`、`public/assets/**`、3D 模型资源、Time Debt / Wealth / Tree 等业务代码。
+- 不修改 Wealth 相关文件。
+- 不修改 Tree / Graph 相关文件。
+- 不修改 `public/assets/**`。
+- 不修改 3D 模型资源。
+- 不做全局状态管理重构。
 
 ## 9. 下一步唯一任务
 
-开始选择一个业务模块推进。
+M13 P1｜Time Debt 跨天计时拆分。
 
 ## 10. Mac / Windows 双端状态
 
 当前设备：
 
-- 当前负责把 AI 工作流底座合并到主开发分支 `main`。
-- 本轮不触碰业务代码。
+- 当前负责 Time Debt 计时器 P0 稳定性修复。
+- 本轮只触碰 Time Debt 计时器相关代码和 project-state/handoff 文档。
 
 另一台设备：
 
-- 后续只负责拉取、检查和只读验收主开发分支上的 AI 工作流底座。
+- 后续负责拉取并验收 Time Debt 计时器 P0 行为。
 - 不在同一轮重写 project-state 和 dev-protocol 核心内容。
 
 ## 11. 当前分支建议
 
-- 当前主开发分支：`main`
-- AI 工作流底座来源分支：`feature/mac-sync-ai-workflow-only`
+- 当前工作分支：`feature/m13-time-debt-timer-stability-p0`
+- 主开发分支：`main`
 - 不直接在 `main` 开发。
 
 ## 12. 当前日志策略
