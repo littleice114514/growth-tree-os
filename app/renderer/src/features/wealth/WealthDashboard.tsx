@@ -13,6 +13,12 @@ import {
   type WealthStatus
 } from '@shared/wealth'
 import { appendWealthRecord, deleteWealthRecord, loadWealthRecords, wealthRecordsStorageKey } from './wealthStorage'
+import {
+  loadWealthBaseConfig,
+  saveWealthBaseConfig,
+  resetWealthBaseConfig,
+  wealthConfigStorageKey
+} from './wealthConfigStorage'
 import { WealthDashboardPreview } from '@/features/dashboard-preview'
 
 type WealthView = 'overview' | 'income' | 'expenses' | 'assets' | 'evaluation'
@@ -40,17 +46,6 @@ type RecordDraft = {
 }
 
 const today = new Date().toISOString().slice(0, 10)
-const baseConfig: WealthBaseConfig = {
-  date: today,
-  openingBalance: 42860,
-  dailySafeLine: 260,
-  monthlyRemainingDisposable: 4160,
-  remainingDaysInMonth: 16,
-  savingPoolBefore: 860,
-  realityStandard: 9200,
-  deservedStandard: 14800,
-  consecutiveOverdraftDays: 0
-}
 
 const viewLabels: Record<WealthView, string> = {
   overview: 'Overview',
@@ -84,16 +79,26 @@ const statusTone: Record<WealthStatus, string> = {
 
 export function WealthDashboard() {
   const [records, setRecords] = useState<WealthRecord[]>(() => loadWealthRecords())
+  const [baseConfig, setBaseConfig] = useState<WealthBaseConfig>(() => loadWealthBaseConfig())
   const [currentView, setCurrentView] = useState<WealthView>('overview')
   const [isRecorderOpen, setIsRecorderOpen] = useState(false)
   const [draft, setDraft] = useState<RecordDraft>(() => createDraft())
 
-  const summary = useMemo(() => summarizeWealthRecords(records, baseConfig.date, baseConfig), [records])
+  const summary = useMemo(() => summarizeWealthRecords(records, baseConfig.date, baseConfig), [records, baseConfig])
   const snapshot = useMemo(
     () => calculateDailyWealthSnapshot(buildDailyWealthInputFromRecords(records, baseConfig)),
-    [records]
+    [records, baseConfig]
   )
   const recentRecords = records.slice(0, 8)
+
+  const handleSaveConfig = () => {
+    saveWealthBaseConfig(baseConfig)
+  }
+
+  const handleResetConfig = () => {
+    const config = resetWealthBaseConfig()
+    setBaseConfig(config)
+  }
 
   const saveRecord = () => {
     const amount = Number(draft.amount)
@@ -171,7 +176,16 @@ export function WealthDashboard() {
         {currentView === 'overview' ? (
           <>
             <WealthDashboardPreview />
-            <OverviewView snapshot={snapshot} summary={summary} recentRecords={recentRecords} onDelete={removeRecord} />
+            <OverviewView
+              snapshot={snapshot}
+              summary={summary}
+              recentRecords={recentRecords}
+              baseConfig={baseConfig}
+              onConfigChange={(patch) => setBaseConfig((current) => ({ ...current, ...patch }))}
+              onSaveConfig={handleSaveConfig}
+              onResetConfig={handleResetConfig}
+              onDelete={removeRecord}
+            />
           </>
         ) : null}
         {currentView === 'income' ? <IncomeView records={records} /> : null}
@@ -196,11 +210,19 @@ function OverviewView({
   snapshot,
   summary,
   recentRecords,
+  baseConfig,
+  onConfigChange,
+  onSaveConfig,
+  onResetConfig,
   onDelete
 }: {
   snapshot: DailyWealthSnapshot
   summary: ReturnType<typeof summarizeWealthRecords>
   recentRecords: WealthRecord[]
+  baseConfig: WealthBaseConfig
+  onConfigChange: (patch: Partial<WealthBaseConfig>) => void
+  onSaveConfig: () => void
+  onResetConfig: () => void
   onDelete: (recordId: string) => void
 }) {
   return (
@@ -246,6 +268,26 @@ function OverviewView({
         <LineItem label="持续出血" value={formatMoney(summary.ongoingCost)} />
         <LineItem label="体验出血" value={formatMoney(summary.experienceCost)} />
         <LineItem label="月固定流血" value={formatMoney(summary.monthlyOngoingPressure)} />
+      </Panel>
+
+      <Panel title="基础配置" eyebrow="Config">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ConfigField label="期初余额" value={String(baseConfig.openingBalance)} onChange={(v) => onConfigChange({ openingBalance: Number(v) || 0 })} />
+          <ConfigField label="每日安全线" value={String(baseConfig.dailySafeLine)} onChange={(v) => onConfigChange({ dailySafeLine: Number(v) || 0 })} />
+          <ConfigField label="节省池" value={String(baseConfig.savingPoolBefore)} onChange={(v) => onConfigChange({ savingPoolBefore: Number(v) || 0 })} />
+          <ConfigField label="Reality Standard" value={String(baseConfig.realityStandard)} onChange={(v) => onConfigChange({ realityStandard: Number(v) || 0 })} />
+          <ConfigField label="Deserved Standard" value={String(baseConfig.deservedStandard)} onChange={(v) => onConfigChange({ deservedStandard: Number(v) || 0 })} />
+          <ConfigField label="月可支配余额" value={String(baseConfig.monthlyRemainingDisposable ?? '')} onChange={(v) => onConfigChange({ monthlyRemainingDisposable: v ? Number(v) : undefined })} />
+          <ConfigField label="本月剩余天数" value={String(baseConfig.remainingDaysInMonth ?? '')} onChange={(v) => onConfigChange({ remainingDaysInMonth: v ? Number(v) : undefined })} />
+        </div>
+        <div className="mt-4 flex gap-3">
+          <button type="button" onClick={onSaveConfig} className="rounded-2xl bg-[var(--button-bg)] px-5 py-2 text-sm font-semibold text-[color:var(--button-text)] transition hover:bg-[var(--button-hover)]">
+            保存配置
+          </button>
+          <button type="button" onClick={onResetConfig} className="rounded-2xl border border-[color:var(--input-border)] px-5 py-2 text-sm text-[color:var(--text-secondary)] transition hover:bg-[var(--control-hover)]">
+            恢复默认
+          </button>
+        </div>
       </Panel>
     </div>
   )
@@ -618,6 +660,14 @@ function CheckboxField({ label, checked, onChange }: { label: string; checked: b
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
       {label}
     </label>
+  )
+}
+
+function ConfigField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return (
+    <Field label={label}>
+      <input value={value} onChange={(event) => onChange(event.target.value)} type="number" className={inputClass} />
+    </Field>
   )
 }
 
