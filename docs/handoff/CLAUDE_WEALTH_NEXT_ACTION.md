@@ -14,12 +14,16 @@
 - localStorage key：`growth-tree-os:wealth-base-config:v1`。
 - 已将 WealthDashboard.tsx 中硬编码的 baseConfig 改为从 storage 读取的 state。
 - 已在 Overview 视图中新增「基础配置」面板，含 7 个可编辑字段 + 保存/恢复默认按钮。
+- 已将 WealthDashboardPreview 从 mock 数据切换为接收真实 `DailyWealthSnapshot` + `WealthRecordSummary` props。
+- WealthDashboard 现在向 WealthDashboardPreview 传入 `snapshot` 和 `summary`。
+- 无 props 时仍回退 mock 数据，保持独立可用。
 - `pnpm typecheck` 通过，`pnpm build` 通过。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/wealth/wealthConfigStorage.ts`（新建）
-- `app/renderer/src/features/wealth/WealthDashboard.tsx`
+- `app/renderer/src/features/wealth/wealthConfigStorage.ts`（上轮新建）
+- `app/renderer/src/features/wealth/WealthDashboard.tsx`（传入 snapshot/summary props）
+- `app/renderer/src/features/dashboard-preview/WealthDashboardPreview.tsx`（接收真实数据 props）
 
 ## 4. 未做事项
 
@@ -28,7 +32,6 @@
 - 未做记录编辑。
 - 未做 emergency_cost 记录类型。
 - 未做连续透支天数自动追踪。
-- 未接入 WealthDashboardPreview 真实数据。
 
 ## 5. 与 Codex 的文件边界
 
@@ -39,13 +42,13 @@
 ## 6. 下一步任务建议
 
 按优先级：
-1. **Wealth P0-B**：将 WealthDashboardPreview 从 mock 数据切换为真实 localStorage 数据。
-2. **Wealth P1**：连续透支天数自动追踪。
-3. **Wealth P2**：日期切换（查看历史快照）。
+1. **Wealth P1**：连续透支天数自动追踪。
+2. **Wealth P2**：日期切换（查看历史快照）。
+3. **Wealth P3**：趋势图 / 现金流质量历史。
 
 ## 7. 手动验收方式
 
-- 进入 Wealth 页面 → Overview → 底部「基础配置」面板可见。
-- 修改「每日安全线」为 300 → 点击「保存配置」→ 刷新页面 → 值仍为 300。
-- 点击「恢复默认」→ 值回到默认（dailySafeLine = 260）→ 刷新页面 → 值保持默认。
-- 清空 localStorage 中 `growth-tree-os:wealth-base-config:v1` → 刷新页面 → 使用默认配置，不崩溃。
+- 进入 Wealth 页面 → Overview → WealthDashboardPreview 区域显示真实 base config 数据。
+- 修改「每日安全线」为 300 → 点击「保存配置」→ Preview 区域数据跟随变化。
+- 点击「恢复默认」→ Preview 区域数据回到默认值。
+- 清空 localStorage → 刷新页面 → 使用默认配置，不崩溃。

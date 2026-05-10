@@ -7,6 +7,7 @@ import {
 } from './DashboardPreviewComponents'
 import { InteractiveStackedBar, type StackedBarSegment } from '@/components/charts/InteractiveStackedBar'
 import { wealthMock } from './dashboardPreviewData'
+import { wealthStatusLabels, type DailyWealthSnapshot, type WealthRecordSummary } from '@shared/wealth'
 
 const cashFlowQualityMeta: Record<string, Pick<StackedBarSegment, 'colorClass' | 'description'>> = {
   现实收入: {
@@ -35,8 +36,57 @@ const cashFlowQualityMeta: Record<string, Pick<StackedBarSegment, 'colorClass' |
   }
 }
 
-export function WealthDashboardPreview() {
-  const cashFlowQualitySegments: StackedBarSegment[] = wealthMock.cashFlowQuality.map((item) => {
+type WealthPreviewData = {
+  status: string
+  diagnosis: string
+  suggestion: string
+  accountDelta: number
+  incomeToday: number
+  expenseToday: number
+  investableSurplus: number
+  futureMoneyUsed: number
+  savingPoolBefore: number
+  savingPoolAfter: number
+  ongoingCostToday: number
+  passiveIncomeToday: number
+  supportCoverage: number
+  laborDependency: number
+  upgradeGate: string
+  cashFlowQuality: { label: string; value: number }[]
+}
+
+function snapshotToPreviewData(snapshot: DailyWealthSnapshot, summary: WealthRecordSummary): WealthPreviewData {
+  return {
+    status: wealthStatusLabels[snapshot.status],
+    diagnosis: snapshot.diagnosis,
+    suggestion: snapshot.priorityAction,
+    accountDelta: snapshot.accountDelta,
+    incomeToday: snapshot.realIncomeToday + snapshot.passiveIncomeToday + snapshot.systemIncomeToday + snapshot.stableFinanceToday,
+    expenseToday: snapshot.realExpensesToday + snapshot.ongoingCostToday + snapshot.experienceCostToday,
+    investableSurplus: snapshot.investableSurplus,
+    futureMoneyUsed: snapshot.futureMoneyUsed,
+    savingPoolBefore: snapshot.savingPoolBefore,
+    savingPoolAfter: snapshot.savingPoolAfter,
+    ongoingCostToday: snapshot.ongoingCostToday,
+    passiveIncomeToday: snapshot.passiveIncomeToday,
+    supportCoverage: snapshot.supportCoverage,
+    laborDependency: snapshot.laborDependency,
+    upgradeGate: snapshot.status === 'growth' ? '通过' : '暂缓',
+    cashFlowQuality: [
+      { label: '现实收入', value: summary.realIncome },
+      { label: '睡后收入', value: summary.passiveIncome },
+      { label: '系统收入', value: summary.systemIncome },
+      { label: '真实支出', value: summary.realExpense },
+      { label: '持续出血', value: summary.ongoingCost },
+      { label: '体验出血', value: summary.experienceCost }
+    ]
+  }
+}
+
+export function WealthDashboardPreview({ snapshot, summary }: { snapshot?: DailyWealthSnapshot; summary?: WealthRecordSummary }) {
+  const data: WealthPreviewData = snapshot && summary ? snapshotToPreviewData(snapshot, summary) : wealthMock
+
+  const cashFlowQualitySegments: StackedBarSegment[] = data.cashFlowQuality.map((item) => {
     const meta = cashFlowQualityMeta[item.label] ?? {
       colorClass: 'bg-slate-300/70',
       description: '现金流质量中的其他部分'
@@ -55,16 +105,16 @@ export function WealthDashboardPreview() {
     <PreviewShell
       eyebrow="wealth preview"
       title="Wealth Dashboard Preview"
-      description="先把财富系统做成状态判断页，而不是普通记账页；mock 数据只用于看页面质感。"
+      description={snapshot ? '基于真实 base config 数据展示。' : '先把财富系统做成状态判断页，而不是普通记账页；mock 数据只用于看页面质感。'}
     >
       <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <StatusCard title="今日财富状态" status={wealthMock.status} diagnosis={wealthMock.diagnosis} suggestion={wealthMock.suggestion} tone="warn" />
+        <StatusCard title="今日财富状态" status={data.status} diagnosis={data.diagnosis} suggestion={data.suggestion} tone="warn" />
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <MetricCard label="账户变化" value={`¥${wealthMock.accountDelta}`} detail="今日现金流轻微下压" tone="bad" />
-          <MetricCard label="未来钱消耗" value={`¥${wealthMock.futureMoneyUsed}`} detail="未触发系统风险" tone="warn" />
-          <MetricCard label="可投资结余" value={`¥${wealthMock.investableSurplus}`} detail="今日暂不扩大投入" />
-          <MetricCard label="升级资格" value={wealthMock.upgradeGate} detail="先补回节省池" tone="info" />
+          <MetricCard label="账户变化" value={`¥${data.accountDelta}`} detail="今日现金流轻微下压" tone="bad" />
+          <MetricCard label="未来钱消耗" value={`¥${data.futureMoneyUsed}`} detail="未触发系统风险" tone="warn" />
+          <MetricCard label="可投资结余" value={`¥${data.investableSurplus}`} detail="今日暂不扩大投入" />
+          <MetricCard label="升级资格" value={data.upgradeGate} detail="先补回节省池" tone="info" />
         </div>
 
         <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
@@ -75,26 +125,26 @@ export function WealthDashboardPreview() {
         <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
           <div className="mb-4 text-sm font-semibold text-[color:var(--text-primary)]">节省池 / 未来钱判断</div>
           <div className="space-y-4">
-            <CapsuleProgressBar label="节省池消耗后" value={wealthMock.savingPoolAfter} max={wealthMock.savingPoolBefore} tone="warn" />
-            <CapsuleProgressBar label="未来钱使用" value={wealthMock.futureMoneyUsed} max={100} tone="bad" />
+            <CapsuleProgressBar label="节省池消耗后" value={data.savingPoolAfter} max={data.savingPoolBefore || 1} tone="warn" />
+            <CapsuleProgressBar label="未来钱使用" value={data.futureMoneyUsed} max={100} tone="bad" />
           </div>
         </section>
 
         <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
           <div className="mb-4 text-sm font-semibold text-[color:var(--text-primary)]">持续流血</div>
-          <MetricCard label="今日持续流血" value={`¥${wealthMock.ongoingCostToday}`} detail="订阅 / 固定压力先进入观察" tone="warn" />
+          <MetricCard label="今日持续流血" value={`¥${data.ongoingCostToday}`} detail="订阅 / 固定压力先进入观察" tone="warn" />
         </section>
 
         <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
           <div className="mb-4 text-sm font-semibold text-[color:var(--text-primary)]">睡后收入覆盖</div>
-          <CapsuleProgressBar label="覆盖率" value={wealthMock.supportCoverage * 100} max={100} tone="info" />
+          <CapsuleProgressBar label="覆盖率" value={data.supportCoverage * 100} max={100} tone="info" />
           <div className="mt-3 text-xs text-[color:var(--text-secondary)]">
-            睡后收入 ¥{wealthMock.passiveIncomeToday} / 劳动依赖 {Math.round(wealthMock.laborDependency * 100)}%
+            睡后收入 ¥{data.passiveIncomeToday} / 劳动依赖 {Math.round(data.laborDependency * 100)}%
           </div>
         </section>
 
         <div className="xl:col-span-2">
-          <ActionSuggestionCard title="财富下一步动作" body="明天优先补回节省池，不新增订阅，不用短期刺激消费换取状态。" />
+          <ActionSuggestionCard title="财富下一步动作" body={data.suggestion} />
         </div>
       </div>
     </PreviewShell>

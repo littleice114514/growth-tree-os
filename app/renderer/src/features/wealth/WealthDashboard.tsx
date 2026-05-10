@@ -175,7 +175,7 @@ export function WealthDashboard() {
 
         {currentView === 'overview' ? (
           <>
-            <WealthDashboardPreview />
+            <WealthDashboardPreview snapshot={snapshot} summary={summary} />
             <OverviewView
               snapshot={snapshot}
               summary={summary}
