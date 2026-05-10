@@ -15,6 +15,8 @@ import { WeekCalendarView } from './WeekCalendarView'
 const buttonClass = 'rounded-full border border-[color:var(--panel-border)] bg-[var(--control-bg)] px-3 py-1.5 text-xs text-[color:var(--text-secondary)] transition hover:border-[color:var(--node-selected-border)] hover:text-[color:var(--text-primary)]'
 const primaryButtonClass = 'rounded-full border border-[color:var(--node-selected-border)] bg-[var(--node-selected-bg)] px-3 py-1.5 text-xs font-semibold text-[color:var(--text-primary)] transition hover:border-[color:var(--node-selected-border)]'
 
+const fixedTimezoneOptions = ['GMT+8', 'GMT-7 Los Angeles', 'GMT-4 New York', 'GMT+1 London']
+
 export function CalendarViewShell({
   mode,
   anchorDate,
@@ -58,8 +60,14 @@ export function CalendarViewShell({
   const [dragPreview, setDragPreview] = useState<CalendarDragPreview>(null)
   const [resizeState, setResizeState] = useState<CalendarResizeState>(null)
   const [resizePreview, setResizePreview] = useState<CalendarResizePreview>(null)
+  const [timezoneLabel, setTimezoneLabel] = useState(() => formatSystemTimezoneLabel())
+  const [timezoneMenuOpen, setTimezoneMenuOpen] = useState(false)
   const previousTodayKeyRef = useRef(formatDateKey(new Date(timerNow)))
   const todayKey = formatDateKey(calendarNow)
+  const timezoneOptions = useMemo(() => {
+    const systemOption = `${formatSystemTimezoneLabel()} 系统时区`
+    return [systemOption, ...fixedTimezoneOptions.filter((option) => option !== formatSystemTimezoneLabel())]
+  }, [])
   const range = useMemo(() => buildCalendarRange(mode, anchorDate, customDayCount), [anchorDate, customDayCount, mode])
   const dayKeys = useMemo(() => range.days.map(formatDateKey), [range.days])
   const visibleBlocks = useMemo(
@@ -188,6 +196,33 @@ export function CalendarViewShell({
             <button type="button" onClick={() => onAnchorDateChange(todayKey)} className={primaryButtonClass}>今天</button>
             <button type="button" onClick={() => onAnchorDateChange(shiftAnchorDate(mode, anchorDate, customDayCount, -1))} className={buttonClass}>上一段</button>
             <button type="button" onClick={() => onAnchorDateChange(shiftAnchorDate(mode, anchorDate, customDayCount, 1))} className={buttonClass}>下一段</button>
+            <div className="relative">
+              <button
+                type="button"
+                aria-expanded={timezoneMenuOpen}
+                onClick={() => setTimezoneMenuOpen((open) => !open)}
+                className={buttonClass}
+              >
+                {timezoneLabel}
+              </button>
+              {timezoneMenuOpen ? (
+                <div className="absolute right-0 top-[calc(100%+8px)] z-[80] min-w-48 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--overlay-bg)] p-2 shadow-panel">
+                  {timezoneOptions.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => {
+                        setTimezoneLabel(formatTimezoneButtonLabel(option))
+                        setTimezoneMenuOpen(false)
+                      }}
+                      className={`block w-full rounded-xl px-3 py-2 text-left text-xs transition ${formatTimezoneButtonLabel(option) === timezoneLabel ? 'bg-[var(--control-hover)] text-[color:var(--text-primary)]' : 'text-[color:var(--text-secondary)] hover:bg-[var(--control-bg)] hover:text-[color:var(--text-primary)]'}`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
             <button type="button" onClick={onOpenManual} className={primaryButtonClass}>新增日志</button>
           </div>
         </div>
@@ -239,6 +274,19 @@ function buildDateTimeFromDayAndMinutes(dayKey: string, minutes: number): string
 
 function padDateTimePart(value: number): string {
   return String(value).padStart(2, '0')
+}
+
+function formatSystemTimezoneLabel(): string {
+  const offsetMinutes = -new Date().getTimezoneOffset()
+  const sign = offsetMinutes >= 0 ? '+' : '-'
+  const absoluteMinutes = Math.abs(offsetMinutes)
+  const hours = Math.floor(absoluteMinutes / 60)
+  const minutes = absoluteMinutes % 60
+  return minutes === 0 ? `GMT${sign}${hours}` : `GMT${sign}${hours}:${String(minutes).padStart(2, '0')}`
+}
+
+function formatTimezoneButtonLabel(option: string): string {
+  return option.replace(' 系统时区', '')
 }
 
 function Legend({ dotClass, label }: { dotClass: string; label: string }) {

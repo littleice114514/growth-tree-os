@@ -79,6 +79,12 @@
 - 2026-05-10 M13 minimal fix: cross-day daily segments now stay read-only in `CalendarEventDetailPanel.tsx`, so the detail panel no longer exposes a time-range editor that would pass a `::segment::` id into the persistence path.
 - Validation: `pnpm typecheck`, `pnpm build`, and `pnpm smoke` passed on the M13 branch after the daily-segment detail fix.
 - Remaining risk: real Electron click smoke should still be repeated on the receiving Mac after pull, especially for active timer start/finish and dense overlap click targets.
+- 2026-05-10 calendar UI polish: `CalendarTimeAxis.tsx` hides the first visible axis label so the clipped top `12 AM` no longer appears, while later `12:30`, `1 AM`, and half-hour labels remain unchanged.
+- 2026-05-10 calendar UI polish: `CalendarGrid.tsx` moves the empty-range message out of the time-grid overlay into a light hint under the sticky day header, using `当前范围暂无时间块` so it no longer blocks the calendar grid.
+- 2026-05-10 timezone entry MVP: `CalendarViewShell.tsx` adds a toolbar timezone selector with system timezone, GMT+8, GMT-7 Los Angeles, GMT-4 New York, and GMT+1 London options.
+- Timezone status: selector is UI-only state for this round; it changes the displayed button label only and does not recalculate logs, plans, timers, drag/resize math, reminders, storage, or historical time interpretation.
+- Validation target for this UI polish round: run `pnpm typecheck`, `pnpm build`, optional `pnpm smoke`, and real Electron UI smoke for axis labels, empty state, timezone menu, view switching, and timer start/finish.
+- Next unique entry: after Mac pulls this branch, complete a real Electron UI smoke pass; if timezone work continues, decide first whether real timezone conversion belongs in a Time Debt data-layer design pass.
 
 ## 8. Backlog Only
 

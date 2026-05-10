@@ -6,18 +6,21 @@
 - GitHub 仓库：https://github.com/Littleice114514/growth-tree-os.git
 - 分支：feature/mac-time-debt-plan-flow-overlap-ui
 - 最新 commit：以本轮最终汇报的 `git rev-parse --short HEAD` 为准
-- 当前设备完成时间：2026-05-10
+- 当前设备完成时间：2026-05-10 17:48 CST
 
 ## 2. 本轮已完成
 
-- 完成 M13 Time Debt 计时闭环与重叠显示稳定化代码路径验收。
-- 确认 active timer 结束、legacy active plan 关闭、短任务真实时长与视觉高度分离、跨天分段、day/week/month/custom 切换、重叠布局和非今天记录访问均有现有实现支撑。
-- 最小修复跨天 daily segment 详情：跨天分段只读展示，不再暴露会传入 `::segment::` id 的时间段编辑器。
-- 更新 `docs/handoff/TIME_DEBT_MODULE_INDEX.md` 记录 M13 验收结论、修复点、验证结果和下一轮入口。
+- 修复 Time Debt 日历时间轴顶部 `12 AM` 被裁切问题：隐藏首个轴标签，不改变网格和日志时间计算。
+- 优化日历空状态：将中间浮层文案改为网格上方轻提示 `当前范围暂无时间块`，避免遮挡日历格子。
+- 增加时区选择入口 MVP：工具栏按钮默认显示系统 `GMT` 偏移，菜单可选择系统时区、GMT+8、GMT-7 Los Angeles、GMT-4 New York、GMT+1 London。
+- 时区选择本轮只改变 UI 显示状态，不做真实历史日志时间换算。
+- 更新 `docs/handoff/TIME_DEBT_MODULE_INDEX.md` 记录 UI 修复、时区入口现状和下一轮入口。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/time-debt/calendar/CalendarEventDetailPanel.tsx`
+- `app/renderer/src/features/time-debt/calendar/CalendarTimeAxis.tsx`
+- `app/renderer/src/features/time-debt/calendar/CalendarGrid.tsx`
+- `app/renderer/src/features/time-debt/calendar/CalendarViewShell.tsx`
 - `docs/handoff/TIME_DEBT_MODULE_INDEX.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
 
@@ -28,11 +31,12 @@
 - `pnpm typecheck` 通过。
 - `pnpm build` 通过。
 - `pnpm smoke` 通过。
+- 轻量 UI smoke 通过：日历页可打开，顶部 `12 AM` 不再出现在时间轴快照中，`12:30 / 1 AM / 1:30` 仍显示，空状态不遮挡网格，时区菜单可打开并切换到 `GMT-4 New York`，日 / 周 / 月切换正常。
 
 ### 未验证 / 风险
 
-- 真实 Electron 鼠标点击 smoke 未在本轮完成，需要 Mac 端拉取后补做。
-- 重点补验 active timer 开始/结束、跨天分段详情只读、短任务真实分钟数、dense overlap 点击目标。
+- 真实开始 / 结束计时未在本轮 UI smoke 中执行，避免污染本地时间日志；Mac 端可用测试样本补验。
+- 时区菜单目前是 UI-only，不会重算日志、计划、计时器或历史记录时间。
 
 ## 5. Mac 端第一步操作
 
@@ -74,19 +78,19 @@ pnpm dev
 
 请在 Mac 端检查：
 
-- 普通开始计时后可以结束并生成 completed log。
-- 从 planned task 开始计时后可以结束，plan 变为 completed 并清空 active timer。
-- 少于 15 分钟的补记或计时保存真实 `durationMinutes`，日历只用 15 分钟最小视觉高度。
-- 跨天 completed / active 块在 day/week/custom/month 范围内分段展示，分段详情为只读。
-- day / week / month / custom 切换后 active timer 和已选时间块不出现明显状态丢失。
-- 同日重叠任务分列可读，短块仍可点击查看详情。
-- 非今天日期的 completed / planned / missed 记录可以查看，并按现有规则操作。
+- Time Debt 日历视图顶部不再出现被裁切的 `12 AM`。
+- `12:30`、`1 AM`、`1:30` 等后续刻度仍正常显示。
+- 空状态提示不遮挡日历格子，有日志时不显示。
+- 工具栏能看到时区按钮，点击能打开菜单。
+- 选择 GMT+8、GMT-7 Los Angeles、GMT-4 New York、GMT+1 London 后按钮文字会变化。
+- day / week / month / custom 切换正常。
+- 开始 / 结束计时和已有日志显示不受影响。
 
 ## 8. Mac 端下一轮任务
 
 请让 Mac 端 Codex 接着完成：
 
-用真实 Electron UI 做 M13 点击 smoke：创建一个短任务、一个重叠任务、一个跨天任务样本，验证开始/结束计时、详情查看、视图切换和跨天分段只读；通过后只补充简短验收日志，不扩展新功能。
+用真实 Electron UI 完成本轮 Time Debt Calendar UI smoke：检查顶部时间轴、空状态提示、时区菜单选择、day/week/month/custom 切换、开始/结束计时；通过后只补充简短验收日志，不扩展真实多时区换算。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
@@ -104,3 +108,4 @@ pnpm dev
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
 - 不要修改 Wealth、DB、IPC、store、MainWorkspacePage 或 project-state 三件套。
+- 不要把时区入口扩展成真实换算，除非先做数据层设计和历史日志解释规则。

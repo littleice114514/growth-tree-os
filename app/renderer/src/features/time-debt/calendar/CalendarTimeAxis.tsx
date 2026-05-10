@@ -8,7 +8,8 @@ export function CalendarTimeAxis({ scale }: { scale: CalendarTimeScale }) {
     <div className="relative border-r border-[color:var(--panel-border)]/25">
       {labels.map((minutes) => {
         const isHour = minutes % 60 === 0
-        if (minutes >= scale.visibleEndHour * 60 || (!isHour && !scale.showHalfHourLabel)) {
+        const isFirstVisibleLabel = minutes === scale.visibleStartHour * 60
+        if (isFirstVisibleLabel || minutes >= scale.visibleEndHour * 60 || (!isHour && !scale.showHalfHourLabel)) {
           return null
         }
         return (

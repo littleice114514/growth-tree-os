@@ -50,6 +50,11 @@ export function CalendarGrid({
           )
         })}
       </div>
+      {blocks.length === 0 ? (
+        <div className="border-b border-[color:var(--panel-border)]/35 bg-[var(--panel-bg-strong)]/70 px-4 py-2 text-xs text-[color:var(--text-muted)]">
+          当前范围暂无时间块
+        </div>
+      ) : null}
       <div className="relative grid" style={{ height: gridHeight, minWidth: Math.max(520, 72 + days.length * 126), gridTemplateColumns: dayTemplate }}>
         <CalendarTimeAxis scale={scale} />
         {days.map((day, dayIndex) => {
@@ -114,11 +119,6 @@ export function CalendarGrid({
           )
         })}
         {todayIndex >= 0 ? <CalendarCurrentTimeLine now={now} scale={scale} dayCount={days.length} todayIndex={todayIndex} /> : null}
-        {blocks.length === 0 ? (
-          <div className="pointer-events-none absolute left-[92px] right-5 top-8 rounded-2xl border border-dashed border-[color:var(--panel-border)] p-5 text-sm text-[color:var(--text-muted)]">
-            当前范围还没有时间块。先补记、规划或开始计时。
-          </div>
-        ) : null}
       </div>
     </div>
   )
