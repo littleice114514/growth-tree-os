@@ -6,37 +6,33 @@
 - GitHub 仓库：https://github.com/Littleice114514/growth-tree-os.git
 - 分支：feature/mac-time-debt-plan-flow-overlap-ui
 - 最新 commit：以本轮最终汇报的 `git rev-parse --short HEAD` 为准
-- 当前设备完成时间：2026-05-07
+- 当前设备完成时间：2026-05-10
 
 ## 2. 本轮已完成
 
-- 拆分 Time Debt 的 15 分钟规则：真实日志保存仍用实际 duration，日历视觉高度才使用最小 15 分钟。
-- `CalendarEventDetailPanel` 对已保存短任务显示真实短任务说明，不再在未编辑时用“至少 15 分钟”红字误导。
-- resize / 时间段编辑仍保留 15 分钟最小交互规则；计时结束和补记保存不使用 15 分钟门槛。
-- 保持 Active Timer 闭环、跨天分段、历史任务 Combobox 不回退。
+- 完成 M13 Time Debt 计时闭环与重叠显示稳定化代码路径验收。
+- 确认 active timer 结束、legacy active plan 关闭、短任务真实时长与视觉高度分离、跨天分段、day/week/month/custom 切换、重叠布局和非今天记录访问均有现有实现支撑。
+- 最小修复跨天 daily segment 详情：跨天分段只读展示，不再暴露会传入 `::segment::` id 的时间段编辑器。
+- 更新 `docs/handoff/TIME_DEBT_MODULE_INDEX.md` 记录 M13 验收结论、修复点、验证结果和下一轮入口。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/time-debt/TimeDebtDashboard.tsx`
 - `app/renderer/src/features/time-debt/calendar/CalendarEventDetailPanel.tsx`
-- `app/renderer/src/features/time-debt/calendar/calendarTimePositionUtils.ts`
-- `app/renderer/src/features/time-debt/calendar/calendarTypes.ts`
-- `docs/handoff/MAC_NEXT_ACTION.md`
 - `docs/handoff/TIME_DEBT_MODULE_INDEX.md`
+- `docs/handoff/MAC_NEXT_ACTION.md`
 
 ## 4. 当前验证结果
 
 ### 已验证
 
 - `pnpm typecheck` 通过。
-- `pnpm smoke` 通过，包含 renderer production build。
-- 本地 dev 页面 `http://localhost:5174/` 可打开 Time Debt。
+- `pnpm build` 通过。
+- `pnpm smoke` 通过。
 
 ### 未验证 / 风险
 
-- Codex in-app browser 的 datetime-local `fill` 没有可靠触发 React state，本轮未把自动化补记 5 分钟作为有效 UI 验收。
-- 需要 Mac 端用真实鼠标/键盘补记或计时一个 3-8 分钟短任务，确认保存后详情显示真实分钟数。
-- 当前分支本地已有 commit，但 GitHub HTTPS / `gh` 凭据未配置时 push 会失败。
+- 真实 Electron 鼠标点击 smoke 未在本轮完成，需要 Mac 端拉取后补做。
+- 重点补验 active timer 开始/结束、跨天分段详情只读、短任务真实分钟数、dense overlap 点击目标。
 
 ## 5. Mac 端第一步操作
 
@@ -48,12 +44,14 @@ cd ~/Desktop/vibe-coding-projects
 git clone https://github.com/Littleice114514/growth-tree-os.git
 cd growth-tree-os
 git checkout feature/mac-time-debt-plan-flow-overlap-ui
+git rev-parse --short HEAD
 ```
 
 如果 Mac 上已经有项目：
 
 ```bash
 cd <Mac上的项目目录>
+git status
 git fetch origin
 git checkout feature/mac-time-debt-plan-flow-overlap-ui
 git pull origin feature/mac-time-debt-plan-flow-overlap-ui
@@ -76,17 +74,19 @@ pnpm dev
 
 请在 Mac 端检查：
 
-- 开始计时 3-8 分钟后可以结束并保存，不被 15 分钟规则拦截。
-- 补记 `10:03 - 10:08` 可以保存为真实 5 分钟。
-- 日历短任务块有可点击高度，但详情面板显示真实 5 分钟。
-- resize / 时间段编辑仍至少按 15 分钟处理。
-- Active Timer 结束、跨天分段、历史任务 Combobox 不回退。
+- 普通开始计时后可以结束并生成 completed log。
+- 从 planned task 开始计时后可以结束，plan 变为 completed 并清空 active timer。
+- 少于 15 分钟的补记或计时保存真实 `durationMinutes`，日历只用 15 分钟最小视觉高度。
+- 跨天 completed / active 块在 day/week/custom/month 范围内分段展示，分段详情为只读。
+- day / week / month / custom 切换后 active timer 和已选时间块不出现明显状态丢失。
+- 同日重叠任务分列可读，短块仍可点击查看详情。
+- 非今天日期的 completed / planned / missed 记录可以查看，并按现有规则操作。
 
 ## 8. Mac 端下一轮任务
 
 请让 Mac 端 Codex 接着完成：
 
-用真实 UI 输入补记一个 5 分钟短任务，再创建一个 3-8 分钟计时任务，确认统计和详情都使用真实分钟数；通过后只补简短验收日志。
+用真实 Electron UI 做 M13 点击 smoke：创建一个短任务、一个重叠任务、一个跨天任务样本，验证开始/结束计时、详情查看、视图切换和跨天分段只读；通过后只补充简短验收日志，不扩展新功能。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
@@ -95,7 +95,7 @@ pnpm dev
 - `git status` 输出；
 - `git rev-parse --short HEAD` 输出；
 - `pnpm dev` 完整报错；
-- Time Debt 短任务详情截图；
+- Time Debt 日历页面异常截图；
 - DevTools 控制台首个关键错误。
 
 ## 10. 注意事项
@@ -103,4 +103,4 @@ pnpm dev
 - 不要直接覆盖本地未提交改动。
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
-- 不要扩展洞察页、仪表盘、字段系统、Notion API 或外部日历同步。
+- 不要修改 Wealth、DB、IPC、store、MainWorkspacePage 或 project-state 三件套。

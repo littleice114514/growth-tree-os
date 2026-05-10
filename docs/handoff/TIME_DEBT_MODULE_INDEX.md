@@ -75,6 +75,10 @@
 - 2026-05-07 short-task rule fix: real saved `durationMinutes` remains actual duration; calendar positioning uses `minVisualCalendarEventDurationMinutes = 15` only for visual height.
 - 2026-05-07 short-task detail fix: saved short tasks show their real duration in detail, while resize/time-range editing still requires at least 15 minutes.
 - Validation: `pnpm typecheck` and `pnpm smoke` passed after the short-task rule split.
+- 2026-05-10 M13 stabilization acceptance: timer closeout paths, short-task actual duration versus visual height, day/week/month/custom switching, overlap readability, non-today record access, and cross-day segmentation were reviewed against current code paths.
+- 2026-05-10 M13 minimal fix: cross-day daily segments now stay read-only in `CalendarEventDetailPanel.tsx`, so the detail panel no longer exposes a time-range editor that would pass a `::segment::` id into the persistence path.
+- Validation: `pnpm typecheck`, `pnpm build`, and `pnpm smoke` passed on the M13 branch after the daily-segment detail fix.
+- Remaining risk: real Electron click smoke should still be repeated on the receiving Mac after pull, especially for active timer start/finish and dense overlap click targets.
 
 ## 8. Backlog Only
 
@@ -86,4 +90,4 @@
 - Next round should first read only this file and `docs/handoff/MAC_NEXT_ACTION.md`.
 - Then read at most 8 related code files.
 - Do not read full dev logs unless the current bug cannot be located from this index.
-- Do not continue UI work until Mac pushes this branch and Win can pull it.
+- Next unique entry: run Mac-side UI smoke for Time Debt active timer start/finish, short task detail, cross-day read-only segment detail, and dense overlap selection after pulling the latest pushed commit.

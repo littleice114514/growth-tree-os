@@ -40,7 +40,7 @@ export function CalendarEventDetailPanel({
   const plannedRange = block.plan ? `${formatDateTimeReadable(block.plan.plannedStartTime)} - ${formatTimeOnly(block.plan.plannedEndTime)}` : ''
   const actualStart = block.log?.startTime ?? block.plan?.actualStartTime ?? (block.status === 'active' || block.status === 'completed' ? block.startTime : '')
   const actualEnd = block.log?.endTime ?? block.plan?.actualEndTime ?? (block.status === 'completed' ? block.endTime : '')
-  const editableLabel = block.status === 'completed' ? '实际时间段' : block.plan && (block.status === 'planned' || block.status === 'missed') ? '计划时间段' : null
+  const editableLabel = !block.isDailySegment && block.status === 'completed' ? '实际时间段' : !block.isDailySegment && block.plan && (block.status === 'planned' || block.status === 'missed') ? '计划时间段' : null
   const isLongActive = block.status === 'active' && block.durationMinutes >= 24 * 60
   return (
     <aside className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
@@ -62,6 +62,7 @@ export function CalendarEventDetailPanel({
         {block.plan ? <DetailRow label="计划时间" value={plannedRange} /> : null}
         {block.status === 'planned' && block.plan ? <DetailRow label="距离开始" value={formatDistanceToStart(block.plan.plannedStartTime, timerNow)} /> : null}
         {editableLabel ? <TimeRangeEditor label={editableLabel} block={block} onSave={onEditTimeRange} /> : null}
+        {block.isDailySegment ? <DailySegmentReadOnlyNotice /> : null}
         {block.status === 'active' ? <ActiveTimeEditNotice /> : null}
         {isLongActive ? <LongActiveTimerNotice onFinishTimer={() => onFinishTimer(block)} /> : null}
         {block.status === 'active' ? <DetailRow label="实际开始" value={formatDateTimeReadable(actualStart)} /> : null}
@@ -176,6 +177,14 @@ function ActiveTimeEditNotice() {
   return (
     <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-xs leading-5 text-[color:var(--text-secondary)]">
       进行中任务不能直接修改时间段，请先结束计时后再编辑。
+    </div>
+  )
+}
+
+function DailySegmentReadOnlyNotice() {
+  return (
+    <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/10 p-3 text-xs leading-5 text-[color:var(--text-secondary)]">
+      这是跨天任务的当天分段，只用于查看；完整时间段请在原始任务范围内统一调整。
     </div>
   )
 }
