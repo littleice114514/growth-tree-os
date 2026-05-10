@@ -78,6 +78,13 @@
 - Codex 下一轮入口：先读 `docs/project-map/MAP_STATUS.md` + `docs/handoff/TIME_DEBT_MODULE_INDEX.md`，确认分支后只推进 Time Debt / 地图状态接续，不碰 Wealth 文件。
 - Claude 下一轮入口：先读 `docs/project-map/MAP_STATUS.md` + `docs/handoff/CLAUDE_WEALTH_NEXT_ACTION.md`，在 `app/renderer/src/features/wealth/**` 内完成 WealthDashboardPreview 接真实 localStorage 数据。
 
+## 11. 受控业务开发第一轮验证结果
+
+- 当前地图位置：本地产品层；Time Debt / Wealth 双模块并行；多模块本地闭环收口；并行边界固定。
+- 已验证：Codex Time Debt 路线可被地图约束；Claude Wealth 路线可被地图约束；用户真实 UI 反馈可被地图收敛成小任务。
+- 当前未完成：Time Debt 真实 Electron UI 最终 smoke；时区选择仅为 UI-only MVP，真实时间换算未做。
+- 下一步系统优先级：1. 完成 Time Debt Mac UI smoke；2. 封板 M13；3. 再决定 Wealth P1 或 develop 集成。
+
 ## 全量日志压缩索引
 
 | 日期 | 设备/代理 | 模块 | 已完成事项 | 验收结果 | 当前遗留问题 | 是否影响地图状态 |

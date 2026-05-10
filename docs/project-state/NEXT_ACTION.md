@@ -2,45 +2,26 @@
 
 更新时间：2026-05-10
 
-## 1. 当前唯一建议主线
+## 1. 当前唯一优先事项
 
-先使用 project-state 新底座作为后续开工入口，再进入业务开发。下一轮业务开发不要同时开 Time Debt 和 Wealth。
+在 Mac Electron 中补验 Time Debt commit `0c35ad9`。
 
-## 2. Codex 下一轮入口
+## 2. 验收重点
 
-目标：推进 Time Debt / 时间负债、数据记录链路或项目地图状态接续。
+- 日历 UI 是否正常。
+- 顶部裁切的 `12 AM` 是否不再出现。
+- 空状态是否不遮挡日历网格。
+- 时区入口是否不影响 day / week / month / custom days 切换。
+- 开始 / 结束计时是否仍能生成日志。
 
-先读：
+## 3. 暂不启动 Wealth P1 的原因
 
-1. `docs/project-state/CURRENT_STATUS.md`
-2. `docs/project-state/NEXT_ACTION.md`
-3. `docs/project-map/MAP_STATUS.md`
-4. `docs/handoff/TIME_DEBT_MODULE_INDEX.md`
+Time Debt M13 仍需完成真实 Mac Electron UI smoke。先封住 M13，再决定是否启动 Wealth P1，避免双模块同时扩散。
 
-允许范围：
+## 4. 通过后的下一步选择
 
-- `app/renderer/src/features/time-debt/**`
-- 与 Time Debt 直接相关的最小文档
-- `docs/project-map/MAP_STATUS.md`
-- `docs/project-state/**`
-
-## 3. Claude 下一轮入口
-
-目标：完成 WealthDashboardPreview 接真实 localStorage 数据。
-
-先读：
-
-1. `docs/project-state/CURRENT_STATUS.md`
-2. `docs/project-state/NEXT_ACTION.md`
-3. `docs/project-map/MAP_STATUS.md`
-4. `docs/handoff/CLAUDE_WEALTH_NEXT_ACTION.md`
-
-允许范围：
-
-- `app/renderer/src/features/wealth/**`
-- 与 Wealth 直接相关的最小文档
-- `docs/project-map/MAP_STATUS.md`
-- `docs/project-state/**`
+- 可封板 M13 Time Debt。
+- 再决定启动 Wealth P1，或先做 develop 集成。
 
 ## 4. 本轮不做事项
 
@@ -85,9 +66,8 @@
 文档/流程任务：
 
 ```bash
-pnpm typecheck
-pnpm build
 git diff --stat
+git diff --check
 ```
 
 业务任务：

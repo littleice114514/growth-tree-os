@@ -18,3 +18,4 @@
 - 2026-05-06｜Mac｜Account Foundation Validation｜补齐 `user_id` 查询/写入过滤验证；SQLite smoke 通过，真实页面 smoke 待补｜影响数据库层/用户系统层
 - 2026-05-06｜Mac｜M12.1 Startup Env Fix｜恢复 pnpm、重装依赖、定位 Rollup native 签名问题；`pnpm typecheck` 通过｜影响运维维护层
 - 2026-05-06｜Mac｜Time Debt / Wealth localStorage Account Namespace｜为 Time Debt / Wealth localStorage 补账户命名空间；`pnpm typecheck` 和 `pnpm smoke` 通过｜影响数据层轻预留
+- 2026-05-10｜受控业务开发第一轮闭环验证｜Codex Time Debt commit 0c35ad9；Claude Wealth commit abef583；并行边界、GitHub Sync Gate、handoff 接续有效；下一步补验 Time Debt Mac UI smoke。
