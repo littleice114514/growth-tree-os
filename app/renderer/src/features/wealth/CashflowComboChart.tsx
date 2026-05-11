@@ -1,13 +1,27 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import ReactEChartsCore from 'echarts-for-react/lib/core'
+import * as echarts from 'echarts/core'
+import { BarChart, LineChart } from 'echarts/charts'
+import {
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  MarkLineComponent
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 import type { WealthRecord } from '@shared/wealth'
 import { wealthRecordTypeLabels } from '@shared/wealth'
 import type { CashflowTrend, TrendDay } from './overdraftTracker'
 
-const CHART_H = 180
-const PLOT_PAD_TOP = 6
-const PLOT_PAD_BOTTOM = 2
-
-type HoverTarget = string | null
+echarts.use([
+  BarChart,
+  LineChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  MarkLineComponent,
+  CanvasRenderer
+])
 
 export function CashflowComboChart({
   trend,
@@ -18,55 +32,187 @@ export function CashflowComboChart({
   records: WealthRecord[]
   safeLine: number
 }) {
-  const [hover, setHover] = useState<HoverTarget>(null)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const chartRef = useRef<ReactEChartsCore>(null)
 
   const { days, period } = trend
   const dayCount = days.length
-  if (dayCount === 0) return null
-
-  const activeDate = hover ?? selectedDate
-  const maxValue = Math.max(
-    safeLine,
-    ...days.map((d) => Math.max(d.totalExpense, d.totalIncome))
-  )
-  const scaleMax = maxValue > 0 ? maxValue * 1.2 : safeLine * 2
-
-  const toY = (value: number) => PLOT_PAD_TOP + (1 - value / scaleMax) * (CHART_H - PLOT_PAD_TOP - PLOT_PAD_BOTTOM)
-  const safeLineY = toY(safeLine)
-
-  const colW = 100 / dayCount
-  const barW = Math.max(colW * 0.38, 1.2)
-  const cx = (i: number) => colW * i + colW / 2
-
-  const incomeXY = days.map((d, i) => ({ x: cx(i), y: toY(d.totalIncome), date: d.date }))
-  const hasAnyIncome = days.some((d) => d.totalIncome > 0)
-  const polylineStr = incomeXY.map((p) => `${p.x},${p.y}`).join(' ')
-
-  const allZero = days.every((d) => d.totalExpense === 0 && d.totalIncome === 0)
 
   const selectedRecords = selectedDate ? records.filter((r) => r.date === selectedDate) : []
   const selectedDay = selectedDate ? days.find((d) => d.date === selectedDate) : null
 
-  const toggleDate = (date: string) => setSelectedDate((prev) => (prev === date ? null : date))
+  const toggleDate = useCallback(
+    (date: string) => setSelectedDate((prev) => (prev === date ? null : date)),
+    []
+  )
 
-  // Date label density: show all for 7d, sparse for 30d
-  const showLabel = (i: number) => {
-    if (period === 'last7') return true
-    if (days[i].date === selectedDate) return true
-    if (i === 0 || i === dayCount - 1) return true
-    return i % 5 === 0
-  }
+  // Connect click on chart to day selection
+  const onChartClick = useCallback(
+    (params: { name?: string }) => {
+      if (params.name) {
+        toggleDate(params.name)
+      }
+    },
+    [toggleDate]
+  )
+
+  const dates = useMemo(() => days.map((d) => d.date.slice(5)), [days]) // MM-DD for X axis
+  const expenseData = useMemo(() => days.map((d) => d.totalExpense), [days])
+  const safeLineData = useMemo(() => days.map(() => safeLine), [days, safeLine])
+
+  // Color each bar: green normal, rose overdraft
+  const barColors = useMemo(
+    () =>
+      days.map((d) =>
+        d.isOverdraft
+          ? 'rgba(251,113,133,0.65)'
+          : 'rgba(110,231,183,0.55)'
+      ),
+    [days]
+  )
+
+  const option = useMemo(() => {
+    // X-axis label density: show all for 7d, sparse for 30d
+    const showLabel = (i: number) => {
+      if (period === 'last7') return true
+      if (days[i].date === selectedDate) return true
+      if (i === 0 || i === dayCount - 1) return true
+      return i % 5 === 0
+    }
+
+    return {
+      animation: false,
+      grid: {
+        top: 32,
+        right: 16,
+        bottom: 28,
+        left: 12,
+        containLabel: false
+      },
+      legend: {
+        top: 0,
+        left: 0,
+        itemWidth: 16,
+        itemHeight: 8,
+        itemGap: 16,
+        textStyle: {
+          fontSize: 11,
+          color: 'rgba(148,163,184,0.8)'
+        },
+        data: ['支出', '每日安全线']
+      },
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: 'rgba(30,30,40,0.92)',
+        borderColor: 'rgba(100,116,139,0.3)',
+        borderWidth: 1,
+        padding: [8, 12],
+        textStyle: {
+          fontSize: 12,
+          color: '#e2e8f0'
+        },
+        formatter: (params: { seriesName: string; name: string; value: number; dataIndex: number }[]) => {
+          const idx = params[0]?.dataIndex
+          if (idx == null) return ''
+          const day = days[idx]
+          if (!day) return ''
+
+          const statusLabel = day.isOverdraft
+            ? `<span style="color:#fb7185">透支 ¥${Math.abs(day.totalExpense - day.safeLine)}</span>`
+            : '<span style="color:#6ee7b7">正常</span>'
+
+          return `
+            <div style="font-weight:600;margin-bottom:6px">${day.date} ${statusLabel}</div>
+            <div style="display:flex;gap:16px">
+              <div>
+                <div style="color:#94a3b8;font-size:10px">收入</div>
+                <div style="color:#60a5fa;font-weight:600">${formatMoney(day.totalIncome)}</div>
+              </div>
+              <div>
+                <div style="color:#94a3b8;font-size:10px">支出</div>
+                <div style="color:${day.isOverdraft ? '#fb7185' : '#e2e8f0'};font-weight:600">${formatMoney(day.totalExpense)}</div>
+              </div>
+              <div>
+                <div style="color:#94a3b8;font-size:10px">安全线</div>
+                <div style="color:#d4a017;font-weight:600">${formatMoney(day.safeLine)}</div>
+              </div>
+            </div>
+          `
+        }
+      },
+      xAxis: {
+        type: 'category',
+        data: dates,
+        axisTick: { show: false },
+        axisLine: { lineStyle: { color: 'rgba(100,116,139,0.15)' } },
+        axisLabel: {
+          fontSize: 10,
+          color: 'rgba(148,163,184,0.6)',
+          interval: (i: number) => showLabel(i),
+          rotate: period === 'last30' ? 30 : 0
+        }
+      },
+      yAxis: {
+        type: 'value',
+        show: false
+      },
+      series: [
+        {
+          name: '支出',
+          type: 'bar',
+          data: expenseData.map((val, i) => ({
+            value: val,
+            itemStyle: { color: barColors[i], borderRadius: [3, 3, 0, 0] }
+          })),
+          barWidth: period === 'last30' ? '45%' : '50%',
+          markLine: {
+            silent: true,
+            symbol: 'none',
+            lineStyle: {
+              color: '#d4a017',
+              type: 'dashed',
+              width: 1.5,
+              opacity: 0.7
+            },
+            data: [{ yAxis: safeLine, name: '安全线' }],
+            label: {
+              position: 'end',
+              formatter: `安全线 ¥${safeLine}`,
+              fontSize: 10,
+              color: '#d4a017'
+            }
+          }
+        },
+        {
+          name: '每日安全线',
+          type: 'line',
+          data: safeLineData,
+          symbol: 'none',
+          lineStyle: { width: 0 },
+          // Invisible line just for legend presence
+        }
+      ]
+    }
+  }, [days, dates, expenseData, safeLineData, barColors, safeLine, period, selectedDate, dayCount])
+
+  // All zero state
+  const allZero = days.every((d) => d.totalExpense === 0 && d.totalIncome === 0)
+
+  if (dayCount === 0) return null
 
   if (allZero) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
-        <svg viewBox={`0 0 100 ${CHART_H}`} className="w-full opacity-15" style={{ maxHeight: '80px' }} preserveAspectRatio="none">
-          <line x1="0" y1={safeLineY} x2="100" y2={safeLineY} stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 2" />
-          {days.map((d, i) => (
-            <rect key={d.date} x={cx(i) - barW / 2} y={CHART_H * 0.92} width={barW} height={CHART_H * 0.08} fill="currentColor" rx="0.5" />
-          ))}
-        </svg>
+        <div className="h-[80px] w-full opacity-15">
+          <ReactEChartsCore
+            ref={chartRef}
+            echarts={echarts}
+            option={option}
+            style={{ height: '100%', width: '100%' }}
+            notMerge
+            lazyUpdate
+          />
+        </div>
         <div className="mt-3 text-xs font-medium text-[color:var(--text-secondary)]">等待数据</div>
         <p className="mt-1 text-[10px] text-[color:var(--text-muted)]">新增记录后，趋势图将自动更新。</p>
       </div>
@@ -75,187 +221,27 @@ export function CashflowComboChart({
 
   return (
     <div>
-      <svg
-        viewBox={`0 0 100 ${CHART_H}`}
-        className="w-full"
-        style={{ height: '220px' }}
-        preserveAspectRatio="none"
-        onMouseLeave={() => setHover(null)}
-      >
-        {/* ── Safe line (formal) ── */}
-        <line x1="0" y1={safeLineY} x2="100" y2={safeLineY} stroke="#d4a017" strokeWidth="0.35" strokeDasharray="4 1.8" opacity="0.55" />
-        <text x="100.5" y={safeLineY + 1.2} fill="#d4a017" fontSize="2.8" opacity="0.65" textAnchor="start" dominantBaseline="middle">
-          安全线 ¥{safeLine}
-        </text>
-
-        {/* ── Column highlight (hover / selected) ── */}
-        {days.map((day, i) => {
-          const isHovered = hover === day.date
-          const isSelected = selectedDate === day.date
-          if (!isHovered && !isSelected) return null
-          return (
-            <rect
-              key={`hl-${day.date}`}
-              x={cx(i) - colW / 2}
-              y="0"
-              width={colW}
-              height={CHART_H}
-              fill={isSelected ? 'rgba(148,163,184,0.12)' : 'rgba(148,163,184,0.07)'}
-              rx="0.5"
-            />
-          )
-        })}
-
-        {/* ── Bars (expense) ── */}
-        {days.map((day, i) => {
-          const x = cx(i)
-          const barH = Math.max(0.8, (day.totalExpense / scaleMax) * (CHART_H - PLOT_PAD_TOP - PLOT_PAD_BOTTOM))
-          const barY = CHART_H - PLOT_PAD_BOTTOM - barH
-
-          return (
-            <g key={`bar-${day.date}`}>
-              <rect
-                x={x - barW / 2}
-                y={barY}
-                width={barW}
-                height={barH}
-                rx="0.6"
-                fill={day.isOverdraft ? 'rgba(251,113,133,0.55)' : 'rgba(110,231,183,0.45)'}
-                pointerEvents="none"
-              />
-              {/* Overdraft risk dot on top of bar */}
-              {day.isOverdraft ? (
-                <circle cx={x} cy={barY - 1.2} r="0.7" fill="rgba(244,63,94,0.8)" pointerEvents="none" />
-              ) : null}
-            </g>
-          )
-        })}
-
-        {/* ── Income polyline + dots ── */}
-        {hasAnyIncome && (
-          <>
-            {/* Area fill under income line */}
-            <polygon
-              points={`${incomeXY[0].x},${CHART_H - PLOT_PAD_BOTTOM} ${polylineStr} ${incomeXY[incomeXY.length - 1].x},${CHART_H - PLOT_PAD_BOTTOM}`}
-              fill="rgba(96,165,250,0.08)"
-              pointerEvents="none"
-            />
-            <polyline
-              points={polylineStr}
-              fill="none"
-              stroke="rgba(96,165,250,0.85)"
-              strokeWidth="0.55"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              pointerEvents="none"
-            />
-            {incomeXY.map((p) => {
-              const day = days.find((d) => d.date === p.date)!
-              const hasIncome = day.totalIncome > 0
-              const isHovered = hover === p.date
-              const isSelected = selectedDate === p.date
-              return (
-                <circle
-                  key={`dot-${p.date}`}
-                  cx={p.x}
-                  cy={p.y}
-                  r={hasIncome ? (isHovered || isSelected ? 1.2 : 0.8) : 0.3}
-                  fill={hasIncome ? 'rgba(96,165,250,0.9)' : 'rgba(96,165,250,0.2)'}
-                  stroke={hasIncome ? 'white' : 'none'}
-                  strokeWidth="0.25"
-                  pointerEvents="none"
-                />
-              )
-            })}
-          </>
-        )}
-
-        {/* ── Invisible interaction layer (topmost, captures all events) ── */}
-        {days.map((day, i) => (
-          <rect
-            key={`hit-${day.date}`}
-            x={cx(i) - colW / 2}
-            y="0"
-            width={colW}
-            height={CHART_H}
-            fill="transparent"
-            onMouseEnter={() => setHover(day.date)}
-            onClick={() => toggleDate(day.date)}
-            style={{ cursor: 'pointer' }}
-          />
-        ))}
-      </svg>
-
-      {/* ── X-axis date labels ── */}
-      <div className="mt-1 flex px-0.5">
-        {days.map((day, i) => {
-          const isSelected = selectedDate === day.date
-          const visible = showLabel(i)
-          return (
-            <div key={day.date} className="flex flex-1 justify-center">
-              {visible ? (
-                <button
-                  type="button"
-                  onClick={() => toggleDate(day.date)}
-                  className={`truncate rounded-md px-1 py-0.5 text-[9px] transition ${
-                    isSelected
-                      ? 'bg-[color:var(--text-primary)] text-[color:var(--panel-bg)] font-medium'
-                      : day.isOverdraft
-                        ? 'text-accent-rose font-medium'
-                        : 'text-[color:var(--text-muted)] hover:text-[color:var(--text-secondary)]'
-                  }`}
-                  style={{ maxWidth: '36px' }}
-                >
-                  {day.date.slice(5)}
-                </button>
-              ) : (
-                <div style={{ height: '14px' }} />
-              )}
-            </div>
-          )
-        })}
+      {/* ECharts chart */}
+      <div style={{ height: '220px' }}>
+        <ReactEChartsCore
+          ref={chartRef}
+          echarts={echarts}
+          option={option}
+          style={{ height: '100%', width: '100%' }}
+          onEvents={{ click: onChartClick }}
+          notMerge
+          lazyUpdate
+        />
       </div>
 
-      {/* ── Legend ── */}
+      {/* Legend */}
       <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] text-[color:var(--text-muted)]">
         <span className="flex items-center gap-1"><span className="inline-block h-2 w-3 rounded-sm bg-emerald-300/50" />支出</span>
-        <span className="flex items-center gap-1"><span className="inline-block h-0.5 w-3 bg-blue-400/80" />收入</span>
         <span className="flex items-center gap-1"><span className="inline-block h-0 w-3 border-t border-dashed" style={{ borderColor: '#d4a017' }} />安全线</span>
         <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-rose-400/70" />透支</span>
       </div>
 
-      {/* ── Tooltip (shows all data for active column) ── */}
-      {activeDate && (() => {
-        const day = days.find((d) => d.date === activeDate)
-        if (!day) return null
-        return (
-          <div className="mt-2 rounded-xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-2.5 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-[color:var(--text-primary)]">{day.date}</span>
-              {day.isOverdraft
-                ? <span className="rounded-md bg-rose-400/15 px-1.5 py-0.5 text-[10px] font-medium text-accent-rose">透支</span>
-                : <span className="rounded-md bg-emerald-400/15 px-1.5 py-0.5 text-[10px] font-medium text-accent-green">正常</span>
-              }
-            </div>
-            <div className="mt-1.5 grid grid-cols-3 gap-2">
-              <div>
-                <div className="text-[10px] text-[color:var(--text-muted)]">收入</div>
-                <div className="font-medium text-blue-400">{formatMoney(day.totalIncome)}</div>
-              </div>
-              <div>
-                <div className="text-[10px] text-[color:var(--text-muted)]">支出</div>
-                <div className={day.isOverdraft ? 'font-medium text-accent-rose' : 'font-medium text-[color:var(--text-primary)]'}>{formatMoney(day.totalExpense)}</div>
-              </div>
-              <div>
-                <div className="text-[10px] text-[color:var(--text-muted)]">安全线</div>
-                <div className="font-medium text-[color:var(--text-secondary)]">{formatMoney(day.safeLine)}</div>
-              </div>
-            </div>
-          </div>
-        )
-      })()}
-
-      {/* ── Day detail slice ── */}
+      {/* Day detail slice (on click) */}
       {selectedDate && selectedDay ? (
         <div className="mt-3 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
           <div className="mb-2 flex items-center justify-between">
