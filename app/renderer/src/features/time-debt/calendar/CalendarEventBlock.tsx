@@ -43,7 +43,7 @@ export function CalendarEventBlock({
   const showTimeRange = block.height >= 34
   const showStatus = block.height >= 58
   const canDrag = block.status !== 'active' && !block.isDailySegment
-  const canResize = block.status !== 'active' && !block.isDailySegment
+  const canResize = block.status !== 'active' && !block.isDailySegment && block.height > RESIZE_HIT_AREA_PX * 2
   const isDragging = dragPreview?.blockId === block.id
   const isResizing = resizePreview?.blockId === block.id
 

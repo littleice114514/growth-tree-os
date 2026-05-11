@@ -7,8 +7,8 @@
 - Module: Time Debt Calendar
 - Device role: Mac UI / page experience / frontend interaction
 - Last stable base commit before resize round: `a3192fe`
-- Latest local UI commit: `e4ebcff`
-- Push status: pending; Mac currently lacks GitHub CLI and HTTPS push credentials are not configured
+- Latest verified base before M13 seal: `8d941ce`
+- Push status: this M13 seal round should be committed and pushed from the active Codex device after validation
 
 ## 2. Entry Points
 
@@ -84,7 +84,12 @@
 - 2026-05-10 timezone entry MVP: `CalendarViewShell.tsx` adds a toolbar timezone selector with system timezone, GMT+8, GMT-7 Los Angeles, GMT-4 New York, and GMT+1 London options.
 - Timezone status: selector is UI-only state for this round; it changes the displayed button label only and does not recalculate logs, plans, timers, drag/resize math, reminders, storage, or historical time interpretation.
 - Validation target for this UI polish round: run `pnpm typecheck`, `pnpm build`, optional `pnpm smoke`, and real Electron UI smoke for axis labels, empty state, timezone menu, view switching, and timer start/finish.
-- Next unique entry: after Mac pulls this branch, complete a real Electron UI smoke pass; if timezone work continues, decide first whether real timezone conversion belongs in a Time Debt data-layer design pass.
+- 2026-05-11 M13 real Electron UI smoke: Time Debt page, calendar page, day/week/month switching, hidden top `12 AM`, header-level empty state, timezone menu open/select, timer start, timer finish, generated log display, log detail open, and timezone UI-only non-interference were verified in the real Electron window.
+- 2026-05-11 M13 minimal fix: short visual calendar blocks no longer expose resize hit zones when the rendered block is too small, preventing a normal click from being treated as a resize and writing the 15-minute visual minimum back into the real log.
+- 2026-05-11 short-task verification: a post-fix 2-minute timer log displayed as a minimum-height calendar block, opened in detail on click, and preserved real start/end plus `实际时长 2 分钟`; timezone selection to `GMT-7 Los Angeles` did not alter the record or detail values.
+- Validation: `pnpm typecheck` and `pnpm smoke` passed before the UI smoke; after the short-block click fix, `pnpm typecheck` and `pnpm smoke` passed again.
+- M13 seal judgment: Time Debt M13 is sealable after this commit/push. Timezone remains UI-only MVP by design; real timezone conversion should be a later data-layer design pass if needed.
+- Next unique entry: after pulling this M13 seal commit, start either Wealth P1 or develop integration; do not continue Time Debt timezone conversion without a separate data-layer task card.
 
 ## 8. Backlog Only
 
@@ -93,7 +98,7 @@
 
 ## 9. Next Token-Saving Rule
 
-- Next round should first read only this file and `docs/handoff/MAC_NEXT_ACTION.md`.
+- Next round should first read only this file and `docs/handoff/MAC_NEXT_ACTION.md` if present.
 - Then read at most 8 related code files.
 - Do not read full dev logs unless the current bug cannot be located from this index.
-- Next unique entry: run Mac-side UI smoke for Time Debt active timer start/finish, short task detail, cross-day read-only segment detail, and dense overlap selection after pulling the latest pushed commit.
+- Next unique entry: choose Wealth P1 or develop integration after pulling the M13 seal commit; Time Debt M13 does not need another UI smoke pass unless the receiving device sees a regression.
