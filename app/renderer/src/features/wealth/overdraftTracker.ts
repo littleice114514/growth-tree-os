@@ -140,6 +140,16 @@ function buildDailyExpenseMap(records: WealthRecord[]): Map<string, number> {
   return map
 }
 
+function buildDailyIncomeMap(records: WealthRecord[]): Map<string, number> {
+  const incomeTypes = new Set(['real_income', 'passive_income', 'system_income', 'stable_finance'])
+  const map = new Map<string, number>()
+  for (const record of records) {
+    if (!incomeTypes.has(record.type)) continue
+    map.set(record.date, (map.get(record.date) ?? 0) + record.amount)
+  }
+  return map
+}
+
 function sortedUniqueDates(expenseByDate: Map<string, number>, today: string): string[] {
   const dates = new Set<string>(expenseByDate.keys())
   dates.add(today)
@@ -149,9 +159,11 @@ function sortedUniqueDates(expenseByDate: Map<string, number>, today: string): s
 export type TrendDay = {
   date: string
   totalExpense: number
+  totalIncome: number
   safeLine: number
   isOverdraft: boolean
   expenseRatio: number
+  incomeRatio: number
 }
 
 export type CashflowTrend = {
@@ -170,20 +182,24 @@ export function calculateCashflowTrend(
   const { startDate, endDate } = { startDate: shiftDate(today, -daysBack), endDate: today }
   const filtered = records.filter((r) => r.date >= startDate && r.date <= endDate)
   const expenseByDate = buildDailyExpenseMap(filtered)
+  const incomeByDate = buildDailyIncomeMap(filtered)
   const dates = buildDateRange(startDate, endDate)
-  const maxExpense = Math.max(
+  const maxValue = Math.max(
     dailySafeLine,
-    ...dates.map((d) => expenseByDate.get(d) ?? 0)
+    ...dates.map((d) => Math.max(expenseByDate.get(d) ?? 0, incomeByDate.get(d) ?? 0))
   )
 
   const days: TrendDay[] = dates.map((date) => {
     const totalExpense = expenseByDate.get(date) ?? 0
+    const totalIncome = incomeByDate.get(date) ?? 0
     return {
       date,
       totalExpense,
+      totalIncome,
       safeLine: dailySafeLine,
       isOverdraft: totalExpense > dailySafeLine,
-      expenseRatio: maxExpense > 0 ? totalExpense / maxExpense : 0
+      expenseRatio: maxValue > 0 ? totalExpense / maxValue : 0,
+      incomeRatio: maxValue > 0 ? totalIncome / maxValue : 0
     }
   })
 

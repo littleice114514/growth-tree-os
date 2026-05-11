@@ -69,11 +69,22 @@
   - 切换事件类型时，分类字段不自动清空，保留用户已输入内容。
   - 不改 IPC、不改全局 store、不改数据库、不改 DashboardPreview、不改 Time Debt。
   - `pnpm typecheck` / `pnpm build` / `pnpm smoke` 均通过。
+- **现金流趋势图 V2 完成**：从 CSS 条形图升级为 SVG 组合图（柱状支出 + 折线收入 + 安全线 + 日记录联动）。
+  - `overdraftTracker.ts`：`TrendDay` 新增 `totalIncome`/`incomeRatio`，`calculateCashflowTrend` 同时计算收入数据。
+  - `overdraftTracker.ts`：新增 `buildDailyIncomeMap`，收入类型包括现实/睡后/系统/稳定理财。
+  - 新建 `CashflowComboChart.tsx`：SVG 组合图组件，柱状图=支出，折线图=收入，虚线=安全线。
+  - 透支日日期标签红色边框标注，hover 柱状图显示支出数据，hover 折线点显示收入数据（折线点优先级更高）。
+  - 点击某一天下方显示「日记录切片」：当日收入/支出/状态 + 该日全部财富记录列表。
+  - 零数据时显示半透明占位 + "等待数据"引导。
+  - `CashflowTrendPanel` 改为接收 `records` prop，透传至 `CashflowComboChart`。
+  - 不改 IPC、不改全局 store、不改数据库、不改 Time Debt。
+  - `pnpm typecheck` / `pnpm build` / `pnpm smoke` 均通过。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/wealth/wealthCategoryOptions.ts`（新增：8 个事件类型 → 分类预设映射表）
-- `app/renderer/src/features/wealth/WealthDashboard.tsx`（新增 CategoryPresetChips 组件，renderTypeFields 每个类型接入分类 chip）
+- `app/renderer/src/features/wealth/CashflowComboChart.tsx`（新增：SVG 组合图组件，柱状+折线+安全线+日记录切片）
+- `app/renderer/src/features/wealth/overdraftTracker.ts`（TrendDay 加 totalIncome/incomeRatio，新增 buildDailyIncomeMap）
+- `app/renderer/src/features/wealth/WealthDashboard.tsx`（CashflowTrendPanel 替换为组合图，传入 records）
 - `app/renderer/src/features/wealth/overdraftTracker.ts`（上轮新增 P3 函数）
 - `app/renderer/src/features/wealth/wealthConfigStorage.ts`（上轮新建）
 - `app/renderer/src/features/dashboard-preview/WealthDashboardPreview.tsx`（上轮：接收真实数据 props）
@@ -101,8 +112,10 @@
 4. ~~**Wealth UI-IA 重构**：收敛页面入口 + 接入 P1/P2/P3 到主视图。~~ **已完成。**
 5. ~~**Wealth UI Polish**：空状态承接 + Preview 收敛 + 零数据趋势优化。~~ **已完成。**
 6. ~~**Wealth 分类项目 MVP**：分类字段从手填升级为可复用预设选择。~~ **已完成。**
-7. **Wealth 分类项目持久化设计**：保存用户自定义分类到 localStorage（下一轮建议）。
-8. **Wealth 真实体验验收**：在 Electron 中实际操作，确认首屏体验后再推进新功能。
+7. ~~**Wealth 现金流趋势图 V2**：柱状支出 + 折线收入 + 安全线 + 日记录联动。~~ **已完成。**
+8. **Wealth 日记录切片交互优化**：记录明细呈现优化（下一轮建议）。
+9. **Wealth 分类项目持久化设计**：保存用户自定义分类到 localStorage。
+10. **Wealth 真实体验验收**：在 Electron 中实际操作，确认首屏体验后再推进新功能。
 
 ## 7. 手动验收方式
 

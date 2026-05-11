@@ -21,6 +21,7 @@ import {
 } from './wealthConfigStorage'
 import { calculateOverdraftStreak, calculatePeriodOverdraftStreak, calculateCashflowTrend, periodLabels, type OverdraftStreak, type PeriodKey, type CashflowTrend } from './overdraftTracker'
 import { categoryPresets } from './wealthCategoryOptions'
+import { CashflowComboChart } from './CashflowComboChart'
 import { WealthDashboardPreview } from '@/features/dashboard-preview'
 
 type WealthTab = 'overview' | 'records' | 'config'
@@ -195,6 +196,7 @@ export function WealthDashboard() {
           <OverviewTab
             snapshot={snapshot}
             summary={summary}
+            records={records}
             recentRecords={recentRecords}
             overdraftStreak={overdraftStreak}
             selectedPeriod={selectedPeriod}
@@ -238,6 +240,7 @@ export function WealthDashboard() {
 function OverviewTab({
   snapshot,
   summary,
+  records,
   recentRecords,
   overdraftStreak,
   selectedPeriod,
@@ -250,6 +253,7 @@ function OverviewTab({
 }: {
   snapshot: DailyWealthSnapshot
   summary: ReturnType<typeof summarizeWealthRecords>
+  records: WealthRecord[]
   recentRecords: WealthRecord[]
   overdraftStreak: OverdraftStreak
   selectedPeriod: PeriodKey
@@ -265,8 +269,8 @@ function OverviewTab({
       {/* A. Hero: Vitals Card */}
       <VitalsHero snapshot={snapshot} summary={summary} overdraftStreak={overdraftStreak} />
 
-      {/* B. Cashflow Trend (P3) */}
-      <CashflowTrendPanel cashflowTrend={cashflowTrend} trendPeriod={trendPeriod} onTrendPeriodChange={onTrendPeriodChange} />
+      {/* B. Cashflow Trend V2 (combo chart) */}
+      <CashflowTrendPanel cashflowTrend={cashflowTrend} trendPeriod={trendPeriod} onTrendPeriodChange={onTrendPeriodChange} records={records} />
 
       {/* C. Period Slicer (P2) */}
       <PeriodSlicePanel
@@ -366,18 +370,20 @@ function HeroMetric({ label, value, className }: { label: string; value: string;
 function CashflowTrendPanel({
   cashflowTrend,
   trendPeriod,
-  onTrendPeriodChange
+  onTrendPeriodChange,
+  records
 }: {
   cashflowTrend: CashflowTrend
   trendPeriod: 'last7' | 'last30'
   onTrendPeriodChange: (period: 'last7' | 'last30') => void
+  records: WealthRecord[]
 }) {
   return (
     <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Cashflow</div>
-          <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">现金流质量趋势</h3>
+          <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">现金流趋势</h3>
         </div>
         <div className="flex gap-2">
           {(['last7', 'last30'] as const).map((period) => (
@@ -397,53 +403,8 @@ function CashflowTrendPanel({
         </div>
       </div>
 
-      {/* Bar chart */}
       <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-4">
-        {cashflowTrend.days.every((d) => d.totalExpense === 0) ? (
-          <div className="flex flex-col items-center justify-center py-6" style={{ minHeight: '100px' }}>
-            <div className="flex items-end gap-[3px] opacity-30" style={{ height: '60px' }}>
-              {cashflowTrend.days.map((day) => (
-                <div key={day.date} className="flex flex-1 flex-col items-center">
-                  <div className="relative flex w-full flex-1 items-end justify-center">
-                    <div className="w-full max-w-[20px] rounded-t-sm bg-slate-400/40" style={{ height: '8%' }} />
-                  </div>
-                  <div className="mt-1 truncate text-[8px] text-[color:var(--text-muted)]" style={{ maxWidth: '28px' }}>
-                    {day.date.slice(5)}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 text-center">
-              <div className="text-xs font-medium text-[color:var(--text-secondary)]">等待数据</div>
-              <p className="mt-1 text-[10px] text-[color:var(--text-muted)]">新增支出记录后，趋势图将自动更新。</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-end gap-[3px]" style={{ height: '100px' }}>
-              {cashflowTrend.days.map((day) => {
-                const heightPercent = Math.max(2, day.expenseRatio * 100)
-                return (
-                  <div key={day.date} className="group relative flex flex-1 flex-col items-center" title={`${day.date}: ${formatMoney(day.totalExpense)} / ${formatMoney(day.safeLine)}`}>
-                    <div className="relative flex w-full flex-1 items-end justify-center">
-                      <div
-                        className={`w-full max-w-[20px] rounded-t-sm ${day.isOverdraft ? 'bg-rose-400/70' : 'bg-emerald-400/60'}`}
-                        style={{ height: `${heightPercent}%` }}
-                      />
-                    </div>
-                    <div className="mt-1 truncate text-[8px] text-[color:var(--text-muted)]" style={{ maxWidth: '28px' }}>
-                      {day.date.slice(5)}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            <div className="mt-2 flex items-center gap-4 text-[10px] text-[color:var(--text-muted)]">
-              <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-emerald-400/60" />正常</span>
-              <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-rose-400/70" />透支</span>
-            </div>
-          </>
-        )}
+        <CashflowComboChart trend={cashflowTrend} records={records} safeLine={cashflowTrend.days[0]?.safeLine ?? 0} />
       </div>
 
       <div className="mt-3 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
