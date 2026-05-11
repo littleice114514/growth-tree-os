@@ -5,7 +5,8 @@ import { BarChart, LineChart } from 'echarts/charts'
 import {
   GridComponent,
   TooltipComponent,
-  LegendComponent
+  LegendComponent,
+  MarkLineComponent
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import type { WealthRecord } from '@shared/wealth'
@@ -18,6 +19,7 @@ echarts.use([
   GridComponent,
   TooltipComponent,
   LegendComponent,
+  MarkLineComponent,
   CanvasRenderer
 ])
 
@@ -56,7 +58,7 @@ export function CashflowComboChart({
 
   const dates = useMemo(() => days.map((d) => d.date.slice(5)), [days]) // MM-DD for X axis
   const expenseData = useMemo(() => days.map((d) => d.totalExpense), [days])
-  const safeLineData = useMemo(() => days.map(() => safeLine), [days, safeLine])
+  const incomeData = useMemo(() => days.map((d) => d.totalIncome), [days])
 
   // Color each bar: green normal, rose overdraft
   const barColors = useMemo(
@@ -97,7 +99,7 @@ export function CashflowComboChart({
           fontSize: 11,
           color: 'rgba(148,163,184,0.8)'
         },
-        data: ['支出', '每日安全线']
+        data: ['支出', '收入', '安全线']
       },
       tooltip: {
         trigger: 'axis',
@@ -162,26 +164,43 @@ export function CashflowComboChart({
             value: val,
             itemStyle: { color: barColors[i], borderRadius: [3, 3, 0, 0] }
           })),
-          barWidth: period === 'last30' ? '45%' : '50%'
+          barWidth: period === 'last30' ? '45%' : '50%',
+          markLine: {
+            silent: true,
+            symbol: 'none',
+            lineStyle: {
+              color: '#f59e0b',
+              type: 'dashed',
+              width: 1.5,
+              opacity: 0.7
+            },
+            data: [{ yAxis: safeLine, name: '安全线' }],
+            label: {
+              position: 'end',
+              formatter: `安全线 ¥${safeLine}`,
+              fontSize: 10,
+              color: '#f59e0b'
+            }
+          }
         },
         {
-          name: '每日安全线',
+          name: '收入',
           type: 'line',
-          data: safeLineData,
+          data: incomeData,
           symbol: 'circle',
           symbolSize: 6,
           lineStyle: {
-            color: '#34d399',
+            color: '#60a5fa',
             width: 2
           },
           itemStyle: {
-            color: '#34d399'
+            color: '#60a5fa'
           },
           emphasis: {
             itemStyle: {
               borderWidth: 2,
               shadowBlur: 6,
-              shadowColor: 'rgba(52,211,153,0.4)'
+              shadowColor: 'rgba(96,165,250,0.4)'
             },
             scale: 1.8
           },
@@ -189,7 +208,7 @@ export function CashflowComboChart({
         }
       ]
     }
-  }, [days, dates, expenseData, safeLineData, barColors, safeLine, period, selectedDate, dayCount])
+  }, [days, dates, expenseData, incomeData, barColors, safeLine, period, selectedDate, dayCount])
 
   // All zero state
   const allZero = days.every((d) => d.totalExpense === 0 && d.totalIncome === 0)
@@ -233,7 +252,8 @@ export function CashflowComboChart({
       {/* Legend */}
       <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] text-[color:var(--text-muted)]">
         <span className="flex items-center gap-1"><span className="inline-block h-2 w-3 rounded-sm bg-emerald-300/50" />支出</span>
-        <span className="flex items-center gap-1"><span className="inline-block h-0.5 w-3 rounded-full" style={{ backgroundColor: '#34d399' }} />安全线</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-0.5 w-3 rounded-full" style={{ backgroundColor: '#60a5fa' }} />收入</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-0 w-3 border-t border-dashed" style={{ borderColor: '#f59e0b' }} />安全线</span>
         <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-rose-400/70" />透支</span>
       </div>
 
