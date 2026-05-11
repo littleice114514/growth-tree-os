@@ -60,10 +60,20 @@
   - P3 零数据趋势图：当所有天支出为 0 时，显示半透明占位条 + "等待数据" 状态 + 引导文案；有数据时正常渲染。
   - 不改 IPC、不改全局 store、不改数据库、不改底层数据逻辑。
   - `pnpm typecheck` / `pnpm build` / `pnpm smoke` 均通过。
+- **分类项目 MVP 完成**：财富记录分类字段从手填升级为可复用预设选择。
+  - 新增 `wealthCategoryOptions.ts`，维护 8 个财富事件类型对应的默认分类预设。
+  - 每种类型映射到具体的分类字段（source / category / title / assetName）。
+  - `renderTypeFields` 中每个类型的分类字段下方新增 `CategoryPresetChips` 组件。
+  - Chip 样式：小型 pill button，选中高亮，未选中灰色，hover 提亮。
+  - 用户仍可手动输入自定义分类，chip 只是快捷填充。
+  - 切换事件类型时，分类字段不自动清空，保留用户已输入内容。
+  - 不改 IPC、不改全局 store、不改数据库、不改 DashboardPreview、不改 Time Debt。
+  - `pnpm typecheck` / `pnpm build` / `pnpm smoke` 均通过。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/wealth/WealthDashboard.tsx`（UI Polish：RecordsEmptyGuide 空状态引导、CollapsiblePreviewPanel 折叠预览、零数据趋势占位态）
+- `app/renderer/src/features/wealth/wealthCategoryOptions.ts`（新增：8 个事件类型 → 分类预设映射表）
+- `app/renderer/src/features/wealth/WealthDashboard.tsx`（新增 CategoryPresetChips 组件，renderTypeFields 每个类型接入分类 chip）
 - `app/renderer/src/features/wealth/overdraftTracker.ts`（上轮新增 P3 函数）
 - `app/renderer/src/features/wealth/wealthConfigStorage.ts`（上轮新建）
 - `app/renderer/src/features/dashboard-preview/WealthDashboardPreview.tsx`（上轮：接收真实数据 props）
@@ -90,7 +100,9 @@
 3. ~~**Wealth P3**：趋势图 / 现金流质量历史。~~ **已完成。**
 4. ~~**Wealth UI-IA 重构**：收敛页面入口 + 接入 P1/P2/P3 到主视图。~~ **已完成。**
 5. ~~**Wealth UI Polish**：空状态承接 + Preview 收敛 + 零数据趋势优化。~~ **已完成。**
-6. **Wealth 真实体验验收**：在 Electron 中实际操作，确认首屏体验后再推进新功能。
+6. ~~**Wealth 分类项目 MVP**：分类字段从手填升级为可复用预设选择。~~ **已完成。**
+7. **Wealth 分类项目持久化设计**：保存用户自定义分类到 localStorage（下一轮建议）。
+8. **Wealth 真实体验验收**：在 Electron 中实际操作，确认首屏体验后再推进新功能。
 
 ## 7. 手动验收方式
 

@@ -20,6 +20,7 @@ import {
   wealthConfigStorageKey
 } from './wealthConfigStorage'
 import { calculateOverdraftStreak, calculatePeriodOverdraftStreak, calculateCashflowTrend, periodLabels, type OverdraftStreak, type PeriodKey, type CashflowTrend } from './overdraftTracker'
+import { categoryPresets } from './wealthCategoryOptions'
 import { WealthDashboardPreview } from '@/features/dashboard-preview'
 
 type WealthTab = 'overview' | 'records' | 'config'
@@ -765,11 +766,49 @@ function RecordDialog({
   )
 }
 
+function CategoryPresetChips({
+  type,
+  value,
+  onChange
+}: {
+  type: WealthRecordType
+  value: string
+  onChange: (value: string) => void
+}) {
+  const preset = categoryPresets[type]
+  if (!preset || preset.options.length === 0) return null
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {preset.options.map((option) => {
+        const isSelected = value === option
+        return (
+          <button
+            key={option}
+            type="button"
+            onClick={() => onChange(option)}
+            className={
+              isSelected
+                ? 'rounded-lg border border-[color:var(--node-selected-border)] bg-[var(--control-hover)] px-2.5 py-1 text-xs text-[color:var(--text-primary)]'
+                : 'rounded-lg border border-[color:var(--input-border)] bg-[var(--control-bg)] px-2.5 py-1 text-xs text-[color:var(--text-muted)] transition hover:bg-[var(--control-hover)] hover:text-[color:var(--text-primary)]'
+            }
+          >
+            {option}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function renderTypeFields(draft: RecordDraft, onChange: (patch: Partial<RecordDraft>) => void) {
   if (draft.type === 'real_income') {
     return (
       <>
-        <TextField label="来源" value={draft.source} onChange={(source) => onChange({ source })} />
+        <div>
+          <TextField label="来源" value={draft.source} onChange={(source) => onChange({ source })} />
+          <CategoryPresetChips type={draft.type} value={draft.source} onChange={(source) => onChange({ source })} />
+        </div>
         <TextField label="标题" value={draft.title} onChange={(title) => onChange({ title })} />
       </>
     )
@@ -777,7 +816,10 @@ function renderTypeFields(draft: RecordDraft, onChange: (patch: Partial<RecordDr
   if (draft.type === 'passive_income') {
     return (
       <>
-        <TextField label="来源" value={draft.source} onChange={(source) => onChange({ source })} />
+        <div>
+          <TextField label="来源" value={draft.source} onChange={(source) => onChange({ source })} />
+          <CategoryPresetChips type={draft.type} value={draft.source} onChange={(source) => onChange({ source })} />
+        </div>
         <TextField label="稳定度 0-10" value={draft.stabilityScore} onChange={(stabilityScore) => onChange({ stabilityScore })} type="number" />
         <TextField label="劳动依赖度 0-10" value={draft.laborDependencyScore} onChange={(laborDependencyScore) => onChange({ laborDependencyScore })} type="number" />
       </>
@@ -786,7 +828,10 @@ function renderTypeFields(draft: RecordDraft, onChange: (patch: Partial<RecordDr
   if (draft.type === 'system_income') {
     return (
       <>
-        <TextField label="来源" value={draft.source} onChange={(source) => onChange({ source })} />
+        <div>
+          <TextField label="来源" value={draft.source} onChange={(source) => onChange({ source })} />
+          <CategoryPresetChips type={draft.type} value={draft.source} onChange={(source) => onChange({ source })} />
+        </div>
         <SelectField label="系统类型" value={draft.systemType} onChange={(systemType) => onChange({ systemType: systemType as RecordDraft['systemType'] })} options={['content', 'software', 'automation', 'project', 'other']} />
       </>
     )
@@ -794,7 +839,10 @@ function renderTypeFields(draft: RecordDraft, onChange: (patch: Partial<RecordDr
   if (draft.type === 'stable_finance') {
     return (
       <>
-        <TextField label="来源" value={draft.source} onChange={(source) => onChange({ source })} />
+        <div>
+          <TextField label="来源" value={draft.source} onChange={(source) => onChange({ source })} />
+          <CategoryPresetChips type={draft.type} value={draft.source} onChange={(source) => onChange({ source })} />
+        </div>
         <SelectField label="理财类型" value={draft.financeType} onChange={(financeType) => onChange({ financeType: financeType as RecordDraft['financeType'] })} options={['interest', 'dividend', 'fund', 'crypto', 'stock', 'other']} />
       </>
     )
@@ -802,7 +850,10 @@ function renderTypeFields(draft: RecordDraft, onChange: (patch: Partial<RecordDr
   if (draft.type === 'real_expense') {
     return (
       <>
-        <TextField label="分类" value={draft.category} onChange={(category) => onChange({ category })} />
+        <div>
+          <TextField label="分类" value={draft.category} onChange={(category) => onChange({ category })} />
+          <CategoryPresetChips type={draft.type} value={draft.category} onChange={(category) => onChange({ category })} />
+        </div>
         <SelectField label="必要性" value={draft.necessity} onChange={(necessity) => onChange({ necessity: necessity as RecordDraft['necessity'] })} options={['necessary', 'optional']} />
       </>
     )
@@ -810,7 +861,10 @@ function renderTypeFields(draft: RecordDraft, onChange: (patch: Partial<RecordDr
   if (draft.type === 'ongoing_cost') {
     return (
       <>
-        <TextField label="持续项目名称" value={draft.title} onChange={(title) => onChange({ title })} />
+        <div>
+          <TextField label="持续项目名称" value={draft.title} onChange={(title) => onChange({ title })} />
+          <CategoryPresetChips type={draft.type} value={draft.title} onChange={(title) => onChange({ title })} />
+        </div>
         <SelectField label="周期" value={draft.cycle} onChange={(cycle) => onChange({ cycle: cycle as RecordDraft['cycle'] })} options={['daily', 'weekly', 'monthly', 'yearly']} />
         <TextField label="取消难度 0-10" value={draft.cancelDifficulty} onChange={(cancelDifficulty) => onChange({ cancelDifficulty })} type="number" />
         <CheckboxField label="刚性支出" checked={draft.isRigid} onChange={(isRigid) => onChange({ isRigid })} />
@@ -820,7 +874,10 @@ function renderTypeFields(draft: RecordDraft, onChange: (patch: Partial<RecordDr
   if (draft.type === 'experience_cost') {
     return (
       <>
-        <TextField label="分类" value={draft.category} onChange={(category) => onChange({ category })} />
+        <div>
+          <TextField label="分类" value={draft.category} onChange={(category) => onChange({ category })} />
+          <CategoryPresetChips type={draft.type} value={draft.category} onChange={(category) => onChange({ category })} />
+        </div>
         <TextField label="触发器" value={draft.trigger} onChange={(trigger) => onChange({ trigger })} />
         <CheckboxField label="失控 / 多巴胺泄漏" checked={draft.isDopamineLeak} onChange={(isDopamineLeak) => onChange({ isDopamineLeak })} />
       </>
@@ -829,7 +886,10 @@ function renderTypeFields(draft: RecordDraft, onChange: (patch: Partial<RecordDr
 
   return (
     <>
-      <TextField label="资产名称" value={draft.assetName} onChange={(assetName) => onChange({ assetName })} />
+      <div>
+        <TextField label="资产名称" value={draft.assetName} onChange={(assetName) => onChange({ assetName })} />
+        <CategoryPresetChips type={draft.type} value={draft.assetName} onChange={(assetName) => onChange({ assetName })} />
+      </div>
       <SelectField label="方向" value={draft.direction} onChange={(direction) => onChange({ direction: direction as RecordDraft['direction'] })} options={['increase', 'decrease']} />
       <SelectField label="资产类型" value={draft.assetType} onChange={(assetType) => onChange({ assetType: assetType as RecordDraft['assetType'] })} options={['cash', 'saving', 'investment', 'crypto', 'device', 'other']} />
     </>
