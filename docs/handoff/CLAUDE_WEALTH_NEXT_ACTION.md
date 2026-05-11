@@ -41,11 +41,24 @@
   - 条形高度按当日支出占最大值比例计算，hover 显示金额 tooltip。
   - 不改 IPC、不改全局 store、不改数据库、不改 DashboardPreview。
   - `pnpm typecheck` / `pnpm build` / `pnpm smoke` 均通过。
+- **UI-IA 重构完成**：收敛页面入口 + 接入 P1/P2/P3 到 Overview 主视图。
+  - Tab 从 5 个（Overview/Income/Expenses/Assets/Evaluation）收敛到 3 个（总览/记录/参数）。
+  - Overview 主视图重排为「财务生命体征监控器」布局：
+    - A. 顶部 Hero：状态标签 + 系统诊断 + 建议行动 + 连续透支/自由度/评分/未来钱 4 个关键指标
+    - B. 现金流质量趋势（P3）：近7天/30天切换 + CSS 条形图 + 趋势判断文案
+    - C. 周期透支明细（P2）：今天/昨天/近7天/近30天 + 连续透支天数 + 每日明细
+    - D. 最近财富记录：最近 5 条，提示完整列表在「记录」页
+    - E. Dashboard Preview
+  - 记录 Tab：全部财富记录列表
+  - 参数 Tab：基础配置 + 保存/恢复默认
+  - Income/Expenses/Assets/Evaluation 不再作为独立 Tab 平铺。
+  - 不改 IPC、不改全局 store、不改数据库、不改底层数据逻辑。
+  - `pnpm typecheck` / `pnpm build` / `pnpm smoke` 均通过。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/wealth/overdraftTracker.ts`（P3 新增：`calculateCashflowTrend`、`TrendDay`、`CashflowTrend`、`buildTrendSummary`）
-- `app/renderer/src/features/wealth/WealthDashboard.tsx`（P3 新增：`trendPeriod` 状态、现金流质量趋势面板、CSS 条形图、趋势判断文案）
+- `app/renderer/src/features/wealth/WealthDashboard.tsx`（UI-IA 重构：Tab 收敛到总览/记录/参数，Overview 重排为财务生命体征监控器布局，移除 Income/Expenses/Assets/Evaluation 独立 Tab）
+- `app/renderer/src/features/wealth/overdraftTracker.ts`（上轮新增 P3 函数）
 - `app/renderer/src/features/wealth/wealthConfigStorage.ts`（上轮新建）
 - `app/renderer/src/features/dashboard-preview/WealthDashboardPreview.tsx`（上轮：接收真实数据 props）
 
@@ -69,7 +82,8 @@
 1. ~~**Wealth P1**：连续透支天数自动追踪。~~ **已完成。**
 2. ~~**Wealth P2**：日期切换（查看历史快照）。~~ **已完成。**
 3. ~~**Wealth P3**：趋势图 / 现金流质量历史。~~ **已完成。**
-4. **Wealth P4**：记录编辑 / emergency_cost 记录类型（待定）。
+4. ~~**Wealth UI-IA 重构**：收敛页面入口 + 接入 P1/P2/P3 到主视图。~~ **已完成。**
+5. **Wealth UI smoke / 真实体验验收**：建议先在 Electron 中实际操作，确认首屏体验后再推进新功能。
 
 ## 7. 手动验收方式
 

@@ -22,7 +22,7 @@ import {
 import { calculateOverdraftStreak, calculatePeriodOverdraftStreak, calculateCashflowTrend, periodLabels, type OverdraftStreak, type PeriodKey, type CashflowTrend } from './overdraftTracker'
 import { WealthDashboardPreview } from '@/features/dashboard-preview'
 
-type WealthView = 'overview' | 'income' | 'expenses' | 'assets' | 'evaluation'
+type WealthTab = 'overview' | 'records' | 'config'
 type RecordDraft = {
   date: string
   type: WealthRecordType
@@ -48,12 +48,10 @@ type RecordDraft = {
 
 const today = new Date().toISOString().slice(0, 10)
 
-const viewLabels: Record<WealthView, string> = {
-  overview: 'Overview',
-  income: 'Income',
-  expenses: 'Expenses',
-  assets: 'Assets',
-  evaluation: 'Evaluation'
+const tabLabels: Record<WealthTab, string> = {
+  overview: '总览',
+  records: '记录',
+  config: '参数'
 }
 
 const recordTypes: WealthRecordType[] = [
@@ -67,9 +65,6 @@ const recordTypes: WealthRecordType[] = [
   'asset_change'
 ]
 
-const incomeTypes: WealthRecordType[] = ['real_income', 'passive_income', 'system_income', 'stable_finance']
-const expenseTypes: WealthRecordType[] = ['real_expense', 'ongoing_cost', 'experience_cost']
-
 const statusTone: Record<WealthStatus, string> = {
   growth: 'border-emerald-400/25 bg-emerald-400/10 text-accent-green',
   balanced: 'border-cyan-400/25 bg-cyan-400/10 text-accent-cyan',
@@ -78,11 +73,19 @@ const statusTone: Record<WealthStatus, string> = {
   system_risk: 'border-rose-400/30 bg-rose-500/15 text-accent-rose'
 }
 
+const statusIcon: Record<WealthStatus, string> = {
+  growth: '▲',
+  balanced: '●',
+  light_overdraft: '△',
+  future_money_burning: '▽',
+  system_risk: '✕'
+}
+
 export function WealthDashboard() {
   const [records, setRecords] = useState<WealthRecord[]>(() => loadWealthRecords())
   const [baseConfig, setBaseConfig] = useState<WealthBaseConfig>(() => loadWealthBaseConfig())
-  const [currentView, setCurrentView] = useState<WealthView>('overview')
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>('today')
+  const [currentTab, setCurrentTab] = useState<WealthTab>('overview')
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>('last7')
   const [trendPeriod, setTrendPeriod] = useState<'last7' | 'last30'>('last7')
   const [isRecorderOpen, setIsRecorderOpen] = useState(false)
   const [draft, setDraft] = useState<RecordDraft>(() => createDraft())
@@ -109,7 +112,7 @@ export function WealthDashboard() {
     () => calculateDailyWealthSnapshot(buildDailyWealthInputFromRecords(records, configForCalc)),
     [records, configForCalc]
   )
-  const recentRecords = records.slice(0, 8)
+  const recentRecords = records.slice(0, 5)
 
   const handleSaveConfig = () => {
     saveWealthBaseConfig(baseConfig)
@@ -153,72 +156,68 @@ export function WealthDashboard() {
   return (
     <main className="min-h-0 flex-1 overflow-auto rounded-[22px] border border-[color:var(--panel-border)] bg-[var(--panel-bg)] p-5 text-[color:var(--text-primary)] shadow-panel backdrop-blur-2xl">
       <div className="mx-auto flex max-w-[1500px] flex-col gap-5">
+        {/* Header */}
         <header className="flex flex-wrap items-end justify-between gap-4 border-b border-[color:var(--panel-border)] pb-5">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--text-muted)]">Wealth Dashboard</div>
-            <h2 className="mt-2 text-2xl font-semibold text-[color:var(--text-primary)]">个人财富操作系统</h2>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-[color:var(--text-secondary)]">
-              以财富事件、持续流血、睡后收入和自由度净变化为核心，不把记录降级成普通记账。
-            </p>
+            <div className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--text-muted)]">Wealth</div>
+            <h2 className="mt-2 text-2xl font-semibold text-[color:var(--text-primary)]">财务生命体征</h2>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className={`rounded-2xl border px-4 py-3 ${statusTone[snapshot.status]}`}>
-              <div className="text-xs uppercase tracking-[0.18em] opacity-75">今日状态</div>
-              <div className="mt-1 text-xl font-semibold">{wealthStatusLabels[snapshot.status]}</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsRecorderOpen(true)}
-              className="rounded-2xl bg-[var(--button-bg)] px-5 py-3 text-sm font-semibold text-[color:var(--button-text)] transition hover:bg-[var(--button-hover)]"
-            >
-              新增财富记录
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsRecorderOpen(true)}
+            className="rounded-2xl bg-[var(--button-bg)] px-5 py-3 text-sm font-semibold text-[color:var(--button-text)] transition hover:bg-[var(--button-hover)]"
+          >
+            新增财富记录
+          </button>
         </header>
 
+        {/* Tab navigation */}
         <nav className="flex flex-wrap gap-2">
-          {(Object.keys(viewLabels) as WealthView[]).map((view) => (
+          {(Object.keys(tabLabels) as WealthTab[]).map((tab) => (
             <button
-              key={view}
+              key={tab}
               type="button"
-              onClick={() => setCurrentView(view)}
+              onClick={() => setCurrentTab(tab)}
               className={
-                currentView === view
+                currentTab === tab
                   ? 'rounded-xl border border-[color:var(--node-selected-border)] bg-[var(--control-hover)] px-3 py-2 text-sm text-[color:var(--text-primary)] shadow-[var(--shadow-node-neighbor)]'
                   : 'rounded-xl border border-[color:var(--input-border)] bg-[var(--control-bg)] px-3 py-2 text-sm text-[color:var(--text-secondary)] transition hover:bg-[var(--control-hover)] hover:text-[color:var(--text-primary)]'
               }
             >
-              {viewLabels[view]}
+              {tabLabels[tab]}
             </button>
           ))}
         </nav>
 
-        {currentView === 'overview' ? (
-          <>
-            <WealthDashboardPreview snapshot={snapshot} summary={summary} />
-            <OverviewView
-              snapshot={snapshot}
-              summary={summary}
-              recentRecords={recentRecords}
-              baseConfig={baseConfig}
-              overdraftStreak={overdraftStreak}
-              selectedPeriod={selectedPeriod}
-              periodStreak={periodStreak}
-              cashflowTrend={cashflowTrend}
-              trendPeriod={trendPeriod}
-              onPeriodChange={setSelectedPeriod}
-              onTrendPeriodChange={setTrendPeriod}
-              onConfigChange={(patch) => setBaseConfig((current) => ({ ...current, ...patch }))}
-              onSaveConfig={handleSaveConfig}
-              onResetConfig={handleResetConfig}
-              onDelete={removeRecord}
-            />
-          </>
+        {/* Tab content */}
+        {currentTab === 'overview' ? (
+          <OverviewTab
+            snapshot={snapshot}
+            summary={summary}
+            recentRecords={recentRecords}
+            overdraftStreak={overdraftStreak}
+            selectedPeriod={selectedPeriod}
+            periodStreak={periodStreak}
+            cashflowTrend={cashflowTrend}
+            trendPeriod={trendPeriod}
+            onPeriodChange={setSelectedPeriod}
+            onTrendPeriodChange={setTrendPeriod}
+            onDelete={removeRecord}
+          />
         ) : null}
-        {currentView === 'income' ? <IncomeView records={records} /> : null}
-        {currentView === 'expenses' ? <ExpensesView records={records} monthlyPressure={summary.monthlyOngoingPressure} /> : null}
-        {currentView === 'assets' ? <AssetsView records={records} assetBuckets={summary.assetBuckets} /> : null}
-        {currentView === 'evaluation' ? <EvaluationView snapshot={snapshot} summary={summary} /> : null}
+
+        {currentTab === 'records' ? (
+          <RecordsTab records={records} onDelete={removeRecord} />
+        ) : null}
+
+        {currentTab === 'config' ? (
+          <ConfigTab
+            baseConfig={baseConfig}
+            onConfigChange={(patch) => setBaseConfig((current) => ({ ...current, ...patch }))}
+            onSaveConfig={handleSaveConfig}
+            onResetConfig={handleResetConfig}
+          />
+        ) : null}
       </div>
 
       {isRecorderOpen ? (
@@ -233,11 +232,12 @@ export function WealthDashboard() {
   )
 }
 
-function OverviewView({
+/* ── Overview Tab ── */
+
+function OverviewTab({
   snapshot,
   summary,
   recentRecords,
-  baseConfig,
   overdraftStreak,
   selectedPeriod,
   periodStreak,
@@ -245,15 +245,11 @@ function OverviewView({
   trendPeriod,
   onPeriodChange,
   onTrendPeriodChange,
-  onConfigChange,
-  onSaveConfig,
-  onResetConfig,
   onDelete
 }: {
   snapshot: DailyWealthSnapshot
   summary: ReturnType<typeof summarizeWealthRecords>
   recentRecords: WealthRecord[]
-  baseConfig: WealthBaseConfig
   overdraftStreak: OverdraftStreak
   selectedPeriod: PeriodKey
   periodStreak: OverdraftStreak
@@ -261,167 +257,128 @@ function OverviewView({
   trendPeriod: 'last7' | 'last30'
   onPeriodChange: (period: PeriodKey) => void
   onTrendPeriodChange: (period: 'last7' | 'last30') => void
-  onConfigChange: (patch: Partial<WealthBaseConfig>) => void
-  onSaveConfig: () => void
-  onResetConfig: () => void
   onDelete: (recordId: string) => void
 }) {
   return (
-    <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-      <Panel title="今日财富状态卡" eyebrow={snapshot.date}>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="今日收入" value={formatMoney(summary.totalIncome)} />
-          <Metric label="今日支出" value={formatMoney(summary.totalExpense)} />
-          <Metric label="自由度净变化" value={formatMoney(summary.freedomDelta)} tone={summary.freedomDelta >= 0 ? 'good' : 'bad'} />
-          <Metric label="财富评分" value={`${snapshot.wealthScore}`} tone={snapshot.wealthScore >= 70 ? 'good' : 'warn'} />
-          <Metric label="账户变化" value={formatMoney(snapshot.accountDelta)} tone={snapshot.accountDelta >= 0 ? 'good' : 'bad'} />
-          <Metric label="可投资结余" value={formatMoney(snapshot.investableSurplus)} tone="good" />
-          <Metric label="未来钱消耗" value={formatMoney(snapshot.futureMoneyUsed)} tone={snapshot.futureMoneyUsed > 0 ? 'bad' : 'good'} />
-          <Metric label="支撑覆盖率" value={formatPercent(snapshot.supportCoverage)} />
-        </div>
-        <div className="mt-5 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-4">
-          <div className="text-xs uppercase tracking-[0.18em] text-[color:var(--text-muted)]">一句话诊断</div>
-          <p className="mt-2 text-sm leading-6 text-[color:var(--text-secondary)]">{snapshot.diagnosis}</p>
-          <p className="mt-2 text-sm font-medium text-[color:var(--text-primary)]">{snapshot.priorityAction}</p>
-        </div>
-      </Panel>
+    <div className="flex flex-col gap-5">
+      {/* A. Hero: Vitals Card */}
+      <VitalsHero snapshot={snapshot} summary={summary} overdraftStreak={overdraftStreak} />
 
-      <Panel title="最近财富记录" eyebrow={`${recentRecords.length} recent`}>
-        <RecordList records={recentRecords} onDelete={onDelete} />
-      </Panel>
+      {/* B. Cashflow Trend (P3) */}
+      <CashflowTrendPanel cashflowTrend={cashflowTrend} trendPeriod={trendPeriod} onTrendPeriodChange={onTrendPeriodChange} />
 
-      <Panel title="Standards" eyebrow="Reality / Deserved">
-        <LineItem label="Reality Standard" value={formatMoney(snapshot.realityStandard)} />
-        <LineItem label="Deserved Standard" value={formatMoney(snapshot.deservedStandard)} />
-        <LineItem label="Monthly Gap" value={formatMoney(snapshot.monthlyGap)} />
-      </Panel>
-      <Panel title="Real Summary" eyebrow="Today">
-        <LineItem label="现实收入" value={formatMoney(summary.realIncome)} />
-        <LineItem label="真实支出" value={formatMoney(summary.realExpense)} />
-        <LineItem label="劳动依赖度" value={formatPercent(summary.laborDependency)} />
-      </Panel>
-      <Panel title="Alternative Self Income" eyebrow="Freedom Sources">
-        <LineItem label="睡后收入" value={formatMoney(summary.passiveIncome)} />
-        <LineItem label="系统收入" value={formatMoney(summary.systemIncome)} />
-        <LineItem label="稳定理财" value={formatMoney(summary.stableFinance)} />
-      </Panel>
-      <Panel title="Cost Burden" eyebrow="Burn">
-        <LineItem label="持续出血" value={formatMoney(summary.ongoingCost)} />
-        <LineItem label="体验出血" value={formatMoney(summary.experienceCost)} />
-        <LineItem label="月固定流血" value={formatMoney(summary.monthlyOngoingPressure)} />
-      </Panel>
+      {/* C. Period Slicer (P2) */}
+      <PeriodSlicePanel
+        selectedPeriod={selectedPeriod}
+        periodStreak={periodStreak}
+        onPeriodChange={onPeriodChange}
+      />
 
-      <Panel title="连续透支追踪" eyebrow="Overdraft Streak">
-        <div className={`rounded-2xl border p-3 ${overdraftStreak.riskTriggered ? 'border-rose-400/30 bg-rose-500/15' : 'border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)]'}`}>
-          <div className="text-xs text-[color:var(--text-muted)]">当前连续透支天数</div>
-          <div className={`mt-1 text-2xl font-semibold ${overdraftStreak.riskTriggered ? 'text-accent-rose' : overdraftStreak.current > 0 ? 'text-accent-amber' : 'text-accent-green'}`}>
-            {overdraftStreak.current} 天
+      {/* D. Recent Records */}
+      <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Recent</div>
+            <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">最近财富记录</h3>
           </div>
+          <div className="text-xs text-[color:var(--text-muted)]">完整列表在「记录」页</div>
         </div>
-        <LineItem label="自动计算（基于记录）" value={`${overdraftStreak.current} 天`} />
-        <LineItem label="手动配置值" value={`${baseConfig.consecutiveOverdraftDays ?? 0} 天`} />
-        <LineItem label="生效值" value={`${Math.max(baseConfig.consecutiveOverdraftDays ?? 0, overdraftStreak.current)} 天`} />
-        {overdraftStreak.riskTriggered ? (
-          <div className="mt-3 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3">
-            <div className="text-xs font-semibold text-accent-rose">⚠ 连续透支 ≥ 3 天，已触发系统风险</div>
-            <p className="mt-1 text-xs text-[color:var(--text-secondary)]">
-              连续透支已进入 system_risk 区间。优先砍掉一项持续成本，避免自由度持续被侵蚀。
-            </p>
-          </div>
-        ) : overdraftStreak.current > 0 ? (
-          <div className="mt-3 rounded-2xl border border-amber-400/25 bg-amber-400/10 p-3">
-            <div className="text-xs font-semibold text-accent-amber">已透支 {overdraftStreak.current} 天，注意避免连续化</div>
-            <p className="mt-1 text-xs text-[color:var(--text-secondary)]">
-              连续 3 天透支将触发系统风险。控制今日支出，不让透支天数继续增长。
-            </p>
-          </div>
-        ) : (
-          <div className="mt-3 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-3">
-            <div className="text-xs font-semibold text-accent-green">当前无连续透支</div>
-          </div>
-        )}
-        {overdraftStreak.days.length > 0 ? (
-          <div className="mt-3">
-            <div className="text-xs text-[color:var(--text-muted)]">近期每日透支状态</div>
-            <div className="mt-2 space-y-1">
-              {overdraftStreak.days.slice(-5).map((day) => (
-                <div key={day.date} className="flex items-center justify-between text-xs">
-                  <span className="text-[color:var(--text-secondary)]">{day.date}</span>
-                  <span className={day.isOverdraft ? 'text-accent-rose' : 'text-accent-green'}>
-                    {formatMoney(day.totalExpense)} / {formatMoney(day.safeLine)} {day.isOverdraft ? '透支' : '正常'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : null}
-      </Panel>
+        <RecordList records={recentRecords} onDelete={onDelete} emptyText="暂无财富记录，点击右上角「新增财富记录」开始。" />
+      </section>
 
-      <Panel title="透支周期查看" eyebrow="Period View">
-        <div className="flex flex-wrap gap-2">
-          {(Object.keys(periodLabels) as PeriodKey[]).map((period) => (
-            <button
-              key={period}
-              type="button"
-              onClick={() => onPeriodChange(period)}
-              className={
-                selectedPeriod === period
-                  ? 'rounded-xl border border-[color:var(--node-selected-border)] bg-[var(--control-hover)] px-3 py-2 text-sm text-[color:var(--text-primary)] shadow-[var(--shadow-node-neighbor)]'
-                  : 'rounded-xl border border-[color:var(--input-border)] bg-[var(--control-bg)] px-3 py-2 text-sm text-[color:var(--text-secondary)] transition hover:bg-[var(--control-hover)] hover:text-[color:var(--text-primary)]'
-              }
-            >
-              {periodLabels[period]}
-            </button>
-          ))}
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <div className={`rounded-2xl border p-3 ${periodStreak.riskTriggered ? 'border-rose-400/30 bg-rose-500/15' : 'border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)]'}`}>
-            <div className="text-xs text-[color:var(--text-muted)]">末尾连续透支</div>
-            <div className={`mt-1 text-xl font-semibold ${periodStreak.riskTriggered ? 'text-accent-rose' : periodStreak.current > 0 ? 'text-accent-amber' : 'text-accent-green'}`}>
-              {periodStreak.current} 天
-            </div>
+      {/* E. Dashboard Preview */}
+      <WealthDashboardPreview snapshot={snapshot} summary={summary} />
+    </div>
+  )
+}
+
+function VitalsHero({
+  snapshot,
+  summary,
+  overdraftStreak
+}: {
+  snapshot: DailyWealthSnapshot
+  summary: ReturnType<typeof summarizeWealthRecords>
+  overdraftStreak: OverdraftStreak
+}) {
+  const toneClass = statusTone[snapshot.status]
+  const icon = statusIcon[snapshot.status]
+  const streakClass = overdraftStreak.riskTriggered
+    ? 'text-accent-rose'
+    : overdraftStreak.current > 0
+      ? 'text-accent-amber'
+      : 'text-accent-green'
+
+  return (
+    <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-5">
+      <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
+        {/* Left: Status + Diagnosis */}
+        <div>
+          <div className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2 ${toneClass}`}>
+            <span className="text-lg">{icon}</span>
+            <span className="text-sm font-semibold">{wealthStatusLabels[snapshot.status]}</span>
           </div>
-          <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
-            <div className="text-xs text-[color:var(--text-muted)]">透支天数合计</div>
-            <div className="mt-1 text-xl font-semibold text-[color:var(--text-primary)]">
-              {periodStreak.days.filter((d) => d.isOverdraft).length} / {periodStreak.days.length} 天
-            </div>
-          </div>
-          <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
-            <div className="text-xs text-[color:var(--text-muted)]">总支出</div>
-            <div className="mt-1 text-xl font-semibold text-[color:var(--text-primary)]">
-              {formatMoney(periodStreak.days.reduce((sum, d) => sum + d.totalExpense, 0))}
-            </div>
+          <div className="mt-4">
+            <div className="text-xs uppercase tracking-[0.18em] text-[color:var(--text-muted)]">系统诊断</div>
+            <p className="mt-2 text-sm leading-6 text-[color:var(--text-secondary)]">{snapshot.diagnosis}</p>
+            <p className="mt-2 text-sm font-medium text-[color:var(--text-primary)]">{snapshot.priorityAction}</p>
           </div>
         </div>
-        {periodStreak.riskTriggered ? (
-          <div className="mt-3 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3">
-            <div className="text-xs font-semibold text-accent-rose">⚠ {periodLabels[selectedPeriod]}末尾连续透支 ≥ 3 天</div>
-          </div>
-        ) : null}
-        {periodStreak.days.length > 0 ? (
-          <div className="mt-3">
-            <div className="text-xs text-[color:var(--text-muted)]">每日明细</div>
-            <div className="mt-2 space-y-1">
-              {periodStreak.days.map((day) => (
-                <div key={day.date} className="flex items-center justify-between text-xs">
-                  <span className="text-[color:var(--text-secondary)]">{day.date}</span>
-                  <span className={day.isOverdraft ? 'text-accent-rose' : 'text-accent-green'}>
-                    {formatMoney(day.totalExpense)} / {formatMoney(day.safeLine)} {day.isOverdraft ? '透支' : '正常'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="mt-3 rounded-2xl border border-dashed border-[color:var(--panel-border)] p-4 text-sm text-[color:var(--text-muted)]">
-            {periodLabels[selectedPeriod]}暂无记录
-          </div>
-        )}
-      </Panel>
 
-      <Panel title="现金流质量趋势" eyebrow="Cashflow Trend">
-        <div className="flex flex-wrap gap-2">
+        {/* Right: Key Metrics */}
+        <div className="grid grid-cols-2 gap-3">
+          <HeroMetric
+            label="连续透支"
+            value={`${overdraftStreak.current} 天`}
+            className={streakClass}
+          />
+          <HeroMetric
+            label="自由度净变化"
+            value={formatMoney(summary.freedomDelta)}
+            className={summary.freedomDelta >= 0 ? 'text-accent-green' : 'text-accent-rose'}
+          />
+          <HeroMetric
+            label="财富评分"
+            value={`${snapshot.wealthScore}`}
+            className={snapshot.wealthScore >= 70 ? 'text-accent-green' : snapshot.wealthScore >= 50 ? 'text-accent-amber' : 'text-accent-rose'}
+          />
+          <HeroMetric
+            label="未来钱消耗"
+            value={formatMoney(snapshot.futureMoneyUsed)}
+            className={snapshot.futureMoneyUsed > 0 ? 'text-accent-rose' : 'text-accent-green'}
+          />
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function HeroMetric({ label, value, className }: { label: string; value: string; className: string }) {
+  return (
+    <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
+      <div className="text-xs text-[color:var(--text-muted)]">{label}</div>
+      <div className={`mt-1 text-xl font-semibold ${className}`}>{value}</div>
+    </div>
+  )
+}
+
+function CashflowTrendPanel({
+  cashflowTrend,
+  trendPeriod,
+  onTrendPeriodChange
+}: {
+  cashflowTrend: CashflowTrend
+  trendPeriod: 'last7' | 'last30'
+  onTrendPeriodChange: (period: 'last7' | 'last30') => void
+}) {
+  return (
+    <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Cashflow</div>
+          <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">现金流质量趋势</h3>
+        </div>
+        <div className="flex gap-2">
           {(['last7', 'last30'] as const).map((period) => (
             <button
               key={period}
@@ -429,67 +386,167 @@ function OverviewView({
               onClick={() => onTrendPeriodChange(period)}
               className={
                 trendPeriod === period
-                  ? 'rounded-xl border border-[color:var(--node-selected-border)] bg-[var(--control-hover)] px-3 py-2 text-sm text-[color:var(--text-primary)] shadow-[var(--shadow-node-neighbor)]'
-                  : 'rounded-xl border border-[color:var(--input-border)] bg-[var(--control-bg)] px-3 py-2 text-sm text-[color:var(--text-secondary)] transition hover:bg-[var(--control-hover)] hover:text-[color:var(--text-primary)]'
+                  ? 'rounded-xl border border-[color:var(--node-selected-border)] bg-[var(--control-hover)] px-3 py-1.5 text-xs text-[color:var(--text-primary)]'
+                  : 'rounded-xl border border-[color:var(--input-border)] bg-[var(--control-bg)] px-3 py-1.5 text-xs text-[color:var(--text-secondary)] transition hover:bg-[var(--control-hover)] hover:text-[color:var(--text-primary)]'
               }
             >
               {period === 'last7' ? '近 7 天' : '近 30 天'}
             </button>
           ))}
         </div>
-        <div className="mt-4 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-4">
-          <div className="flex items-end gap-[3px]" style={{ height: '120px' }}>
-            {cashflowTrend.days.map((day) => {
-              const heightPercent = Math.max(2, day.expenseRatio * 100)
-              const safeLinePercent = cashflowTrend.days.reduce((max, d) => Math.max(max, d.totalExpense), 0) > 0
-                ? (day.safeLine / Math.max(day.safeLine, ...cashflowTrend.days.map((d) => d.totalExpense))) * 100
-                : 100
-              return (
-                <div key={day.date} className="group relative flex flex-1 flex-col items-center" title={`${day.date}: ${formatMoney(day.totalExpense)} / ${formatMoney(day.safeLine)}`}>
-                  <div className="relative flex w-full flex-1 items-end justify-center">
-                    <div
-                      className={`w-full max-w-[24px] rounded-t-sm transition-colors ${day.isOverdraft ? 'bg-rose-400/70' : 'bg-emerald-400/60'}`}
-                      style={{ height: `${heightPercent}%` }}
-                    />
-                  </div>
-                  <div className="mt-1 truncate text-[9px] text-[color:var(--text-muted)]" style={{ maxWidth: '32px' }}>
-                    {day.date.slice(5)}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-          <div className="mt-2 flex items-center gap-4 text-[10px] text-[color:var(--text-muted)]">
-            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-emerald-400/60" />正常</span>
-            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-rose-400/70" />透支</span>
-            <span className="ml-auto">柱高 = 当日支出比例</span>
-          </div>
-        </div>
-        <div className="mt-3 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
-          <div className="text-xs text-[color:var(--text-muted)]">趋势判断</div>
-          <p className="mt-1 text-sm text-[color:var(--text-secondary)]">{cashflowTrend.summaryText}</p>
-        </div>
-        <div className="mt-3 grid gap-1">
-          <div className="grid grid-cols-4 gap-2 text-[10px] font-semibold text-[color:var(--text-muted)]">
-            <span>日期</span>
-            <span className="text-right">支出</span>
-            <span className="text-right">安全线</span>
-            <span className="text-right">状态</span>
-          </div>
-          {cashflowTrend.days.slice(-7).map((day) => (
-            <div key={day.date} className="grid grid-cols-4 gap-2 text-xs">
-              <span className="text-[color:var(--text-secondary)]">{day.date.slice(5)}</span>
-              <span className="text-right text-[color:var(--text-primary)]">{formatMoney(day.totalExpense)}</span>
-              <span className="text-right text-[color:var(--text-muted)]">{formatMoney(day.safeLine)}</span>
-              <span className={`text-right ${day.isOverdraft ? 'text-accent-rose' : 'text-accent-green'}`}>
-                {day.isOverdraft ? '透支' : '正常'}
-              </span>
-            </div>
-          ))}
-        </div>
-      </Panel>
+      </div>
 
-      <Panel title="基础配置" eyebrow="Config">
+      {/* Bar chart */}
+      <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-4">
+        <div className="flex items-end gap-[3px]" style={{ height: '100px' }}>
+          {cashflowTrend.days.map((day) => {
+            const heightPercent = Math.max(2, day.expenseRatio * 100)
+            return (
+              <div key={day.date} className="group relative flex flex-1 flex-col items-center" title={`${day.date}: ${formatMoney(day.totalExpense)} / ${formatMoney(day.safeLine)}`}>
+                <div className="relative flex w-full flex-1 items-end justify-center">
+                  <div
+                    className={`w-full max-w-[20px] rounded-t-sm ${day.isOverdraft ? 'bg-rose-400/70' : 'bg-emerald-400/60'}`}
+                    style={{ height: `${heightPercent}%` }}
+                  />
+                </div>
+                <div className="mt-1 truncate text-[8px] text-[color:var(--text-muted)]" style={{ maxWidth: '28px' }}>
+                  {day.date.slice(5)}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        <div className="mt-2 flex items-center gap-4 text-[10px] text-[color:var(--text-muted)]">
+          <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-emerald-400/60" />正常</span>
+          <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-rose-400/70" />透支</span>
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
+        <p className="text-sm text-[color:var(--text-secondary)]">{cashflowTrend.summaryText}</p>
+      </div>
+    </section>
+  )
+}
+
+function PeriodSlicePanel({
+  selectedPeriod,
+  periodStreak,
+  onPeriodChange
+}: {
+  selectedPeriod: PeriodKey
+  periodStreak: OverdraftStreak
+  onPeriodChange: (period: PeriodKey) => void
+}) {
+  return (
+    <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
+      <div className="mb-4">
+        <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Period</div>
+        <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">周期透支明细</h3>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {(Object.keys(periodLabels) as PeriodKey[]).map((period) => (
+          <button
+            key={period}
+            type="button"
+            onClick={() => onPeriodChange(period)}
+            className={
+              selectedPeriod === period
+                ? 'rounded-xl border border-[color:var(--node-selected-border)] bg-[var(--control-hover)] px-3 py-1.5 text-xs text-[color:var(--text-primary)]'
+                : 'rounded-xl border border-[color:var(--input-border)] bg-[var(--control-bg)] px-3 py-1.5 text-xs text-[color:var(--text-secondary)] transition hover:bg-[var(--control-hover)] hover:text-[color:var(--text-primary)]'
+            }
+          >
+            {periodLabels[period]}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className={`rounded-2xl border p-3 ${periodStreak.riskTriggered ? 'border-rose-400/30 bg-rose-500/15' : 'border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)]'}`}>
+          <div className="text-xs text-[color:var(--text-muted)]">末尾连续透支</div>
+          <div className={`mt-1 text-xl font-semibold ${periodStreak.riskTriggered ? 'text-accent-rose' : periodStreak.current > 0 ? 'text-accent-amber' : 'text-accent-green'}`}>
+            {periodStreak.current} 天
+          </div>
+        </div>
+        <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
+          <div className="text-xs text-[color:var(--text-muted)]">透支天数</div>
+          <div className="mt-1 text-xl font-semibold text-[color:var(--text-primary)]">
+            {periodStreak.days.filter((d) => d.isOverdraft).length} / {periodStreak.days.length}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
+          <div className="text-xs text-[color:var(--text-muted)]">总支出</div>
+          <div className="mt-1 text-xl font-semibold text-[color:var(--text-primary)]">
+            {formatMoney(periodStreak.days.reduce((sum, d) => sum + d.totalExpense, 0))}
+          </div>
+        </div>
+      </div>
+
+      {periodStreak.days.length > 0 ? (
+        <div className="mt-3">
+          <div className="grid gap-1">
+            {periodStreak.days.slice(-5).map((day) => (
+              <div key={day.date} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-xs hover:bg-[var(--control-hover)]">
+                <span className="text-[color:var(--text-secondary)]">{day.date}</span>
+                <span className={day.isOverdraft ? 'text-accent-rose' : 'text-accent-green'}>
+                  {formatMoney(day.totalExpense)} / {formatMoney(day.safeLine)} {day.isOverdraft ? '透支' : '正常'}
+                </span>
+              </div>
+            ))}
+          </div>
+          {periodStreak.days.length > 5 ? (
+            <div className="mt-1 text-center text-[10px] text-[color:var(--text-muted)]">
+              共 {periodStreak.days.length} 天，显示最近 5 天
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <div className="mt-3 rounded-2xl border border-dashed border-[color:var(--panel-border)] p-4 text-sm text-[color:var(--text-muted)]">
+          {periodLabels[selectedPeriod]}暂无记录
+        </div>
+      )}
+    </section>
+  )
+}
+
+/* ── Records Tab ── */
+
+function RecordsTab({ records, onDelete }: { records: WealthRecord[]; onDelete: (id: string) => void }) {
+  return (
+    <div className="flex flex-col gap-5">
+      <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
+        <div className="mb-4">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">All Records</div>
+          <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">全部财富记录</h3>
+          <p className="mt-1 text-xs text-[color:var(--text-muted)]">共 {records.length} 条</p>
+        </div>
+        <RecordList records={records} onDelete={onDelete} emptyText="暂无财富记录。点击右上角「新增财富记录」开始记录。" />
+      </section>
+    </div>
+  )
+}
+
+/* ── Config Tab ── */
+
+function ConfigTab({
+  baseConfig,
+  onConfigChange,
+  onSaveConfig,
+  onResetConfig
+}: {
+  baseConfig: WealthBaseConfig
+  onConfigChange: (patch: Partial<WealthBaseConfig>) => void
+  onSaveConfig: () => void
+  onResetConfig: () => void
+}) {
+  return (
+    <div className="flex flex-col gap-5">
+      <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
+        <div className="mb-4">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Base Config</div>
+          <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">基础参数配置</h3>
+          <p className="mt-1 text-xs text-[color:var(--text-muted)]">修改后点击保存，配置将持久化到本地。</p>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <ConfigField label="期初余额" value={String(baseConfig.openingBalance)} onChange={(v) => onConfigChange({ openingBalance: Number(v) || 0 })} />
           <ConfigField label="每日安全线" value={String(baseConfig.dailySafeLine)} onChange={(v) => onConfigChange({ dailySafeLine: Number(v) || 0 })} />
@@ -507,124 +564,57 @@ function OverviewView({
             恢复默认
           </button>
         </div>
-      </Panel>
+      </section>
+
+      {/* WealthDashboardPreview in config for reference */}
+      <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
+        <div className="mb-4">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Preview</div>
+          <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">配置预览</h3>
+        </div>
+        <p className="text-xs text-[color:var(--text-muted)]">配置参数影响总览页面的计算结果。修改后可在此查看 preview。</p>
+      </section>
     </div>
   )
 }
 
-function IncomeView({ records }: { records: WealthRecord[] }) {
-  return (
-    <GroupedRecordView
-      title="Income"
-      groups={incomeTypes}
-      records={records}
-      emptyText="还没有收入记录。先记录现实收入、睡后收入、系统收入或稳定理财。"
-    />
-  )
-}
+/* ── Shared Components ── */
 
-function ExpensesView({ records, monthlyPressure }: { records: WealthRecord[]; monthlyPressure: number }) {
-  return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
-      <GroupedRecordView title="Expenses" groups={expenseTypes} records={records} emptyText="还没有支出记录。" />
-      <Panel title="支出语义判断" eyebrow="Burden">
-        <LineItem label="月固定流血压力" value={formatMoney(monthlyPressure)} />
-        <LineItem
-          label="持续出血提醒"
-          value={monthlyPressure > 0 ? '优先进入 Plan 检查' : '暂无固定压力'}
-        />
-        <LineItem
-          label="体验出血提醒"
-          value={records.some((record) => record.type === 'experience_cost' && record.meta?.isDopamineLeak) ? '存在失控 / 多巴胺泄漏' : '未标记失控'}
-        />
-      </Panel>
-    </div>
-  )
-}
-
-function AssetsView({ records, assetBuckets }: { records: WealthRecord[]; assetBuckets: Record<string, number> }) {
-  const assetRecords = records.filter((record) => record.type === 'asset_change')
-  const bucketLabels: Record<string, string> = {
-    cash: '现金',
-    saving: '储蓄',
-    investment: '投资',
-    crypto: '数字资产',
-    device: '设备',
-    other: '其他'
+function RecordList({ records, emptyText = '暂无财富记录', onDelete }: { records: WealthRecord[]; emptyText?: string; onDelete?: (recordId: string) => void }) {
+  if (records.length === 0) {
+    return <div className="rounded-2xl border border-dashed border-[color:var(--panel-border)] p-4 text-sm text-[color:var(--text-muted)]">{emptyText}</div>
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
-      <Panel title="资产变化记录" eyebrow="Assets">
-        <RecordList records={assetRecords} />
-      </Panel>
-      <Panel title="资产分类占位" eyebrow="Buckets">
-        {['cash', 'saving', 'investment', 'crypto', 'device', 'other'].map((key) => (
-          <LineItem key={key} label={bucketLabels[key]} value={formatMoney(assetBuckets[key] ?? 0)} />
-        ))}
-      </Panel>
+    <div className="space-y-2">
+      {records.map((record) => (
+        <div key={record.id} className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-semibold text-[color:var(--text-primary)]">{wealthRecordTypeLabels[record.type]}</span>
+                <span className="text-sm text-accent-cyan">{formatMoney(record.amount)}</span>
+              </div>
+              <div className="mt-1 truncate text-xs text-[color:var(--text-muted)]">
+                {record.date} / {record.title ?? record.source ?? record.category ?? record.meta?.assetType ?? '未命名记录'}
+              </div>
+              {record.meta?.isDopamineLeak ? <div className="mt-2 text-xs text-accent-rose">已标记失控 / 多巴胺泄漏</div> : null}
+              {record.type === 'ongoing_cost' ? <div className="mt-2 text-xs text-accent-amber">周期：{record.meta?.cycle ?? 'monthly'}</div> : null}
+              {record.note ? <p className="mt-2 text-sm leading-6 text-[color:var(--text-secondary)]">{record.note}</p> : null}
+            </div>
+            {onDelete ? (
+              <button type="button" onClick={() => onDelete(record.id)} className="shrink-0 rounded-xl border border-[color:var(--input-border)] px-2 py-1 text-xs text-[color:var(--text-muted)] transition hover:border-rose-400/40 hover:bg-rose-400/10 hover:text-accent-rose">
+                删除
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
 
-function EvaluationView({
-  snapshot,
-  summary
-}: {
-  snapshot: DailyWealthSnapshot
-  summary: ReturnType<typeof summarizeWealthRecords>
-}) {
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="Evaluation" eyebrow="Judgement">
-        <LineItem label="Reality Standard" value={formatMoney(snapshot.realityStandard)} />
-        <LineItem label="Deserved Standard" value={formatMoney(snapshot.deservedStandard)} />
-        <LineItem label="Monthly Gap" value={formatMoney(snapshot.monthlyGap)} />
-        <LineItem label="Labor Dependency" value={formatPercent(snapshot.laborDependency)} />
-        <LineItem label="Support Coverage" value={formatPercent(snapshot.supportCoverage)} />
-        <LineItem label="Freedom Delta" value={formatMoney(summary.freedomDelta)} />
-      </Panel>
-      <Panel title="指标来源" eyebrow="Record Sources">
-        <p className="text-sm leading-6 text-[color:var(--text-secondary)]">
-          Reality Standard 由现实收入、真实支出和资产变化辅助判断；Deserved Standard 由睡后收入、系统收入、稳定理财和支撑覆盖率辅助判断。
-        </p>
-        <p className="mt-3 text-sm leading-6 text-[color:var(--text-secondary)]">
-          Labor Dependency 来自现实收入占总收入比例；Support Coverage 来自睡后收入、系统收入、稳定理财对真实支出和持续出血的覆盖。
-        </p>
-        <p className="mt-3 text-sm leading-6 text-[color:var(--text-secondary)]">
-          Freedom Delta 来自睡后收入 + 系统收入 + 稳定理财 - 持续出血 - 体验出血。
-        </p>
-      </Panel>
-    </div>
-  )
-}
-
-function GroupedRecordView({
-  title,
-  groups,
-  records,
-  emptyText
-}: {
-  title: string
-  groups: WealthRecordType[]
-  records: WealthRecord[]
-  emptyText: string
-}) {
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      {groups.map((type) => {
-        const groupRecords = records.filter((record) => record.type === type)
-        const total = groupRecords.reduce((sum, record) => sum + record.amount, 0)
-        return (
-          <Panel key={type} title={wealthRecordTypeLabels[type]} eyebrow={title}>
-            <LineItem label="小计" value={formatMoney(total)} />
-            <RecordList records={groupRecords.slice(0, 6)} emptyText={emptyText} />
-          </Panel>
-        )
-      })}
-    </div>
-  )
-}
+/* ── Record Dialog ── */
 
 function RecordDialog({
   draft,
@@ -771,76 +761,7 @@ function renderTypeFields(draft: RecordDraft, onChange: (patch: Partial<RecordDr
   )
 }
 
-function Panel({ title, eyebrow, children }: { title: string; eyebrow: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
-      <div className="mb-4">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">{eyebrow}</div>
-        <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">{title}</h3>
-      </div>
-      {children}
-    </section>
-  )
-}
-
-function Metric({ label, value, tone = 'neutral' }: { label: string; value: string; tone?: 'neutral' | 'good' | 'warn' | 'bad' }) {
-  const toneClass = {
-    neutral: 'text-[color:var(--text-primary)]',
-    good: 'text-accent-green',
-    warn: 'text-accent-amber',
-    bad: 'text-accent-rose'
-  }[tone]
-
-  return (
-    <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
-      <div className="text-xs text-[color:var(--text-muted)]">{label}</div>
-      <div className={`mt-2 text-lg font-semibold ${toneClass}`}>{value}</div>
-    </div>
-  )
-}
-
-function LineItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-4 border-b border-[color:var(--panel-border)] py-2 last:border-b-0">
-      <span className="text-sm text-[color:var(--text-secondary)]">{label}</span>
-      <span className="text-right text-sm font-medium text-[color:var(--text-primary)]">{value}</span>
-    </div>
-  )
-}
-
-function RecordList({ records, emptyText = '暂无财富记录', onDelete }: { records: WealthRecord[]; emptyText?: string; onDelete?: (recordId: string) => void }) {
-  if (records.length === 0) {
-    return <div className="rounded-2xl border border-dashed border-[color:var(--panel-border)] p-4 text-sm text-[color:var(--text-muted)]">{emptyText}</div>
-  }
-
-  return (
-    <div className="space-y-2">
-      {records.map((record) => (
-        <div key={record.id} className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-semibold text-[color:var(--text-primary)]">{wealthRecordTypeLabels[record.type]}</span>
-                <span className="text-sm text-accent-cyan">{formatMoney(record.amount)}</span>
-              </div>
-              <div className="mt-1 truncate text-xs text-[color:var(--text-muted)]">
-                {record.date} / {record.title ?? record.source ?? record.category ?? record.meta?.assetType ?? '未命名记录'}
-              </div>
-              {record.meta?.isDopamineLeak ? <div className="mt-2 text-xs text-accent-rose">已标记失控 / 多巴胺泄漏</div> : null}
-              {record.type === 'ongoing_cost' ? <div className="mt-2 text-xs text-accent-amber">周期：{record.meta?.cycle ?? 'monthly'}</div> : null}
-              {record.note ? <p className="mt-2 text-sm leading-6 text-[color:var(--text-secondary)]">{record.note}</p> : null}
-            </div>
-            {onDelete ? (
-              <button type="button" onClick={() => onDelete(record.id)} className="shrink-0 rounded-xl border border-[color:var(--input-border)] px-2 py-1 text-xs text-[color:var(--text-muted)] transition hover:border-rose-400/40 hover:bg-rose-400/10 hover:text-accent-rose">
-                删除
-              </button>
-            ) : null}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
+/* ── Form Field Components ── */
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -892,6 +813,8 @@ function ConfigField({ label, value, onChange }: { label: string; value: string;
 
 const inputClass =
   'w-full rounded-2xl border border-[color:var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none transition placeholder:text-[color:var(--text-muted)] focus:border-[color:var(--node-selected-border)] focus:bg-[var(--control-hover)]'
+
+/* ── Helpers ── */
 
 function createDraft(type: WealthRecordType = 'real_income'): RecordDraft {
   return {
@@ -972,13 +895,6 @@ function formatMoney(value: number): string {
   return new Intl.NumberFormat('zh-CN', {
     style: 'currency',
     currency: 'CNY',
-    maximumFractionDigits: 0
-  }).format(value)
-}
-
-function formatPercent(value: number): string {
-  return new Intl.NumberFormat('zh-CN', {
-    style: 'percent',
     maximumFractionDigits: 0
   }).format(value)
 }
