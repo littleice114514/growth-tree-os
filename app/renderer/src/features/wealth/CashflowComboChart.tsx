@@ -87,7 +87,7 @@ export function CashflowComboChart({
         right: 16,
         bottom: 28,
         left: 12,
-        containLabel: false
+        containLabel: true
       },
       legend: {
         top: 0,
@@ -126,15 +126,15 @@ export function CashflowComboChart({
             <div style="display:flex;gap:16px">
               <div>
                 <div style="color:#94a3b8;font-size:10px">收入</div>
-                <div style="color:#60a5fa;font-weight:600">${formatMoney(day.totalIncome)}</div>
+                <div style="color:#60a5fa;font-weight:600">${formatCurrency(day.totalIncome)}</div>
               </div>
               <div>
                 <div style="color:#94a3b8;font-size:10px">支出</div>
-                <div style="color:${day.isOverdraft ? '#fb7185' : '#e2e8f0'};font-weight:600">${formatMoney(day.totalExpense)}</div>
+                <div style="color:${day.isOverdraft ? '#fb7185' : '#e2e8f0'};font-weight:600">${formatCurrency(day.totalExpense)}</div>
               </div>
               <div>
                 <div style="color:#94a3b8;font-size:10px">安全线</div>
-                <div style="color:#d4a017;font-weight:600">${formatMoney(day.safeLine)}</div>
+                <div style="color:#d4a017;font-weight:600">${formatCurrency(day.safeLine)}</div>
               </div>
             </div>
           `
@@ -154,7 +154,17 @@ export function CashflowComboChart({
       },
       yAxis: {
         type: 'value',
-        show: false
+        show: true,
+        axisLine: { show: false },
+        axisTick: { show: false },
+        splitLine: {
+          lineStyle: { color: 'rgba(100,116,139,0.08)' }
+        },
+        axisLabel: {
+          fontSize: 10,
+          color: 'rgba(148,163,184,0.5)',
+          formatter: (v: number) => formatCurrency(v)
+        }
       },
       series: [
         {
@@ -174,13 +184,8 @@ export function CashflowComboChart({
               width: 1.5,
               opacity: 0.7
             },
-            data: [{ yAxis: safeLine, name: '安全线' }],
-            label: {
-              position: 'end',
-              formatter: `安全线 ¥${safeLine}`,
-              fontSize: 10,
-              color: '#f59e0b'
-            }
+            data: [{ yAxis: safeLine }],
+            label: { show: false }
           }
         },
         {
@@ -277,11 +282,11 @@ export function CashflowComboChart({
           <div className="grid grid-cols-3 gap-2">
             <div className="rounded-xl border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-2">
               <div className="text-[10px] text-[color:var(--text-muted)]">收入</div>
-              <div className="mt-0.5 text-sm font-semibold text-blue-400">{formatMoney(selectedDay.totalIncome)}</div>
+              <div className="mt-0.5 text-sm font-semibold text-blue-400">{formatCurrency(selectedDay.totalIncome)}</div>
             </div>
             <div className="rounded-xl border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-2">
               <div className="text-[10px] text-[color:var(--text-muted)]">支出</div>
-              <div className={`mt-0.5 text-sm font-semibold ${selectedDay.isOverdraft ? 'text-accent-rose' : 'text-accent-green'}`}>{formatMoney(selectedDay.totalExpense)}</div>
+              <div className={`mt-0.5 text-sm font-semibold ${selectedDay.isOverdraft ? 'text-accent-rose' : 'text-accent-green'}`}>{formatCurrency(selectedDay.totalExpense)}</div>
             </div>
             <div className="rounded-xl border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-2">
               <div className="text-[10px] text-[color:var(--text-muted)]">状态</div>
@@ -310,7 +315,7 @@ export function CashflowComboChart({
                       ? 'text-blue-400'
                       : 'text-accent-rose'
                   }`}>
-                    {['real_income', 'passive_income', 'system_income', 'stable_finance'].includes(record.type) ? '+' : '-'}{formatMoney(record.amount)}
+                    {['real_income', 'passive_income', 'system_income', 'stable_finance'].includes(record.type) ? '+' : '-'}{formatCurrency(record.amount)}
                   </span>
                 </div>
               ))}
@@ -322,10 +327,6 @@ export function CashflowComboChart({
   )
 }
 
-function formatMoney(value: number): string {
-  return new Intl.NumberFormat('zh-CN', {
-    style: 'currency',
-    currency: 'CNY',
-    maximumFractionDigits: 0
-  }).format(value)
+function formatCurrency(value: number, currencySymbol = '¥'): string {
+  return `${currencySymbol}${Math.round(value)}`
 }
