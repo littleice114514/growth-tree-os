@@ -4,45 +4,46 @@
 
 - 项目名：growth-tree-os
 - GitHub 仓库：git@github.com:littleice114514/growth-tree-os.git
-- 分支：feature/win-ai-workflow-token-saving
-- 最新 commit：以 Windows 最终汇报的 `git rev-parse --short HEAD` 为准
-- 当前设备完成时间：2026-05-07 17:01:33 +08:00
+- 分支：feature/win-ai-map-console-mvp
+- 最新 commit：以本轮最终汇报的 `git rev-parse --short HEAD` 为准
+- 当前设备完成时间：2026-05-11
 
 ## 2. 本轮已完成
 
-- 新增 `docs/project-state/` 三件套：`CURRENT_STATUS.md`、`LOG_INDEX.md`、`NEXT_ACTION.md`。
-- 新增 `docs/dev-protocol/AI_WORKFLOW_TOKEN_SAVING.md`，定义省 token 开工读取顺序。
-- 更新 startup、dev-log、dual-device、handoff 协议，把 project-state 三件套接入默认工作流。
-- 新增 Windows 本轮日志，记录 AI workflow 底座改动和 Mac 同步方式。
-- 本轮未推进 3D、Time Debt、数据库或页面重构。
+- Win 端新增只读型 `tools/ai-map-console` MVP。
+- 支持 `status` 输出当前分支、commit、工作区状态、已读取/缺失底座文件、地图位置、主线、下一步入口和风险提示。
+- 支持生成 Codex / Claude 短任务卡。
+- 缺失 `AGENTS.md`、`MAP_STATUS.md`、Time Debt / Wealth handoff 时正常显示“缺失”，不会崩溃。
+- 本轮未修改 Time Debt、Wealth、Electron 页面、3D 资源或 `app/renderer/**`。
 
 ## 3. 本轮修改文件
 
-- `docs/project-state/CURRENT_STATUS.md`
-- `docs/project-state/LOG_INDEX.md`
-- `docs/project-state/NEXT_ACTION.md`
-- `docs/dev-protocol/AI_WORKFLOW_TOKEN_SAVING.md`
-- `docs/dev-protocol/CODEX_STARTUP_CHECKLIST.md`
-- `docs/dev-protocol/DUAL_DEVICE_WORKFLOW.md`
-- `docs/dev-protocol/DEV_LOG_RULES.md`
-- `docs/dev-protocol/PROJECT_HANDOFF_RULES.md`
-- `docs/dev-log/2026-05/2026-05-07/win-ai-workflow-token-saving.md`
+- `tools/ai-map-console/README.md`
+- `tools/ai-map-console/package.json`
+- `tools/ai-map-console/src/index.js`
+- `tools/ai-map-console/src/paths.js`
+- `tools/ai-map-console/src/readProjectState.js`
+- `tools/ai-map-console/src/generateTaskCard.js`
+- `docs/handoff/WIN_AI_MAP_CONSOLE_NEXT_ACTION.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
+- `docs/dev-log/2026-05/2026-05-11/win-ai-map-console-mvp.md`
 
 ## 4. 当前验证结果
 
 ### 已验证
 
-- Windows 端已确认 project-state 三件套存在。
-- Windows 端已确认 `AI_WORKFLOW_TOKEN_SAVING.md` 存在。
-- Windows 端已确认 startup、dev-log、dual-device、handoff 协议包含省 token / project-state 规则。
-- Windows 端已确认本轮改动只在文档、协议、日志和交接卡范围内。
+- `node tools/ai-map-console/src/index.js status`
+- `node tools/ai-map-console/src/index.js task-card --agent codex --module time-debt`
+- `node tools/ai-map-console/src/index.js task-card --agent claude --module wealth`
+- `pnpm typecheck`
+- `pnpm build`
 
 ### 未验证 / 风险
 
-- Mac 端尚未 pull 并验收。
-- 本轮不改业务代码，因此未运行 UI / 3D / build 验收。
-- 后续任务必须持续维护 `LOG_INDEX.md`，否则省 token 机制会退化。
+- `AGENTS.md` 当前缺失。
+- `docs/project-map/MAP_STATUS.md` 当前缺失。
+- `docs/handoff/CODEX_TIME_DEBT_NEXT_ACTION.md` 当前缺失。
+- `docs/handoff/CLAUDE_WEALTH_NEXT_ACTION.md` 当前缺失。
 
 ## 5. Mac 端第一步操作
 
@@ -53,7 +54,7 @@ mkdir -p ~/Desktop/vibe-coding-projects
 cd ~/Desktop/vibe-coding-projects
 git clone git@github.com:littleice114514/growth-tree-os.git
 cd growth-tree-os
-git checkout feature/win-ai-workflow-token-saving
+git checkout feature/win-ai-map-console-mvp
 ```
 
 如果 Mac 上已经有项目：
@@ -62,8 +63,8 @@ git checkout feature/win-ai-workflow-token-saving
 cd <Mac上的项目目录>
 git status
 git fetch origin
-git checkout feature/win-ai-workflow-token-saving
-git pull origin feature/win-ai-workflow-token-saving
+git checkout feature/win-ai-map-console-mvp
+git pull origin feature/win-ai-map-console-mvp
 git rev-parse --short HEAD
 ```
 
@@ -71,36 +72,37 @@ git rev-parse --short HEAD
 
 ## 6. Mac 端环境准备
 
-本轮只做文档同步验收，不需要安装新依赖。若 Mac 后续需要运行应用，再执行：
-
 ```bash
 pnpm install
+```
+
+如需运行应用：
+
+```bash
 pnpm dev
 ```
 
 ## 7. Mac 端验收方式
 
-请在 Mac 端检查以下文件是否存在：
+请在 Mac 端运行：
 
-- `docs/project-state/CURRENT_STATUS.md`
-- `docs/project-state/LOG_INDEX.md`
-- `docs/project-state/NEXT_ACTION.md`
-- `docs/dev-protocol/AI_WORKFLOW_TOKEN_SAVING.md`
-- `docs/dev-protocol/CODEX_STARTUP_CHECKLIST.md`
-- `docs/dev-protocol/DUAL_DEVICE_WORKFLOW.md`
-- `docs/dev-protocol/DEV_LOG_RULES.md`
-- `docs/dev-protocol/PROJECT_HANDOFF_RULES.md`
+```bash
+node tools/ai-map-console/src/index.js status
+node tools/ai-map-console/src/index.js task-card --agent codex --module time-debt
+node tools/ai-map-console/src/index.js task-card --agent claude --module wealth
+pnpm typecheck
+pnpm build
+```
 
 预期结果：
 
-- project-state 三件套可作为后续开工入口。
-- `CODEX_STARTUP_CHECKLIST.md` 包含先读 project-state 的规则。
-- `LOG_INDEX.md` 明确默认只读最近 5 条索引。
-- Mac 端不重写 Windows 本轮建立的核心协议内容。
+- 三条 map-console 命令均正常输出中文内容。
+- 缺失文件显示为“缺失”，命令不崩溃。
+- `pnpm typecheck` 和 `pnpm build` 通过。
 
 ## 8. Mac 端下一轮任务
 
-请让 Mac 端 Codex 完成：同步 Windows 推送的 AI 工作流省 token 底座，只做文件存在检查、读取顺序验收，并新增 `docs/dev-log/2026-05/2026-05-07/mac-ai-workflow-sync-check.md`。不要改 3D、Time Debt、业务代码或 project-state 核心内容。
+Mac 端继续推进业务进度时，只做 Time Debt / Wealth / UI / Electron smoke 相关工作，不修改 `tools/ai-map-console/**`、`docs/handoff/WIN_AI_MAP_CONSOLE_NEXT_ACTION.md` 或本轮 Win dev-log。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
@@ -109,14 +111,13 @@ pnpm dev
 - `git status` 输出；
 - `git branch --show-current` 输出；
 - `git rev-parse --short HEAD` 输出；
-- `git fetch` / `git pull` 完整报错；
-- 缺失文件路径；
-- 如果出现冲突，粘贴冲突文件列表。
+- 三条 map-console 命令的完整报错；
+- `pnpm typecheck` 或 `pnpm build` 的首个关键错误；
+- 页面异常截图，如果失败发生在 UI 验收阶段。
 
 ## 10. 注意事项
 
 - 不要直接覆盖 Mac 本地未提交改动。
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
-- Mac 端本轮只新增同步验收日志，避免双端同时修改协议核心文件。
-
+- Win 端 map-console 文件与 Mac 端业务文件保持隔离。
