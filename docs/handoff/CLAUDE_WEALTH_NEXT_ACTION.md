@@ -27,31 +27,32 @@
 - **现金流趋势图 V2 完成**：从 CSS 条形图升级为 SVG 组合图（柱状支出 + 折线收入 + 安全线 + 日记录联动）。
 - **现金流趋势图 V2 视觉重构完成**：安全线/收入线/hover/selected/透支日视觉体系重塑。
 - **ECharts 图表路线切换完成**：废弃手写 SVG 壳子，改用 echarts-for-react 实现柱状图 + markLine 安全线 + Tooltip。
-  - 安装 `echarts` 6.0.0 + `echarts-for-react` 3.0.6 依赖。
-  - `CashflowComboChart.tsx` 完全重写：SVG → ECharts BarChart。
-  - 支出柱状图：正常=低饱和绿色，透支=柔和红色，圆角柱顶。
-  - 安全线：markLine 虚线，右侧标签「安全线 ¥X」，琥珀色。
-  - Tooltip：触发方式=axis，显示日期、收入、支出、安全线、状态（正常/透支）。
-  - 图例：支出、每日安全线。
-  - X 轴：7 天全部显示，30 天稀疏 + 旋转 30°。
-  - 点击柱状图：日记录切片联动保留。
-  - 零数据状态保留。
-  - 收入折线暂不渲染，收入数据通过 Tooltip 和日记录切片展示。
-  - 不改 IPC、不改全局 store、不改数据库、不改 Time Debt。
-  - `pnpm typecheck` 通过，`pnpm build` 通过。
+- **ECharts 图表语义修正完成**：柱状图=支出，蓝色折线=收入，橙色虚线=安全线。
+- **ECharts 坐标轴修正完成**：Y 轴金额刻度可见，安全线残缺 label 已移除，金额格式统一为轻量 formatCurrency。
+- **Wealth Records Insight MVP 完成**：
+  - 记录搜索框：支持按类型、分类、备注、触发器、日期、金额关键词过滤。
+  - 记录分组视图：支持按日期/类型/分类三种分组模式切换。
+  - 支出类型占比饼图：ECharts PieChart，支持今天/近7天/近30天切换。
+  - 饼图统计口径：仅 real_expense/ongoing_cost/experience_cost 支出类记录。
+  - 饼图 Tooltip 显示分类名称、金额、占比百分比。
+  - 饼图下方显示分类列表（颜色圆点+分类名+金额+占比）。
+  - 无支出数据时显示空状态引导。
+  - 新增 utility 文件 `wealthRecordInsights.ts`：搜索、分组、支出分类聚合。
+  - 新增组件文件 `ExpenseBreakdownPie.tsx`：ECharts PieChart 支出占比饼图。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/wealth/CashflowComboChart.tsx`（完全重写：SVG → ECharts）
-- `package.json`（新增 echarts + echarts-for-react 依赖）
-- `pnpm-lock.yaml`（新增 echarts + echarts-for-react 依赖）
+- `app/renderer/src/features/wealth/wealthRecordInsights.ts`（新增：搜索/分组/支出聚合 utility）
+- `app/renderer/src/features/wealth/ExpenseBreakdownPie.tsx`（新增：ECharts 支出占比饼图组件）
+- `app/renderer/src/features/wealth/WealthDashboard.tsx`（修改：RecordsTab 增加搜索/分组/饼图）
 - `docs/handoff/CLAUDE_WEALTH_NEXT_ACTION.md`（更新本轮记录）
 
 ## 4. 未做事项
 
-- 未做收入主折线（收入不每天都有，容易贴底消失，暂放 Tooltip）。
 - 未做记录编辑。
 - 未做 emergency_cost 记录类型。
+- 未做全局货币系统（当前默认 ¥）。
+- 未做投资模块。
 
 ## 5. 与 Codex 的文件边界
 
@@ -62,18 +63,21 @@
 ## 6. 下一步任务建议
 
 按优先级：
-1. **Wealth ECharts 图表 UI smoke 与日记录切片优化**（下一轮唯一建议）。
-2. Wealth 分类项目持久化设计：保存用户自定义分类到 localStorage。
-3. Wealth 真实体验验收：在 Electron 中实际操作，确认首屏体验后再推进新功能。
+1. **Global Currency Design Pass**（全局货币系统设计审查）— 当前金额格式已轻量预留，下一步可设计货币选择入口。
+2. **Investment Map**（投资模块 A+B+C 路线设计）— 不默认直接开发，先设计路线。
 
 ## 7. 手动验收方式
 
-- 进入 Wealth 页面 → Overview → 现金流趋势图显示 ECharts 柱状图（非 SVG）。
-- hover 柱状图 → Tooltip 显示日期、收入、支出、安全线、状态。
-- 点击某一天 → 下方日记录切片切换到对应日期。
-- 切换近 7 天 / 近 30 天 → 图表更新，30 天标签不挤。
-- 安全线虚线可见，右端标签清晰。
-- 透支日柱子为红色，正常日为绿色。
+- 进入 Wealth 页面 → 记录页 → 页面顶部出现开销去向饼图。
+- 切换今天/近7天/近30天 → 饼图和分类列表更新。
+- 饼图下方显示分类列表（颜色圆点+金额+占比）。
+- 无支出数据时显示空状态引导文字。
+- 搜索框输入「饮食」→ 过滤显示分类含饮食的记录。
+- 搜索框输入「订阅」→ 过滤显示含订阅的记录。
+- 点击「按日期」→ 记录按日期分组显示。
+- 点击「按类型」→ 记录按类型（真实支出/睡后收入等）分组显示。
+- 点击「按分类」→ 记录按分类（饮食/交通等）分组显示。
+- 现金流趋势图仍正常显示（柱状图=支出，蓝线=收入，橙色虚线=安全线）。
 - 新增财富记录弹窗仍可用。
 - 参数页仍可用。
 - Time Debt 页面仍能打开。

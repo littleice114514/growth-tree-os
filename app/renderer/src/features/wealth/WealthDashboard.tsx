@@ -22,6 +22,8 @@ import {
 import { calculateOverdraftStreak, calculatePeriodOverdraftStreak, calculateCashflowTrend, periodLabels, type OverdraftStreak, type PeriodKey, type CashflowTrend } from './overdraftTracker'
 import { categoryPresets } from './wealthCategoryOptions'
 import { CashflowComboChart } from './CashflowComboChart'
+import { ExpenseBreakdownPie } from './ExpenseBreakdownPie'
+import { searchRecords, groupRecords, type GroupMode, type InsightPeriod } from './wealthRecordInsights'
 import { WealthDashboardPreview } from '@/features/dashboard-preview'
 
 type WealthTab = 'overview' | 'records' | 'config'
@@ -210,7 +212,7 @@ export function WealthDashboard() {
         ) : null}
 
         {currentTab === 'records' ? (
-          <RecordsTab records={records} onDelete={removeRecord} />
+          <RecordsTab records={records} onDelete={removeRecord} referenceDate={baseConfig.date} />
         ) : null}
 
         {currentTab === 'config' ? (
@@ -523,16 +525,83 @@ function CollapsiblePreviewPanel({ snapshot, summary }: { snapshot: DailyWealthS
 
 /* ── Records Tab ── */
 
-function RecordsTab({ records, onDelete }: { records: WealthRecord[]; onDelete: (id: string) => void }) {
+function RecordsTab({ records, onDelete, referenceDate }: { records: WealthRecord[]; onDelete: (id: string) => void; referenceDate: string }) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [groupMode, setGroupMode] = useState<GroupMode>('date')
+  const [insightPeriod, setInsightPeriod] = useState<InsightPeriod>('last7')
+
+  const filteredRecords = useMemo(() => searchRecords(records, searchQuery), [records, searchQuery])
+  const groups = useMemo(() => groupRecords(filteredRecords, groupMode), [filteredRecords, groupMode])
+
   return (
     <div className="flex flex-col gap-5">
+      {/* Expense Breakdown Pie */}
+      <ExpenseBreakdownPie
+        records={records}
+        referenceDate={referenceDate}
+        period={insightPeriod}
+        onPeriodChange={setInsightPeriod}
+      />
+
+      {/* Records List */}
       <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
         <div className="mb-4">
           <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">All Records</div>
           <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">全部财富记录</h3>
-          <p className="mt-1 text-xs text-[color:var(--text-muted)]">共 {records.length} 条</p>
+          <p className="mt-1 text-xs text-[color:var(--text-muted)]">共 {records.length} 条{searchQuery ? ` · 匹配 ${filteredRecords.length} 条` : ''}</p>
         </div>
-        {records.length === 0 ? <RecordsEmptyGuide /> : <RecordList records={records} onDelete={onDelete} />}
+
+        {/* Search + Group controls */}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="搜索记录（类型、分类、备注、日期、金额）…"
+            className="min-w-0 flex-1 rounded-xl border border-[color:var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none transition placeholder:text-[color:var(--text-muted)] focus:border-[color:var(--node-selected-border)] focus:bg-[var(--control-hover)]"
+          />
+          <div className="flex gap-1.5">
+            {([
+              { key: 'date' as GroupMode, label: '按日期' },
+              { key: 'type' as GroupMode, label: '按类型' },
+              { key: 'category' as GroupMode, label: '按分类' }
+            ]).map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setGroupMode(key)}
+                className={
+                  groupMode === key
+                    ? 'rounded-lg border border-[color:var(--node-selected-border)] bg-[var(--control-hover)] px-2.5 py-1.5 text-xs text-[color:var(--text-primary)]'
+                    : 'rounded-lg border border-[color:var(--input-border)] bg-[var(--control-bg)] px-2.5 py-1.5 text-xs text-[color:var(--text-muted)] transition hover:bg-[var(--control-hover)] hover:text-[color:var(--text-primary)]'
+                }
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {filteredRecords.length === 0 ? (
+          searchQuery ? (
+            <div className="rounded-2xl border border-dashed border-[color:var(--panel-border)] p-4 text-center text-sm text-[color:var(--text-muted)]">
+              没有匹配「{searchQuery}」的记录
+            </div>
+          ) : (
+            <RecordsEmptyGuide />
+          )
+        ) : (
+          <div className="space-y-4">
+            {groups.map((group) => (
+              <div key={group.key}>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-xs font-semibold text-[color:var(--text-secondary)]">{group.label}</span>
+                  <span className="text-[10px] text-[color:var(--text-muted)]">{group.records.length} 条</span>
+                </div>
+                <RecordList records={group.records} onDelete={onDelete} />
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   )
