@@ -54,10 +54,16 @@
   - Income/Expenses/Assets/Evaluation 不再作为独立 Tab 平铺。
   - 不改 IPC、不改全局 store、不改数据库、不改底层数据逻辑。
   - `pnpm typecheck` / `pnpm build` / `pnpm smoke` 均通过。
+- **UI Polish 完成**：空状态承接 + Preview 收敛 + 零数据趋势优化。
+  - RecordsTab 空状态：新增 `RecordsEmptyGuide` 组件，展示引导文案 + 3 个快捷记录类型提示卡片（收入/支出/持续消耗）。
+  - Overview 的 DashboardPreview：新增 `CollapsiblePreviewPanel` 组件，默认收起，点击展开查看完整系统指标预览，减少首屏信息密度。
+  - P3 零数据趋势图：当所有天支出为 0 时，显示半透明占位条 + "等待数据" 状态 + 引导文案；有数据时正常渲染。
+  - 不改 IPC、不改全局 store、不改数据库、不改底层数据逻辑。
+  - `pnpm typecheck` / `pnpm build` / `pnpm smoke` 均通过。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/wealth/WealthDashboard.tsx`（UI-IA 重构：Tab 收敛到总览/记录/参数，Overview 重排为财务生命体征监控器布局，移除 Income/Expenses/Assets/Evaluation 独立 Tab）
+- `app/renderer/src/features/wealth/WealthDashboard.tsx`（UI Polish：RecordsEmptyGuide 空状态引导、CollapsiblePreviewPanel 折叠预览、零数据趋势占位态）
 - `app/renderer/src/features/wealth/overdraftTracker.ts`（上轮新增 P3 函数）
 - `app/renderer/src/features/wealth/wealthConfigStorage.ts`（上轮新建）
 - `app/renderer/src/features/dashboard-preview/WealthDashboardPreview.tsx`（上轮：接收真实数据 props）
@@ -83,7 +89,8 @@
 2. ~~**Wealth P2**：日期切换（查看历史快照）。~~ **已完成。**
 3. ~~**Wealth P3**：趋势图 / 现金流质量历史。~~ **已完成。**
 4. ~~**Wealth UI-IA 重构**：收敛页面入口 + 接入 P1/P2/P3 到主视图。~~ **已完成。**
-5. **Wealth UI smoke / 真实体验验收**：建议先在 Electron 中实际操作，确认首屏体验后再推进新功能。
+5. ~~**Wealth UI Polish**：空状态承接 + Preview 收敛 + 零数据趋势优化。~~ **已完成。**
+6. **Wealth 真实体验验收**：在 Electron 中实际操作，确认首屏体验后再推进新功能。
 
 ## 7. 手动验收方式
 

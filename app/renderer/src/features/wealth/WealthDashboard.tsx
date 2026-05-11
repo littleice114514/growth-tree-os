@@ -286,8 +286,8 @@ function OverviewTab({
         <RecordList records={recentRecords} onDelete={onDelete} emptyText="暂无财富记录，点击右上角「新增财富记录」开始。" />
       </section>
 
-      {/* E. Dashboard Preview */}
-      <WealthDashboardPreview snapshot={snapshot} summary={summary} />
+      {/* E. Dashboard Preview (collapsible) */}
+      <CollapsiblePreviewPanel snapshot={snapshot} summary={summary} />
     </div>
   )
 }
@@ -398,28 +398,51 @@ function CashflowTrendPanel({
 
       {/* Bar chart */}
       <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-4">
-        <div className="flex items-end gap-[3px]" style={{ height: '100px' }}>
-          {cashflowTrend.days.map((day) => {
-            const heightPercent = Math.max(2, day.expenseRatio * 100)
-            return (
-              <div key={day.date} className="group relative flex flex-1 flex-col items-center" title={`${day.date}: ${formatMoney(day.totalExpense)} / ${formatMoney(day.safeLine)}`}>
-                <div className="relative flex w-full flex-1 items-end justify-center">
-                  <div
-                    className={`w-full max-w-[20px] rounded-t-sm ${day.isOverdraft ? 'bg-rose-400/70' : 'bg-emerald-400/60'}`}
-                    style={{ height: `${heightPercent}%` }}
-                  />
+        {cashflowTrend.days.every((d) => d.totalExpense === 0) ? (
+          <div className="flex flex-col items-center justify-center py-6" style={{ minHeight: '100px' }}>
+            <div className="flex items-end gap-[3px] opacity-30" style={{ height: '60px' }}>
+              {cashflowTrend.days.map((day) => (
+                <div key={day.date} className="flex flex-1 flex-col items-center">
+                  <div className="relative flex w-full flex-1 items-end justify-center">
+                    <div className="w-full max-w-[20px] rounded-t-sm bg-slate-400/40" style={{ height: '8%' }} />
+                  </div>
+                  <div className="mt-1 truncate text-[8px] text-[color:var(--text-muted)]" style={{ maxWidth: '28px' }}>
+                    {day.date.slice(5)}
+                  </div>
                 </div>
-                <div className="mt-1 truncate text-[8px] text-[color:var(--text-muted)]" style={{ maxWidth: '28px' }}>
-                  {day.date.slice(5)}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-        <div className="mt-2 flex items-center gap-4 text-[10px] text-[color:var(--text-muted)]">
-          <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-emerald-400/60" />正常</span>
-          <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-rose-400/70" />透支</span>
-        </div>
+              ))}
+            </div>
+            <div className="mt-3 text-center">
+              <div className="text-xs font-medium text-[color:var(--text-secondary)]">等待数据</div>
+              <p className="mt-1 text-[10px] text-[color:var(--text-muted)]">新增支出记录后，趋势图将自动更新。</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-end gap-[3px]" style={{ height: '100px' }}>
+              {cashflowTrend.days.map((day) => {
+                const heightPercent = Math.max(2, day.expenseRatio * 100)
+                return (
+                  <div key={day.date} className="group relative flex flex-1 flex-col items-center" title={`${day.date}: ${formatMoney(day.totalExpense)} / ${formatMoney(day.safeLine)}`}>
+                    <div className="relative flex w-full flex-1 items-end justify-center">
+                      <div
+                        className={`w-full max-w-[20px] rounded-t-sm ${day.isOverdraft ? 'bg-rose-400/70' : 'bg-emerald-400/60'}`}
+                        style={{ height: `${heightPercent}%` }}
+                      />
+                    </div>
+                    <div className="mt-1 truncate text-[8px] text-[color:var(--text-muted)]" style={{ maxWidth: '28px' }}>
+                      {day.date.slice(5)}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="mt-2 flex items-center gap-4 text-[10px] text-[color:var(--text-muted)]">
+              <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-emerald-400/60" />正常</span>
+              <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-rose-400/70" />透支</span>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="mt-3 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
@@ -509,6 +532,33 @@ function PeriodSlicePanel({
   )
 }
 
+/* ── Collapsible Preview Panel ── */
+
+function CollapsiblePreviewPanel({ snapshot, summary }: { snapshot: DailyWealthSnapshot; summary: ReturnType<typeof summarizeWealthRecords> }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)]">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex w-full items-center justify-between p-4 text-left"
+      >
+        <div>
+          <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">System</div>
+          <h3 className="mt-1 text-sm font-semibold text-[color:var(--text-primary)]">系统指标预览</h3>
+        </div>
+        <span className="text-xs text-[color:var(--text-muted)]">{open ? '收起' : '展开'}</span>
+      </button>
+      {open ? (
+        <div className="border-t border-[color:var(--panel-border)] px-4 pb-4 pt-4">
+          <WealthDashboardPreview snapshot={snapshot} summary={summary} />
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
 /* ── Records Tab ── */
 
 function RecordsTab({ records, onDelete }: { records: WealthRecord[]; onDelete: (id: string) => void }) {
@@ -520,8 +570,33 @@ function RecordsTab({ records, onDelete }: { records: WealthRecord[]; onDelete: 
           <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">全部财富记录</h3>
           <p className="mt-1 text-xs text-[color:var(--text-muted)]">共 {records.length} 条</p>
         </div>
-        <RecordList records={records} onDelete={onDelete} emptyText="暂无财富记录。点击右上角「新增财富记录」开始记录。" />
+        {records.length === 0 ? <RecordsEmptyGuide /> : <RecordList records={records} onDelete={onDelete} />}
       </section>
+    </div>
+  )
+}
+
+const quickRecordSuggestions: { type: WealthRecordType; label: string; hint: string }[] = [
+  { type: 'real_income', label: '记录一笔收入', hint: '工资、兼职、自由职业等' },
+  { type: 'real_expense', label: '记录一笔支出', hint: '餐饮、交通、购物等' },
+  { type: 'ongoing_cost', label: '添加持续消耗', hint: '订阅、房租、月供等' }
+]
+
+function RecordsEmptyGuide() {
+  return (
+    <div className="rounded-2xl border border-dashed border-[color:var(--panel-border)] p-6 text-center">
+      <div className="text-sm font-medium text-[color:var(--text-secondary)]">还没有财富记录</div>
+      <p className="mt-2 text-xs text-[color:var(--text-muted)]">
+        点击右上角「新增财富记录」开始记录，系统将自动计算体征指标。
+      </p>
+      <div className="mt-4 flex flex-wrap justify-center gap-2">
+        {quickRecordSuggestions.map((s) => (
+          <div key={s.type} className="rounded-xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] px-3 py-2 text-left">
+            <div className="text-xs font-semibold text-[color:var(--text-primary)]">{s.label}</div>
+            <div className="mt-0.5 text-[10px] text-[color:var(--text-muted)]">{s.hint}</div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
