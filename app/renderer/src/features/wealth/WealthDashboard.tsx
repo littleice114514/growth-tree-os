@@ -19,7 +19,7 @@ import {
   resetWealthBaseConfig,
   wealthConfigStorageKey
 } from './wealthConfigStorage'
-import { calculateOverdraftStreak, type OverdraftStreak } from './overdraftTracker'
+import { calculateOverdraftStreak, calculatePeriodOverdraftStreak, periodLabels, type OverdraftStreak, type PeriodKey } from './overdraftTracker'
 import { WealthDashboardPreview } from '@/features/dashboard-preview'
 
 type WealthView = 'overview' | 'income' | 'expenses' | 'assets' | 'evaluation'
@@ -82,12 +82,17 @@ export function WealthDashboard() {
   const [records, setRecords] = useState<WealthRecord[]>(() => loadWealthRecords())
   const [baseConfig, setBaseConfig] = useState<WealthBaseConfig>(() => loadWealthBaseConfig())
   const [currentView, setCurrentView] = useState<WealthView>('overview')
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>('today')
   const [isRecorderOpen, setIsRecorderOpen] = useState(false)
   const [draft, setDraft] = useState<RecordDraft>(() => createDraft())
 
   const overdraftStreak = useMemo(
     () => calculateOverdraftStreak(records, baseConfig.dailySafeLine, baseConfig.date),
     [records, baseConfig.dailySafeLine, baseConfig.date]
+  )
+  const periodStreak = useMemo(
+    () => calculatePeriodOverdraftStreak(records, baseConfig.dailySafeLine, selectedPeriod, baseConfig.date),
+    [records, baseConfig.dailySafeLine, selectedPeriod, baseConfig.date]
   )
   const effectiveOverdraftDays = Math.max(baseConfig.consecutiveOverdraftDays ?? 0, overdraftStreak.current)
   const configForCalc = useMemo(
@@ -192,6 +197,9 @@ export function WealthDashboard() {
               recentRecords={recentRecords}
               baseConfig={baseConfig}
               overdraftStreak={overdraftStreak}
+              selectedPeriod={selectedPeriod}
+              periodStreak={periodStreak}
+              onPeriodChange={setSelectedPeriod}
               onConfigChange={(patch) => setBaseConfig((current) => ({ ...current, ...patch }))}
               onSaveConfig={handleSaveConfig}
               onResetConfig={handleResetConfig}
@@ -223,6 +231,9 @@ function OverviewView({
   recentRecords,
   baseConfig,
   overdraftStreak,
+  selectedPeriod,
+  periodStreak,
+  onPeriodChange,
   onConfigChange,
   onSaveConfig,
   onResetConfig,
@@ -233,6 +244,9 @@ function OverviewView({
   recentRecords: WealthRecord[]
   baseConfig: WealthBaseConfig
   overdraftStreak: OverdraftStreak
+  selectedPeriod: PeriodKey
+  periodStreak: OverdraftStreak
+  onPeriodChange: (period: PeriodKey) => void
   onConfigChange: (patch: Partial<WealthBaseConfig>) => void
   onSaveConfig: () => void
   onResetConfig: () => void
@@ -327,6 +341,69 @@ function OverviewView({
             </div>
           </div>
         ) : null}
+      </Panel>
+
+      <Panel title="透支周期查看" eyebrow="Period View">
+        <div className="flex flex-wrap gap-2">
+          {(Object.keys(periodLabels) as PeriodKey[]).map((period) => (
+            <button
+              key={period}
+              type="button"
+              onClick={() => onPeriodChange(period)}
+              className={
+                selectedPeriod === period
+                  ? 'rounded-xl border border-[color:var(--node-selected-border)] bg-[var(--control-hover)] px-3 py-2 text-sm text-[color:var(--text-primary)] shadow-[var(--shadow-node-neighbor)]'
+                  : 'rounded-xl border border-[color:var(--input-border)] bg-[var(--control-bg)] px-3 py-2 text-sm text-[color:var(--text-secondary)] transition hover:bg-[var(--control-hover)] hover:text-[color:var(--text-primary)]'
+              }
+            >
+              {periodLabels[period]}
+            </button>
+          ))}
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className={`rounded-2xl border p-3 ${periodStreak.riskTriggered ? 'border-rose-400/30 bg-rose-500/15' : 'border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)]'}`}>
+            <div className="text-xs text-[color:var(--text-muted)]">末尾连续透支</div>
+            <div className={`mt-1 text-xl font-semibold ${periodStreak.riskTriggered ? 'text-accent-rose' : periodStreak.current > 0 ? 'text-accent-amber' : 'text-accent-green'}`}>
+              {periodStreak.current} 天
+            </div>
+          </div>
+          <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
+            <div className="text-xs text-[color:var(--text-muted)]">透支天数合计</div>
+            <div className="mt-1 text-xl font-semibold text-[color:var(--text-primary)]">
+              {periodStreak.days.filter((d) => d.isOverdraft).length} / {periodStreak.days.length} 天
+            </div>
+          </div>
+          <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
+            <div className="text-xs text-[color:var(--text-muted)]">总支出</div>
+            <div className="mt-1 text-xl font-semibold text-[color:var(--text-primary)]">
+              {formatMoney(periodStreak.days.reduce((sum, d) => sum + d.totalExpense, 0))}
+            </div>
+          </div>
+        </div>
+        {periodStreak.riskTriggered ? (
+          <div className="mt-3 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3">
+            <div className="text-xs font-semibold text-accent-rose">⚠ {periodLabels[selectedPeriod]}末尾连续透支 ≥ 3 天</div>
+          </div>
+        ) : null}
+        {periodStreak.days.length > 0 ? (
+          <div className="mt-3">
+            <div className="text-xs text-[color:var(--text-muted)]">每日明细</div>
+            <div className="mt-2 space-y-1">
+              {periodStreak.days.map((day) => (
+                <div key={day.date} className="flex items-center justify-between text-xs">
+                  <span className="text-[color:var(--text-secondary)]">{day.date}</span>
+                  <span className={day.isOverdraft ? 'text-accent-rose' : 'text-accent-green'}>
+                    {formatMoney(day.totalExpense)} / {formatMoney(day.safeLine)} {day.isOverdraft ? '透支' : '正常'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="mt-3 rounded-2xl border border-dashed border-[color:var(--panel-border)] p-4 text-sm text-[color:var(--text-muted)]">
+            {periodLabels[selectedPeriod]}暂无记录
+          </div>
+        )}
       </Panel>
 
       <Panel title="基础配置" eyebrow="Config">

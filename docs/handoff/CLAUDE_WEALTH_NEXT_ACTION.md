@@ -26,17 +26,24 @@
   - 展示最近 5 天每日透支状态明细。
   - 不改 IPC、不改全局 store、不改数据库、不改 DashboardPreview。
   - `pnpm typecheck` / `pnpm build` / `pnpm smoke` 均通过。
+- **P2 完成**：日期切换与透支天数查看。
+  - `overdraftTracker.ts` 新增 `calculatePeriodOverdraftStreak`，支持今天/昨天/近7天/近30天四个周期。
+  - `WealthDashboard.tsx` 新增 `selectedPeriod` 状态和「透支周期查看」面板。
+  - 周期面板包含：周期选择按钮组、末尾连续透支天数、透支天数合计（如 3/7）、总支出、风险警告、每日明细。
+  - 切换周期后，所有数据实时变化，无需刷新。
+  - 不改 IPC、不改全局 store、不改数据库、不改 DashboardPreview。
+  - `pnpm typecheck` / `pnpm build` / `pnpm smoke` 均通过。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/wealth/overdraftTracker.ts`（本轮新建：连续透支天数自动计算逻辑）
-- `app/renderer/src/features/wealth/WealthDashboard.tsx`（接入 overdraftTracker，新增连续透支追踪面板）
+- `app/renderer/src/features/wealth/overdraftTracker.ts`（P2 新增：`calculatePeriodOverdraftStreak`、`PeriodKey`、`periodLabels`、周期范围计算）
+- `app/renderer/src/features/wealth/WealthDashboard.tsx`（P2 新增：`selectedPeriod` 状态、周期选择器、透支周期查看面板）
 - `app/renderer/src/features/wealth/wealthConfigStorage.ts`（上轮新建）
 - `app/renderer/src/features/dashboard-preview/WealthDashboardPreview.tsx`（上轮：接收真实数据 props）
 
 ## 4. 未做事项
 
-- 未做日期切换。
+- ~~未做日期切换。~~ **已完成。**
 - 未做趋势图。
 - 未做记录编辑。
 - 未做 emergency_cost 记录类型。
@@ -52,7 +59,7 @@
 
 按优先级：
 1. ~~**Wealth P1**：连续透支天数自动追踪。~~ **已完成。**
-2. **Wealth P2**：日期切换（查看历史快照）。
+2. ~~**Wealth P2**：日期切换（查看历史快照）。~~ **已完成。**
 3. **Wealth P3**：趋势图 / 现金流质量历史。
 
 ## 7. 手动验收方式

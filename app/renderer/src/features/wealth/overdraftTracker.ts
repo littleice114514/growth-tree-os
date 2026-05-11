@@ -14,6 +14,15 @@ export type OverdraftStreak = {
   days: OverdraftDay[]
 }
 
+export type PeriodKey = 'today' | 'yesterday' | 'last7' | 'last30'
+
+export const periodLabels: Record<PeriodKey, string> = {
+  today: '今天',
+  yesterday: '昨天',
+  last7: '近 7 天',
+  last30: '近 30 天'
+}
+
 const RISK_THRESHOLD = 3
 
 export function calculateOverdraftStreak(
@@ -50,6 +59,75 @@ export function calculateOverdraftStreak(
     lastOverdraftDate,
     days
   }
+}
+
+export function calculatePeriodOverdraftStreak(
+  records: WealthRecord[],
+  dailySafeLine: number,
+  period: PeriodKey,
+  today: string
+): OverdraftStreak {
+  const { startDate, endDate } = resolvePeriodRange(period, today)
+  const filtered = records.filter((r) => r.date >= startDate && r.date <= endDate)
+  const expenseByDate = buildDailyExpenseMap(filtered)
+  const dates = buildDateRange(startDate, endDate)
+  const days: OverdraftDay[] = dates.map((date) => {
+    const totalExpense = expenseByDate.get(date) ?? 0
+    return {
+      date,
+      totalExpense,
+      safeLine: dailySafeLine,
+      isOverdraft: totalExpense > dailySafeLine
+    }
+  })
+
+  let current = 0
+  for (let i = days.length - 1; i >= 0; i--) {
+    if (days[i].isOverdraft) {
+      current++
+    } else {
+      break
+    }
+  }
+
+  const totalOverdraftDays = days.filter((d) => d.isOverdraft).length
+  const lastOverdraftDate = totalOverdraftDays > 0 ? days.filter((d) => d.isOverdraft).pop()?.date ?? null : null
+
+  return {
+    current,
+    riskTriggered: current >= RISK_THRESHOLD,
+    lastOverdraftDate,
+    days
+  }
+}
+
+function resolvePeriodRange(period: PeriodKey, today: string): { startDate: string; endDate: string } {
+  if (period === 'today') {
+    return { startDate: today, endDate: today }
+  }
+  if (period === 'yesterday') {
+    const yesterday = shiftDate(today, -1)
+    return { startDate: yesterday, endDate: yesterday }
+  }
+  const daysBack = period === 'last7' ? 6 : 29
+  return { startDate: shiftDate(today, -daysBack), endDate: today }
+}
+
+function shiftDate(dateStr: string, delta: number): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  d.setDate(d.getDate() + delta)
+  return d.toISOString().slice(0, 10)
+}
+
+function buildDateRange(start: string, end: string): string[] {
+  const dates: string[] = []
+  const current = new Date(start + 'T00:00:00')
+  const last = new Date(end + 'T00:00:00')
+  while (current <= last) {
+    dates.push(current.toISOString().slice(0, 10))
+    current.setDate(current.getDate() + 1)
+  }
+  return dates
 }
 
 function buildDailyExpenseMap(records: WealthRecord[]): Map<string, number> {
