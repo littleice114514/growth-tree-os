@@ -89,7 +89,11 @@
 - 2026-05-11 short-task verification: a post-fix 2-minute timer log displayed as a minimum-height calendar block, opened in detail on click, and preserved real start/end plus `实际时长 2 分钟`; timezone selection to `GMT-7 Los Angeles` did not alter the record or detail values.
 - Validation: `pnpm typecheck` and `pnpm smoke` passed before the UI smoke; after the short-block click fix, `pnpm typecheck` and `pnpm smoke` passed again.
 - M13 seal judgment: Time Debt M13 is sealable after this commit/push. Timezone remains UI-only MVP by design; real timezone conversion should be a later data-layer design pass if needed.
-- Next unique entry: after pulling this M13 seal commit, start either Wealth P1 or develop integration; do not continue Time Debt timezone conversion without a separate data-layer task card.
+- 2026-05-11 Time Usage Dashboard MVP: `TimeDebtDashboard.tsx` now renders a lightweight daily time usage dashboard above the view tabs, with recorded time, mainline time, time debt, blank/unfiled time, a share bar, category details, and one-line diagnosis.
+- 2026-05-11 Time Usage Dashboard MVP: `timeDebtUsageStats.ts` computes today's completed-log usage from `title`, `primaryCategory`, `secondaryProject`, tags, distraction, dimension, and notes; the first version uses hardcoded keyword mapping only.
+- Classification status: mainline/growth/maintenance/recovery/debt/unknown mapping is MVP-level and not configurable. Unknown records stay in `unknownMinutes`; blank time is calculated as local today 00:00-to-now elapsed minutes minus recorded minutes.
+- Overlap status: overlapping completed logs are not deduplicated in this MVP, so totals can exceed true elapsed focus time when records overlap. Treat overlap dedupe as a later Time Debt statistics refinement.
+- Next unique entry: `Time Debt｜时间质量分类映射可配置设计`; do not implement configurable mapping without a separate task card.
 
 ## 8. Backlog Only
 

@@ -58,6 +58,7 @@ import {
   upsertTimePlanReminder
 } from '@/features/reminders/timePlanReminderStorage'
 import { timeDebtFieldConfigs, timeDebtReservedFieldTypes, timeDebtSupportedFieldTypes } from './timeDebtFieldConfig'
+import { buildDailyTimeUsageStats, type DailyTimeUsageStats, type TimeUsageCategoryId } from './timeDebtUsageStats'
 import { CalendarViewShell } from './calendar/CalendarViewShell'
 import type { CalendarBlock, CalendarViewMode } from './calendar/calendarTypes'
 import { layoutOverlappingEvents } from './calendar/calendarOverlapLayoutUtils'
@@ -174,6 +175,7 @@ export function TimeDebtDashboard() {
   const todayLogs = useMemo(() => logs.filter((log) => log.startTime.slice(0, 10) === selectedDate), [logs, selectedDate])
   const calendarBlocks = useMemo(() => buildCalendarBlocks(logs, plans, runningTimer, timerNow), [logs, plans, runningTimer, timerNow])
   const taskHistoryOptions = useMemo(() => buildTaskHistoryOptions(logs, plans), [logs, plans])
+  const dailyUsageStats = useMemo(() => buildDailyTimeUsageStats(logs, new Date(timerNow)), [logs, timerNow])
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setTimerNow(Date.now()), runningTimer ? 1000 : 30000)
@@ -563,6 +565,8 @@ export function TimeDebtDashboard() {
           </div>
         </header>
 
+        <DailyUsageDashboard stats={dailyUsageStats} />
+
         <nav className="flex flex-wrap gap-2">
           {(Object.keys(viewLabels) as TimeDebtView[]).map((view) => (
             <button key={view} type="button" onClick={() => setCurrentView(view)} className={currentView === view ? activeTabClass : tabClass}>
@@ -651,6 +655,75 @@ export function TimeDebtDashboard() {
         />
       ) : null}
     </main>
+  )
+}
+
+function DailyUsageDashboard({ stats }: { stats: DailyTimeUsageStats }) {
+  const rows = buildUsageCategoryRows(stats)
+  const totalVisibleMinutes = Math.max(
+    rows.reduce((sum, row) => sum + row.minutes, 0),
+    1
+  )
+  const diagnosis = resolveDailyUsageDiagnosis(stats)
+  const unfiledMinutes = stats.unknownMinutes + stats.blankMinutes
+  const mainlineRatio = stats.totalRecordedMinutes > 0 ? stats.mainlineMinutes / stats.totalRecordedMinutes : 0
+  const debtRatio = stats.totalRecordedMinutes > 0 ? stats.debtMinutes / stats.totalRecordedMinutes : 0
+
+  return (
+    <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
+      <div className="grid gap-4 xl:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.2fr)]">
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Time Usage Dashboard</div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <h3 className="text-lg font-semibold text-[color:var(--text-primary)]">今日时间状态：{diagnosis.label}</h3>
+            <span className={`rounded-full border px-2.5 py-1 text-[11px] ${diagnosis.pillClass}`}>{diagnosis.badge}</span>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-[color:var(--text-secondary)]">{diagnosis.summary}</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Metric label="已记录时间" value={formatMinutes(stats.totalRecordedMinutes)} tone={stats.totalRecordedMinutes > 0 ? 'good' : 'warn'} />
+            <Metric label="主线推进" value={formatMinutes(stats.mainlineMinutes)} tone={mainlineRatio >= 0.35 ? 'good' : 'warn'} />
+            <Metric label="时间负债" value={formatMinutes(stats.debtMinutes)} tone={debtRatio > 0.2 ? 'bad' : 'neutral'} />
+            <Metric label="空白 / 未归档" value={formatMinutes(unfiledMinutes)} tone={unfiledMinutes > 120 ? 'warn' : 'neutral'} />
+          </div>
+        </div>
+
+        <div className="min-w-0 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--text-muted)]">Usage Share</div>
+              <div className="mt-1 text-sm font-semibold text-[color:var(--text-primary)]">时间使用比例</div>
+            </div>
+            <div className="text-xs tabular-nums text-[color:var(--text-muted)]">{stats.date}</div>
+          </div>
+          <div className="flex h-4 overflow-hidden rounded-full border border-[color:var(--panel-border)] bg-[var(--control-bg)]">
+            {rows.map((row) =>
+              row.minutes > 0 ? (
+                <div
+                  key={row.id}
+                  className={`${row.barClass} h-full transition-[width]`}
+                  style={{ width: `${Math.max(2, (row.minutes / totalVisibleMinutes) * 100)}%` }}
+                  title={`${row.label} ${formatMinutes(row.minutes)}`}
+                />
+              ) : null
+            )}
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {rows.map((row) => (
+              <div key={row.id} className="rounded-xl border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${row.dotClass}`} />
+                    <span className="truncate text-xs text-[color:var(--text-secondary)]">{row.label}</span>
+                  </div>
+                  <span className="text-[11px] tabular-nums text-[color:var(--text-muted)]">{formatUsageShare(row.minutes, totalVisibleMinutes)}</span>
+                </div>
+                <div className="mt-2 text-sm font-semibold tabular-nums text-[color:var(--text-primary)]">{formatMinutes(row.minutes)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 
@@ -2012,6 +2085,112 @@ function StatusBadge({ overview }: { overview: TimeDebtOverview }) {
   )
 }
 
+function buildUsageCategoryRows(stats: DailyTimeUsageStats): Array<{
+  id: TimeUsageCategoryId
+  label: string
+  minutes: number
+  barClass: string
+  dotClass: string
+}> {
+  return [
+    {
+      id: 'mainline',
+      label: '主线推进',
+      minutes: stats.mainlineMinutes,
+      barClass: 'bg-cyan-300/90',
+      dotClass: 'bg-cyan-300'
+    },
+    {
+      id: 'growth',
+      label: '能力建设',
+      minutes: stats.growthMinutes,
+      barClass: 'bg-emerald-300/85',
+      dotClass: 'bg-emerald-300'
+    },
+    {
+      id: 'maintenance',
+      label: '生活维护',
+      minutes: stats.maintenanceMinutes,
+      barClass: 'bg-sky-300/75',
+      dotClass: 'bg-sky-300'
+    },
+    {
+      id: 'recovery',
+      label: '恢复休息',
+      minutes: stats.recoveryMinutes,
+      barClass: 'bg-lime-300/75',
+      dotClass: 'bg-lime-300'
+    },
+    {
+      id: 'debt',
+      label: '时间负债',
+      minutes: stats.debtMinutes,
+      barClass: 'bg-rose-300/85',
+      dotClass: 'bg-rose-300'
+    },
+    {
+      id: 'unknown',
+      label: '未归档',
+      minutes: stats.unknownMinutes,
+      barClass: 'bg-violet-300/75',
+      dotClass: 'bg-violet-300'
+    },
+    {
+      id: 'blank',
+      label: '空白',
+      minutes: stats.blankMinutes,
+      barClass: 'bg-zinc-400/60',
+      dotClass: 'bg-zinc-400'
+    }
+  ]
+}
+
+function resolveDailyUsageDiagnosis(stats: DailyTimeUsageStats): {
+  label: string
+  badge: string
+  summary: string
+  pillClass: string
+} {
+  const elapsedMinutes = stats.totalRecordedMinutes + stats.blankMinutes
+  const recordedRatio = elapsedMinutes > 0 ? stats.totalRecordedMinutes / elapsedMinutes : 0
+  const mainlineRatio = stats.totalRecordedMinutes > 0 ? stats.mainlineMinutes / stats.totalRecordedMinutes : 0
+  const debtRatio = stats.totalRecordedMinutes > 0 ? stats.debtMinutes / stats.totalRecordedMinutes : 0
+
+  if (stats.totalRecordedMinutes < 30 || recordedRatio < 0.18) {
+    return {
+      label: '记录不足',
+      badge: 'needs log',
+      summary: `今天已记录 ${formatMinutes(stats.totalRecordedMinutes)}，空白时间约 ${formatMinutes(stats.blankMinutes)}。先补齐最近一段时间，再判断今天的时间结构。`,
+      pillClass: 'border-amber-300/35 bg-amber-300/10 text-accent-amber'
+    }
+  }
+
+  if (stats.debtMinutes >= 60 || debtRatio >= 0.25) {
+    return {
+      label: '时间负债偏高',
+      badge: 'debt high',
+      summary: `今天已记录 ${formatMinutes(stats.totalRecordedMinutes)}，时间负债约 ${formatMinutes(stats.debtMinutes)}。建议先切回一段 30-60 分钟可收尾的主线任务。`,
+      pillClass: 'border-rose-300/35 bg-rose-300/10 text-accent-rose'
+    }
+  }
+
+  if (mainlineRatio < 0.3 && elapsedMinutes >= 240) {
+    return {
+      label: '轻微失衡',
+      badge: 'rebalance',
+      summary: `今天已记录 ${formatMinutes(stats.totalRecordedMinutes)}，主线推进占比偏低。建议优先补一段 60-90 分钟深度工作。`,
+      pillClass: 'border-amber-300/35 bg-amber-300/10 text-accent-amber'
+    }
+  }
+
+  return {
+    label: '健康',
+    badge: 'healthy',
+    summary: `今天已记录 ${formatMinutes(stats.totalRecordedMinutes)}，主线推进 ${formatMinutes(stats.mainlineMinutes)}，时间负债保持在可控范围。`,
+    pillClass: 'border-emerald-300/35 bg-emerald-300/10 text-accent-green'
+  }
+}
+
 function buildCalendarBlocks(logs: TimeDebtLog[], plans: TimeDebtPlan[], runningTimer: RunningTimer | null, timerNow: number): CalendarBlock[] {
   const completed: CalendarBlock[] = logs.map((log) => ({
     id: log.id,
@@ -2512,6 +2691,16 @@ function formatPercent(value: number): string {
     style: 'percent',
     maximumFractionDigits: 0
   }).format(ratio)
+}
+
+function formatUsageShare(minutes: number, totalMinutes: number): string {
+  if (totalMinutes <= 0) {
+    return '0%'
+  }
+  return new Intl.NumberFormat('zh-CN', {
+    style: 'percent',
+    maximumFractionDigits: 0
+  }).format(minutes / totalMinutes)
 }
 
 function formatDiagnosisReason(overview: TimeDebtOverview, diagnosis: TimeDebtDiagnosis): string {
