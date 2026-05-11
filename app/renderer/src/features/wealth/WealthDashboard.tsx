@@ -19,6 +19,7 @@ import {
   resetWealthBaseConfig,
   wealthConfigStorageKey
 } from './wealthConfigStorage'
+import { calculateOverdraftStreak, type OverdraftStreak } from './overdraftTracker'
 import { WealthDashboardPreview } from '@/features/dashboard-preview'
 
 type WealthView = 'overview' | 'income' | 'expenses' | 'assets' | 'evaluation'
@@ -84,10 +85,19 @@ export function WealthDashboard() {
   const [isRecorderOpen, setIsRecorderOpen] = useState(false)
   const [draft, setDraft] = useState<RecordDraft>(() => createDraft())
 
-  const summary = useMemo(() => summarizeWealthRecords(records, baseConfig.date, baseConfig), [records, baseConfig])
+  const overdraftStreak = useMemo(
+    () => calculateOverdraftStreak(records, baseConfig.dailySafeLine, baseConfig.date),
+    [records, baseConfig.dailySafeLine, baseConfig.date]
+  )
+  const effectiveOverdraftDays = Math.max(baseConfig.consecutiveOverdraftDays ?? 0, overdraftStreak.current)
+  const configForCalc = useMemo(
+    () => ({ ...baseConfig, consecutiveOverdraftDays: effectiveOverdraftDays }),
+    [baseConfig, effectiveOverdraftDays]
+  )
+  const summary = useMemo(() => summarizeWealthRecords(records, configForCalc.date, configForCalc), [records, configForCalc])
   const snapshot = useMemo(
-    () => calculateDailyWealthSnapshot(buildDailyWealthInputFromRecords(records, baseConfig)),
-    [records, baseConfig]
+    () => calculateDailyWealthSnapshot(buildDailyWealthInputFromRecords(records, configForCalc)),
+    [records, configForCalc]
   )
   const recentRecords = records.slice(0, 8)
 
@@ -181,6 +191,7 @@ export function WealthDashboard() {
               summary={summary}
               recentRecords={recentRecords}
               baseConfig={baseConfig}
+              overdraftStreak={overdraftStreak}
               onConfigChange={(patch) => setBaseConfig((current) => ({ ...current, ...patch }))}
               onSaveConfig={handleSaveConfig}
               onResetConfig={handleResetConfig}
@@ -211,6 +222,7 @@ function OverviewView({
   summary,
   recentRecords,
   baseConfig,
+  overdraftStreak,
   onConfigChange,
   onSaveConfig,
   onResetConfig,
@@ -220,6 +232,7 @@ function OverviewView({
   summary: ReturnType<typeof summarizeWealthRecords>
   recentRecords: WealthRecord[]
   baseConfig: WealthBaseConfig
+  overdraftStreak: OverdraftStreak
   onConfigChange: (patch: Partial<WealthBaseConfig>) => void
   onSaveConfig: () => void
   onResetConfig: () => void
@@ -268,6 +281,52 @@ function OverviewView({
         <LineItem label="持续出血" value={formatMoney(summary.ongoingCost)} />
         <LineItem label="体验出血" value={formatMoney(summary.experienceCost)} />
         <LineItem label="月固定流血" value={formatMoney(summary.monthlyOngoingPressure)} />
+      </Panel>
+
+      <Panel title="连续透支追踪" eyebrow="Overdraft Streak">
+        <div className={`rounded-2xl border p-3 ${overdraftStreak.riskTriggered ? 'border-rose-400/30 bg-rose-500/15' : 'border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)]'}`}>
+          <div className="text-xs text-[color:var(--text-muted)]">当前连续透支天数</div>
+          <div className={`mt-1 text-2xl font-semibold ${overdraftStreak.riskTriggered ? 'text-accent-rose' : overdraftStreak.current > 0 ? 'text-accent-amber' : 'text-accent-green'}`}>
+            {overdraftStreak.current} 天
+          </div>
+        </div>
+        <LineItem label="自动计算（基于记录）" value={`${overdraftStreak.current} 天`} />
+        <LineItem label="手动配置值" value={`${baseConfig.consecutiveOverdraftDays ?? 0} 天`} />
+        <LineItem label="生效值" value={`${Math.max(baseConfig.consecutiveOverdraftDays ?? 0, overdraftStreak.current)} 天`} />
+        {overdraftStreak.riskTriggered ? (
+          <div className="mt-3 rounded-2xl border border-rose-400/30 bg-rose-500/10 p-3">
+            <div className="text-xs font-semibold text-accent-rose">⚠ 连续透支 ≥ 3 天，已触发系统风险</div>
+            <p className="mt-1 text-xs text-[color:var(--text-secondary)]">
+              连续透支已进入 system_risk 区间。优先砍掉一项持续成本，避免自由度持续被侵蚀。
+            </p>
+          </div>
+        ) : overdraftStreak.current > 0 ? (
+          <div className="mt-3 rounded-2xl border border-amber-400/25 bg-amber-400/10 p-3">
+            <div className="text-xs font-semibold text-accent-amber">已透支 {overdraftStreak.current} 天，注意避免连续化</div>
+            <p className="mt-1 text-xs text-[color:var(--text-secondary)]">
+              连续 3 天透支将触发系统风险。控制今日支出，不让透支天数继续增长。
+            </p>
+          </div>
+        ) : (
+          <div className="mt-3 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-3">
+            <div className="text-xs font-semibold text-accent-green">当前无连续透支</div>
+          </div>
+        )}
+        {overdraftStreak.days.length > 0 ? (
+          <div className="mt-3">
+            <div className="text-xs text-[color:var(--text-muted)]">近期每日透支状态</div>
+            <div className="mt-2 space-y-1">
+              {overdraftStreak.days.slice(-5).map((day) => (
+                <div key={day.date} className="flex items-center justify-between text-xs">
+                  <span className="text-[color:var(--text-secondary)]">{day.date}</span>
+                  <span className={day.isOverdraft ? 'text-accent-rose' : 'text-accent-green'}>
+                    {formatMoney(day.totalExpense)} / {formatMoney(day.safeLine)} {day.isOverdraft ? '透支' : '正常'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </Panel>
 
       <Panel title="基础配置" eyebrow="Config">

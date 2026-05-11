@@ -18,12 +18,21 @@
 - WealthDashboard 现在向 WealthDashboardPreview 传入 `snapshot` 和 `summary`。
 - 无 props 时仍回退 mock 数据，保持独立可用。
 - `pnpm typecheck` 通过，`pnpm build` 通过。
+- **P1 完成**：连续透支天数自动追踪。
+  - 新建 `overdraftTracker.ts`，基于财富记录逐日计算是否超过每日安全线，从今天往回数连续透支天数。
+  - 自动计算值与手动配置值取较大者作为生效值，传入 snapshot 计算链路。
+  - Overview 新增「连续透支追踪」面板，显示自动计算值 / 手动值 / 生效值。
+  - 连续透支 ≥ 3 天触发 system_risk 红色警告；1-2 天显示黄色提醒；0 天显示绿色正常。
+  - 展示最近 5 天每日透支状态明细。
+  - 不改 IPC、不改全局 store、不改数据库、不改 DashboardPreview。
+  - `pnpm typecheck` / `pnpm build` / `pnpm smoke` 均通过。
 
 ## 3. 本轮修改文件
 
+- `app/renderer/src/features/wealth/overdraftTracker.ts`（本轮新建：连续透支天数自动计算逻辑）
+- `app/renderer/src/features/wealth/WealthDashboard.tsx`（接入 overdraftTracker，新增连续透支追踪面板）
 - `app/renderer/src/features/wealth/wealthConfigStorage.ts`（上轮新建）
-- `app/renderer/src/features/wealth/WealthDashboard.tsx`（传入 snapshot/summary props）
-- `app/renderer/src/features/dashboard-preview/WealthDashboardPreview.tsx`（接收真实数据 props）
+- `app/renderer/src/features/dashboard-preview/WealthDashboardPreview.tsx`（上轮：接收真实数据 props）
 
 ## 4. 未做事项
 
@@ -31,7 +40,7 @@
 - 未做趋势图。
 - 未做记录编辑。
 - 未做 emergency_cost 记录类型。
-- 未做连续透支天数自动追踪。
+- ~~未做连续透支天数自动追踪。~~ **已完成。**
 
 ## 5. 与 Codex 的文件边界
 
@@ -42,7 +51,7 @@
 ## 6. 下一步任务建议
 
 按优先级：
-1. **Wealth P1**：连续透支天数自动追踪。
+1. ~~**Wealth P1**：连续透支天数自动追踪。~~ **已完成。**
 2. **Wealth P2**：日期切换（查看历史快照）。
 3. **Wealth P3**：趋势图 / 现金流质量历史。
 
