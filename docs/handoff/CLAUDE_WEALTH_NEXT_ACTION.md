@@ -33,18 +33,26 @@
   - 切换周期后，所有数据实时变化，无需刷新。
   - 不改 IPC、不改全局 store、不改数据库、不改 DashboardPreview。
   - `pnpm typecheck` / `pnpm build` / `pnpm smoke` 均通过。
+- **P3 完成**：现金流趋势图 / 现金流质量历史。
+  - `overdraftTracker.ts` 新增 `calculateCashflowTrend`、`TrendDay`、`CashflowTrend` 类型。
+  - 趋势数据包含每日支出、安全线、是否透支、支出比例。
+  - `WealthDashboard.tsx` 新增 `trendPeriod` 状态和「现金流质量趋势」面板。
+  - 趋势面板包含：近7天/近30天切换、CSS 条形图（绿色正常/红色透支）、趋势判断文案、每日明细表格。
+  - 条形高度按当日支出占最大值比例计算，hover 显示金额 tooltip。
+  - 不改 IPC、不改全局 store、不改数据库、不改 DashboardPreview。
+  - `pnpm typecheck` / `pnpm build` / `pnpm smoke` 均通过。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/wealth/overdraftTracker.ts`（P2 新增：`calculatePeriodOverdraftStreak`、`PeriodKey`、`periodLabels`、周期范围计算）
-- `app/renderer/src/features/wealth/WealthDashboard.tsx`（P2 新增：`selectedPeriod` 状态、周期选择器、透支周期查看面板）
+- `app/renderer/src/features/wealth/overdraftTracker.ts`（P3 新增：`calculateCashflowTrend`、`TrendDay`、`CashflowTrend`、`buildTrendSummary`）
+- `app/renderer/src/features/wealth/WealthDashboard.tsx`（P3 新增：`trendPeriod` 状态、现金流质量趋势面板、CSS 条形图、趋势判断文案）
 - `app/renderer/src/features/wealth/wealthConfigStorage.ts`（上轮新建）
 - `app/renderer/src/features/dashboard-preview/WealthDashboardPreview.tsx`（上轮：接收真实数据 props）
 
 ## 4. 未做事项
 
 - ~~未做日期切换。~~ **已完成。**
-- 未做趋势图。
+- ~~未做趋势图。~~ **已完成。**
 - 未做记录编辑。
 - 未做 emergency_cost 记录类型。
 - ~~未做连续透支天数自动追踪。~~ **已完成。**
@@ -60,7 +68,8 @@
 按优先级：
 1. ~~**Wealth P1**：连续透支天数自动追踪。~~ **已完成。**
 2. ~~**Wealth P2**：日期切换（查看历史快照）。~~ **已完成。**
-3. **Wealth P3**：趋势图 / 现金流质量历史。
+3. ~~**Wealth P3**：趋势图 / 现金流质量历史。~~ **已完成。**
+4. **Wealth P4**：记录编辑 / emergency_cost 记录类型（待定）。
 
 ## 7. 手动验收方式
 

@@ -19,7 +19,7 @@ import {
   resetWealthBaseConfig,
   wealthConfigStorageKey
 } from './wealthConfigStorage'
-import { calculateOverdraftStreak, calculatePeriodOverdraftStreak, periodLabels, type OverdraftStreak, type PeriodKey } from './overdraftTracker'
+import { calculateOverdraftStreak, calculatePeriodOverdraftStreak, calculateCashflowTrend, periodLabels, type OverdraftStreak, type PeriodKey, type CashflowTrend } from './overdraftTracker'
 import { WealthDashboardPreview } from '@/features/dashboard-preview'
 
 type WealthView = 'overview' | 'income' | 'expenses' | 'assets' | 'evaluation'
@@ -83,6 +83,7 @@ export function WealthDashboard() {
   const [baseConfig, setBaseConfig] = useState<WealthBaseConfig>(() => loadWealthBaseConfig())
   const [currentView, setCurrentView] = useState<WealthView>('overview')
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>('today')
+  const [trendPeriod, setTrendPeriod] = useState<'last7' | 'last30'>('last7')
   const [isRecorderOpen, setIsRecorderOpen] = useState(false)
   const [draft, setDraft] = useState<RecordDraft>(() => createDraft())
 
@@ -93,6 +94,10 @@ export function WealthDashboard() {
   const periodStreak = useMemo(
     () => calculatePeriodOverdraftStreak(records, baseConfig.dailySafeLine, selectedPeriod, baseConfig.date),
     [records, baseConfig.dailySafeLine, selectedPeriod, baseConfig.date]
+  )
+  const cashflowTrend = useMemo(
+    () => calculateCashflowTrend(records, baseConfig.dailySafeLine, trendPeriod, baseConfig.date),
+    [records, baseConfig.dailySafeLine, trendPeriod, baseConfig.date]
   )
   const effectiveOverdraftDays = Math.max(baseConfig.consecutiveOverdraftDays ?? 0, overdraftStreak.current)
   const configForCalc = useMemo(
@@ -199,7 +204,10 @@ export function WealthDashboard() {
               overdraftStreak={overdraftStreak}
               selectedPeriod={selectedPeriod}
               periodStreak={periodStreak}
+              cashflowTrend={cashflowTrend}
+              trendPeriod={trendPeriod}
               onPeriodChange={setSelectedPeriod}
+              onTrendPeriodChange={setTrendPeriod}
               onConfigChange={(patch) => setBaseConfig((current) => ({ ...current, ...patch }))}
               onSaveConfig={handleSaveConfig}
               onResetConfig={handleResetConfig}
@@ -233,7 +241,10 @@ function OverviewView({
   overdraftStreak,
   selectedPeriod,
   periodStreak,
+  cashflowTrend,
+  trendPeriod,
   onPeriodChange,
+  onTrendPeriodChange,
   onConfigChange,
   onSaveConfig,
   onResetConfig,
@@ -246,7 +257,10 @@ function OverviewView({
   overdraftStreak: OverdraftStreak
   selectedPeriod: PeriodKey
   periodStreak: OverdraftStreak
+  cashflowTrend: CashflowTrend
+  trendPeriod: 'last7' | 'last30'
   onPeriodChange: (period: PeriodKey) => void
+  onTrendPeriodChange: (period: 'last7' | 'last30') => void
   onConfigChange: (patch: Partial<WealthBaseConfig>) => void
   onSaveConfig: () => void
   onResetConfig: () => void
@@ -404,6 +418,75 @@ function OverviewView({
             {periodLabels[selectedPeriod]}暂无记录
           </div>
         )}
+      </Panel>
+
+      <Panel title="现金流质量趋势" eyebrow="Cashflow Trend">
+        <div className="flex flex-wrap gap-2">
+          {(['last7', 'last30'] as const).map((period) => (
+            <button
+              key={period}
+              type="button"
+              onClick={() => onTrendPeriodChange(period)}
+              className={
+                trendPeriod === period
+                  ? 'rounded-xl border border-[color:var(--node-selected-border)] bg-[var(--control-hover)] px-3 py-2 text-sm text-[color:var(--text-primary)] shadow-[var(--shadow-node-neighbor)]'
+                  : 'rounded-xl border border-[color:var(--input-border)] bg-[var(--control-bg)] px-3 py-2 text-sm text-[color:var(--text-secondary)] transition hover:bg-[var(--control-hover)] hover:text-[color:var(--text-primary)]'
+              }
+            >
+              {period === 'last7' ? '近 7 天' : '近 30 天'}
+            </button>
+          ))}
+        </div>
+        <div className="mt-4 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-4">
+          <div className="flex items-end gap-[3px]" style={{ height: '120px' }}>
+            {cashflowTrend.days.map((day) => {
+              const heightPercent = Math.max(2, day.expenseRatio * 100)
+              const safeLinePercent = cashflowTrend.days.reduce((max, d) => Math.max(max, d.totalExpense), 0) > 0
+                ? (day.safeLine / Math.max(day.safeLine, ...cashflowTrend.days.map((d) => d.totalExpense))) * 100
+                : 100
+              return (
+                <div key={day.date} className="group relative flex flex-1 flex-col items-center" title={`${day.date}: ${formatMoney(day.totalExpense)} / ${formatMoney(day.safeLine)}`}>
+                  <div className="relative flex w-full flex-1 items-end justify-center">
+                    <div
+                      className={`w-full max-w-[24px] rounded-t-sm transition-colors ${day.isOverdraft ? 'bg-rose-400/70' : 'bg-emerald-400/60'}`}
+                      style={{ height: `${heightPercent}%` }}
+                    />
+                  </div>
+                  <div className="mt-1 truncate text-[9px] text-[color:var(--text-muted)]" style={{ maxWidth: '32px' }}>
+                    {day.date.slice(5)}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <div className="mt-2 flex items-center gap-4 text-[10px] text-[color:var(--text-muted)]">
+            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-emerald-400/60" />正常</span>
+            <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-rose-400/70" />透支</span>
+            <span className="ml-auto">柱高 = 当日支出比例</span>
+          </div>
+        </div>
+        <div className="mt-3 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
+          <div className="text-xs text-[color:var(--text-muted)]">趋势判断</div>
+          <p className="mt-1 text-sm text-[color:var(--text-secondary)]">{cashflowTrend.summaryText}</p>
+        </div>
+        <div className="mt-3 grid gap-1">
+          <div className="grid grid-cols-4 gap-2 text-[10px] font-semibold text-[color:var(--text-muted)]">
+            <span>日期</span>
+            <span className="text-right">支出</span>
+            <span className="text-right">安全线</span>
+            <span className="text-right">状态</span>
+          </div>
+          {cashflowTrend.days.slice(-7).map((day) => (
+            <div key={day.date} className="grid grid-cols-4 gap-2 text-xs">
+              <span className="text-[color:var(--text-secondary)]">{day.date.slice(5)}</span>
+              <span className="text-right text-[color:var(--text-primary)]">{formatMoney(day.totalExpense)}</span>
+              <span className="text-right text-[color:var(--text-muted)]">{formatMoney(day.safeLine)}</span>
+              <span className={`text-right ${day.isOverdraft ? 'text-accent-rose' : 'text-accent-green'}`}>
+                {day.isOverdraft ? '透支' : '正常'}
+              </span>
+            </div>
+          ))}
+        </div>
       </Panel>
 
       <Panel title="基础配置" eyebrow="Config">

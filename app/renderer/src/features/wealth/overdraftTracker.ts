@@ -145,3 +145,81 @@ function sortedUniqueDates(expenseByDate: Map<string, number>, today: string): s
   dates.add(today)
   return Array.from(dates).sort()
 }
+
+export type TrendDay = {
+  date: string
+  totalExpense: number
+  safeLine: number
+  isOverdraft: boolean
+  expenseRatio: number
+}
+
+export type CashflowTrend = {
+  days: TrendDay[]
+  period: 'last7' | 'last30'
+  summaryText: string
+}
+
+export function calculateCashflowTrend(
+  records: WealthRecord[],
+  dailySafeLine: number,
+  period: 'last7' | 'last30',
+  today: string
+): CashflowTrend {
+  const daysBack = period === 'last7' ? 6 : 29
+  const { startDate, endDate } = { startDate: shiftDate(today, -daysBack), endDate: today }
+  const filtered = records.filter((r) => r.date >= startDate && r.date <= endDate)
+  const expenseByDate = buildDailyExpenseMap(filtered)
+  const dates = buildDateRange(startDate, endDate)
+  const maxExpense = Math.max(
+    dailySafeLine,
+    ...dates.map((d) => expenseByDate.get(d) ?? 0)
+  )
+
+  const days: TrendDay[] = dates.map((date) => {
+    const totalExpense = expenseByDate.get(date) ?? 0
+    return {
+      date,
+      totalExpense,
+      safeLine: dailySafeLine,
+      isOverdraft: totalExpense > dailySafeLine,
+      expenseRatio: maxExpense > 0 ? totalExpense / maxExpense : 0
+    }
+  })
+
+  return {
+    days,
+    period,
+    summaryText: buildTrendSummary(days, period)
+  }
+}
+
+function buildTrendSummary(days: TrendDay[], period: 'last7' | 'last30'): string {
+  const label = period === 'last7' ? '最近 7 天' : '最近 30 天'
+  const overdraftCount = days.filter((d) => d.isOverdraft).length
+  const totalDays = days.length
+
+  if (overdraftCount === 0) {
+    return `${label}现金流稳定，所有天数均在安全线以内。`
+  }
+
+  let consecutive = 0
+  for (let i = days.length - 1; i >= 0; i--) {
+    if (days[i].isOverdraft) {
+      consecutive++
+    } else {
+      break
+    }
+  }
+
+  if (consecutive >= 3) {
+    return `${label}连续 ${consecutive} 天透支，透支压力升高，需要收缩支出。`
+  }
+  if (consecutive > 0) {
+    return `${label}末尾 ${consecutive} 天透支，注意避免连续化。`
+  }
+  if (overdraftCount > totalDays / 2) {
+    return `${label}透支 ${overdraftCount}/${totalDays} 天，透支频率偏高。`
+  }
+  return `${label}透支 ${overdraftCount}/${totalDays} 天，整体可控。`
+}
