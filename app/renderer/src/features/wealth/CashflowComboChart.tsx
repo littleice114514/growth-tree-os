@@ -5,8 +5,7 @@ import { BarChart, LineChart } from 'echarts/charts'
 import {
   GridComponent,
   TooltipComponent,
-  LegendComponent,
-  MarkLineComponent
+  LegendComponent
 } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import type { WealthRecord } from '@shared/wealth'
@@ -19,7 +18,6 @@ echarts.use([
   GridComponent,
   TooltipComponent,
   LegendComponent,
-  MarkLineComponent,
   CanvasRenderer
 ])
 
@@ -164,32 +162,30 @@ export function CashflowComboChart({
             value: val,
             itemStyle: { color: barColors[i], borderRadius: [3, 3, 0, 0] }
           })),
-          barWidth: period === 'last30' ? '45%' : '50%',
-          markLine: {
-            silent: true,
-            symbol: 'none',
-            lineStyle: {
-              color: '#d4a017',
-              type: 'dashed',
-              width: 1.5,
-              opacity: 0.7
-            },
-            data: [{ yAxis: safeLine, name: '安全线' }],
-            label: {
-              position: 'end',
-              formatter: `安全线 ¥${safeLine}`,
-              fontSize: 10,
-              color: '#d4a017'
-            }
-          }
+          barWidth: period === 'last30' ? '45%' : '50%'
         },
         {
           name: '每日安全线',
           type: 'line',
           data: safeLineData,
-          symbol: 'none',
-          lineStyle: { width: 0 },
-          // Invisible line just for legend presence
+          symbol: 'circle',
+          symbolSize: 6,
+          lineStyle: {
+            color: '#34d399',
+            width: 2
+          },
+          itemStyle: {
+            color: '#34d399'
+          },
+          emphasis: {
+            itemStyle: {
+              borderWidth: 2,
+              shadowBlur: 6,
+              shadowColor: 'rgba(52,211,153,0.4)'
+            },
+            scale: 1.8
+          },
+          z: 10
         }
       ]
     }
@@ -237,7 +233,7 @@ export function CashflowComboChart({
       {/* Legend */}
       <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] text-[color:var(--text-muted)]">
         <span className="flex items-center gap-1"><span className="inline-block h-2 w-3 rounded-sm bg-emerald-300/50" />支出</span>
-        <span className="flex items-center gap-1"><span className="inline-block h-0 w-3 border-t border-dashed" style={{ borderColor: '#d4a017' }} />安全线</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-0.5 w-3 rounded-full" style={{ backgroundColor: '#34d399' }} />安全线</span>
         <span className="flex items-center gap-1"><span className="inline-block h-1.5 w-1.5 rounded-full bg-rose-400/70" />透支</span>
       </div>
 
