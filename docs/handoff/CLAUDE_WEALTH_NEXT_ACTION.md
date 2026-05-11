@@ -79,6 +79,16 @@
   - `CashflowTrendPanel` 改为接收 `records` prop，透传至 `CashflowComboChart`。
   - 不改 IPC、不改全局 store、不改数据库、不改 Time Debt。
   - `pnpm typecheck` / `pnpm build` / `pnpm smoke` 均通过。
+- **现金流趋势图 V2 视觉重构完成**：安全线/收入线/hover/selected/透支日视觉体系重塑。
+  - 收入折线：线条加粗至 0.55 SVG 单位，底部加半透明 area fill，0 值点弱化为小圆点。
+  - 安全线：改为正式短虚线（4 1.8 dash），右侧带「安全线 ¥金额」标签，柔和琥珀色。
+  - 柱子内部灰色竖线彻底移除，hover/selected 改为整列背景高亮带（hover 浅灰 7%, selected 12%）。
+  - Tooltip 统一显示收入/支出/安全线 + 状态标签（正常/透支），不再区分 bar/dot 分别显示。
+  - Selected 日期标签改为深色胶囊样式（白字 on 深色背景）。
+  - 透支日：淡红柱 + 柱顶小红点 + 日期标签红色文字加粗。
+  - 30 天模式日期标签稀疏化：首尾 + 每 5 天 + selected 日期永远显示。
+  - 不改 IPC、不改全局 store、不改数据库、不改 Time Debt。
+  - `pnpm typecheck` / `pnpm build` 均通过。
 
 ## 3. 本轮修改文件
 
@@ -113,7 +123,8 @@
 5. ~~**Wealth UI Polish**：空状态承接 + Preview 收敛 + 零数据趋势优化。~~ **已完成。**
 6. ~~**Wealth 分类项目 MVP**：分类字段从手填升级为可复用预设选择。~~ **已完成。**
 7. ~~**Wealth 现金流趋势图 V2**：柱状支出 + 折线收入 + 安全线 + 日记录联动。~~ **已完成。**
-8. **Wealth 日记录切片交互优化**：记录明细呈现优化（下一轮建议）。
+8. ~~**Wealth 现金流趋势图 V2 视觉重构**：安全线/收入线/hover/selected/透支日视觉体系重塑。~~ **已完成。**
+9. **Wealth 日记录切片呈现优化**：记录明细呈现优化（下一轮建议）。
 9. **Wealth 分类项目持久化设计**：保存用户自定义分类到 localStorage。
 10. **Wealth 真实体验验收**：在 Electron 中实际操作，确认首屏体验后再推进新功能。
 
