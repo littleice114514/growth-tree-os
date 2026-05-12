@@ -20,6 +20,7 @@
 - 已合入 Wealth 分支，并完成共享文档冲突解决。
 - 已确认 `package.json` 保留 `echarts` 与 `echarts-for-react`。
 - 已完成命令验证和轻量 UI smoke。
+- 已固化并行开发与集成开工门禁，覆盖 `AGENTS.md`、Codex 开工清单、双端工作流和交接规则。
 
 ## 3. 冲突与处理
 
@@ -95,6 +96,7 @@ Wealth merge 冲突文件：
 - 未新增真实数据写入记录，避免污染本地数据。
 - 跨天分段只读逻辑以现有日历详情面板不崩为轻量 smoke，未构造新的跨天样例。
 - 本分支尚未合入 `develop`。
+- Workflow hardening 本轮只验证 Markdown diff 与 Git 状态，不运行 `pnpm build`。
 
 ## 5. Mac 端第一步操作
 
@@ -142,7 +144,7 @@ pnpm dev
 
 请让 Mac 端 Codex 接着完成：
 
-基于 `feature/integration-time-debt-wealth` 做一次真实设备统一预览验收，并决定是否单独发起“合入 develop”任务。
+先拉取 `feature/integration-time-debt-wealth`，确认 `AGENTS.md` 与 `docs/dev-protocol/CODEX_STARTUP_CHECKLIST.md` 中的 Parallel Development Startup Gate 生效；然后基于该分支做一次真实设备统一预览验收，并决定是否单独发起“合入 develop”任务。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 

@@ -25,7 +25,7 @@
 - docs/dev-protocol/PROJECT_HANDOFF_RULES.md
 - docs/dev-protocol/FLEXIBLE_OWNERSHIP_RULES.md
 
-以后给 Codex / Claude / Cursor 等开发代理任何开发指令时，必须要求它先读取 CODEX_STARTUP_CHECKLIST.md，再判断当前设备、分支、任务类型、允许修改范围、禁止修改范围和日志路径。
+以后给 Codex / Claude / Cursor 等开发代理任何开发指令时，必须要求它先按 Parallel Development Startup Gate 执行，读取 CODEX_STARTUP_CHECKLIST.md，再判断当前设备、分支、任务类型、允许修改范围、禁止修改范围和日志路径。
 
 不要让 Mac 和 Windows 同时直接改 main。
 不要让两端同时改同一批业务文件。
@@ -67,6 +67,19 @@ main = 稳定版本
 develop = 双端集成分支
 feature/mac-* = Mac 任务分支
 feature/win-* = Windows 任务分支
+feature/integration-time-debt-wealth = Time Debt + Wealth 统一预览和集成分支
+
+业务分支默认不得修改：
+- docs/project-state/**
+- docs/project-map/MAP_STATUS.md
+- AGENTS.md
+- docs/dev-protocol/**
+
+除非任务明确是 integration、workflow hardening、地图归档或协议更新。
+
+集成任务不得只依赖聊天记忆中的关键 commit。参考 commit 仅供识别，最终以 git fetch origin 后的 origin/<branch> HEAD 为准。
+
+同时查看 Time Debt + Wealth 最新成果时，只看 feature/integration-time-debt-wealth；不得在 Time Debt 分支判断 Wealth 是否最新，也不得在 Wealth 分支判断 Time Debt 是否最新。
 
 本轮任务开始前，请先生成给开发代理的指令，并且指令第一段必须要求开发代理读取上述协议文件。
 ```
@@ -79,12 +92,19 @@ feature/win-* = Windows 任务分支
 
 1. 当前设备角色：Mac / Windows
 2. 当前分支
-3. 当前任务类型
-4. 本轮允许修改范围
-5. 本轮禁止修改范围
-6. 本轮日志文件路径
-7. 是否存在跨边界风险
-8. 是否可以开始开发
+3. 当前 commit
+4. 工作区是否 clean
+5. 当前任务类型：module-dev / parallel-dev / multi-agent-dev / integration / smoke / docs-sync
+6. 当前模块
+7. 当前远程 HEAD
+8. 本轮允许修改范围
+9. 本轮禁止修改范围
+10. 是否允许修改 `docs/project-state/**` / `docs/project-map/MAP_STATUS.md`
+11. 本轮日志或 handoff 文件路径
+12. 是否存在跨边界风险
+13. 是否需要 commit / push
+14. 本轮唯一目标
+15. 是否可以开始开发
 
 未完成以上判断，不允许直接修改业务代码。
 

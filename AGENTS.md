@@ -47,7 +47,46 @@
 - Codex：Time Debt / 时间负债、数据记录链路、项目地图状态接续、日志压缩索引、开发协同文档。
 - Claude：Wealth / 财富模块、财富规则配置、DashboardPreview 真实数据接入、展示优化。
 
-## 6. 并行开发与集成边界
+## 6. Parallel Development Startup Gate｜并行开发开工门禁
+
+每次开始任务前，必须先判断当前属于哪种开发模式：
+
+1. `module-dev`：单模块开发。
+2. `parallel-dev`：双端并行开发。
+3. `multi-agent-dev`：多端并行开发。
+4. `integration`：集成开发。
+5. `smoke`：只读验收 / smoke。
+6. `docs-sync`：文档归档 / 协议更新。
+
+在任何修改前，必须先执行并输出：
+
+- 当前 branch。
+- 当前 commit。
+- 工作区是否 clean。
+- 当前任务类型。
+- 当前任务模块。
+- 当前设备 / 代理角色。
+- 当前远程 HEAD。
+- 允许修改范围。
+- 禁止修改范围。
+- 是否需要 `fetch origin`。
+- 是否需要确认远程 HEAD。
+- 是否可能与其他端冲突。
+- 是否允许修改 `docs/project-state/**` / `docs/project-map/MAP_STATUS.md`。
+- 是否需要 commit / push。
+- 本轮唯一目标。
+
+默认规则：
+
+- 业务分支不得随意修改 `docs/project-state/**`、`docs/project-map/MAP_STATUS.md`、`AGENTS.md`、`docs/dev-protocol/**`。
+- 只有任务明确属于 `integration`、`workflow hardening`、地图归档或协议更新时，才允许修改共享状态文件或协议文件。
+- Time Debt 任务默认只改 `app/renderer/src/features/time-debt/**` 和对应 handoff。
+- Wealth 任务默认只改 `app/renderer/src/features/wealth/**` 和对应 handoff。
+- Integration 任务必须先 `git fetch origin`，并以远程分支 HEAD 为准。
+- Integration 完成后必须用 `git merge-base --is-ancestor` 检查是否包含双方最新 HEAD。
+- 参考 commit 只用于识别上下文，最终判断以 `git fetch origin` 后的 `origin/<branch>` HEAD 为准。
+
+## 7. 并行开发与集成边界
 
 - 不要同时修改 `app/renderer/src/features/time-debt/**` 和 `app/renderer/src/features/wealth/**`。
 - 不要两端同时改 `app/main/db.ts`、`app/main/ipc.ts`、`app/renderer/src/app/store.ts`、`app/renderer/src/pages/MainWorkspacePage.tsx`。
@@ -57,7 +96,7 @@
 - Wealth Records Insight 相关能力包括记录搜索、日期/类型/分类分组、支出类型占比饼图与分类 chip，集成后需要 smoke。
 - 不要 merge、rebase、reset 或 push，除非用户明确要求。
 
-## 7. GitHub Sync Gate
+## 8. GitHub Sync Gate
 
 除非用户明确要求只读、不修改、不提交或不推送，否则每轮完成并验证后进入 GitHub 保存流程。
 
@@ -77,7 +116,7 @@ git remote -v
 - 不强推，不删除分支，不自动覆盖用户未提交改动。
 - 如果发现敏感文件进入暂存区，必须移除并说明。
 
-## 8. Mac 下一步操作卡
+## 9. Mac 下一步操作卡
 
 GitHub 推送完成后，必须生成或更新：
 
@@ -89,7 +128,7 @@ docs/handoff/MAC_NEXT_ACTION.md
 
 如果另一台设备已有未提交改动，不要直接 pull；先执行 `git status`，再判断 stash、commit 还是保留等待处理。
 
-## 9. 每轮结束必须输出
+## 10. 每轮结束必须输出
 
 - 当前 branch / commit / working tree。
 - 本轮读取了哪些入口文件。
@@ -101,7 +140,7 @@ docs/handoff/MAC_NEXT_ACTION.md
 - 下一轮唯一入口。
 - 是否修改业务代码、Time Debt、Wealth、是否 push。
 
-## 10. 当前地图入口
+## 11. 当前地图入口
 
 - 总地图：`docs/project-map/PROJECT_MAP.md`
 - 当前地图位置：`docs/project-map/MAP_STATUS.md`
