@@ -54,6 +54,18 @@ Wealth merge 冲突文件：
 
 ## 4. 当前验证结果
 
+### Time Debt 最新内容补入记录
+
+- 原 integration commit：`4d09389`
+- 本轮补入来源：`origin/feature/time-debt-usage-dashboard @ fe4b02e`
+- 本轮 merge commit：`792458b`
+- 是否发生冲突：否。
+- 冲突处理：无冲突；自动合入 Time Debt 仪表盘相关文件和 Time Debt 模块索引。
+- Wealth 回退检查：本轮合并未修改 `app/renderer/src/features/wealth/**`、`package.json` 或 `pnpm-lock.yaml`；`echarts` 与 `echarts-for-react` 依赖保留。
+- 本轮复验结果：`pnpm install`、`pnpm typecheck`、`pnpm build`、`pnpm smoke` 均通过。
+- Time Debt UI smoke：页面可打开，今日时间状态、已记录时间、主线推进、时间负债、空白 / 未归档、时间使用比例和分类明细均可见；日历页和 day / week / month 入口可见，详情面板存在，未见 `NaN` / `Invalid Date` 异常。
+- Wealth UI smoke：页面可打开，现金流趋势 / 安全线可见，记录页搜索框、按日期 / 按类型 / 按分类分组、支出占比空态、新增财富记录弹窗和分类 chip 均可见。
+
 ### 已验证
 
 - `pnpm install`：通过。
