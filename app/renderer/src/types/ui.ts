@@ -6,6 +6,7 @@ import type {
   ReviewRecord,
   SearchNodeResult,
   TreeSnapshot,
+  UserRecord,
   WeeklyReviewSummary
 } from '@shared/contracts'
 
@@ -44,6 +45,7 @@ export type WorkspaceState = {
   extractionDrafts: ExtractionDraft[]
   hoverCard: HoverCardState | null
   dataRoot: string
+  currentUser: UserRecord | null
   searchQuery: string
   searchResults: SearchNodeResult[]
   searchLoading: boolean

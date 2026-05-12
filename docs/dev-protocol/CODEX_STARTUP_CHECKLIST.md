@@ -2,22 +2,10 @@
 
 每次 Codex 开始任何开发任务前，必须先完成本清单。
 
-## 1. 省 token 状态读取
-
-每次开工先读取 project-state 三件套，禁止默认读取全部 dev-log：
-
-1. `docs/project-state/CURRENT_STATUS.md`
-2. `docs/project-state/LOG_INDEX.md` 最近 5 条
-3. `docs/project-state/NEXT_ACTION.md`
-4. 根据任务需要读取相关协议和代码
-
-只有当 `LOG_INDEX.md` 指向某条历史日志且本轮确实需要追溯时，才允许读取相关 1 到 3 个原始 dev-log 文件。不得扫描 `docs/dev-log/**` 全部历史。
-
-## 2. 读取协议文件
+## 1. 读取协议文件
 
 必须读取：
 
-- docs/dev-protocol/AI_WORKFLOW_TOKEN_SAVING.md
 - docs/dev-protocol/DUAL_DEVICE_WORKFLOW.md
 - docs/dev-protocol/BRANCH_AND_FILE_BOUNDARY.md
 - docs/dev-protocol/DEV_LOG_RULES.md
@@ -30,7 +18,7 @@
 
 每次开发前，必须先读取 docs/dev-protocol/FLEXIBLE_OWNERSHIP_RULES.md，确认当前任务是否属于默认分工范围。如果任务需要跨设备边界，必须先写跨边界声明，再设计执行方案。未完成读取前，不允许直接开始跨边界任务。
 
-## 3. 检查 Git 状态
+## 2. 检查 Git 状态
 
 必须执行：
 
@@ -38,7 +26,7 @@ git status
 git branch --show-current
 git remote -v
 
-## 4. 判断当前设备角色
+## 3. 判断当前设备角色
 
 必须明确当前是在：
 
@@ -47,7 +35,7 @@ git remote -v
 
 如果无法判断，通过路径、系统命令或用户指定判断。
 
-## 5. 判断当前任务类型
+## 4. 判断当前任务类型
 
 必须将任务归入以下之一：
 
@@ -59,7 +47,7 @@ git remote -v
 - 文档 / 日志
 - 集成 / 合并
 
-## 6. 判断应使用的分支
+## 5. 判断应使用的分支
 
 禁止直接在 main 上开发。
 
@@ -74,7 +62,7 @@ feature/win-任务名
 集成：
 develop
 
-## 7. 声明文件边界
+## 6. 声明文件边界
 
 开始修改前必须输出：
 
@@ -83,7 +71,7 @@ develop
 - 本轮日志文件路径
 - 是否需要按 docs/dev-protocol/FLEXIBLE_OWNERSHIP_RULES.md 发起跨边界声明
 
-## 8. 日志路径
+## 7. 日志路径
 
 必须使用独立日志文件：
 
@@ -95,7 +83,7 @@ docs/dev-log/YYYY-MM/YYYY-MM-DD/win-任务名.md
 
 禁止两端同时写同一个日志文件。
 
-## 9. 修改前检查
+## 8. 修改前检查
 
 如果本轮任务需要修改对方设备负责范围：
 
@@ -105,7 +93,7 @@ docs/dev-log/YYYY-MM/YYYY-MM-DD/win-任务名.md
 - 输出风险说明。
 - 等集成阶段处理。
 
-## 10. 收工前检查
+## 9. 收工前检查
 
 提交前必须执行：
 

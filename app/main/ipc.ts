@@ -20,4 +20,5 @@ export function registerIpc(db: GrowthTreeDatabase, appPaths: AppPaths) {
   )
   ipcMain.handle('insights:getWeeklyReview', () => db.getWeeklyReview())
   ipcMain.handle('appPaths:getDataRoot', () => appPaths.dataRoot)
+  ipcMain.handle('accounts:getCurrentUser', () => db.getCurrentUser())
 }

@@ -16,6 +16,7 @@ import type {
   ReviewRecord,
   SearchNodeResult,
   TreeSnapshot,
+  UserRecord,
   WeeklyReviewItem,
   WeeklyReviewSummary
 } from '@shared/contracts'
@@ -28,6 +29,9 @@ const DORMANT_DAYS = 7
 const REVIEW_DAYS = 5
 const RESTARTED_GRACE_DAYS = 3
 const WEEKLY_WINDOW_DAYS = 7
+const LOCAL_USER_ID = 'local_user'
+const LOCAL_USER_DISPLAY_NAME = '本地账户'
+const LOCAL_USER_MODE = 'local'
 
 type DatabaseRow = Record<string, string | number | null>
 type ReminderAction = 'complete' | 'reviewed'
@@ -48,6 +52,7 @@ export class GrowthTreeDatabase {
     this.reviewsDir = reviewsDir
     this.db.exec('PRAGMA journal_mode = WAL;')
     this.createSchema()
+    this.migrateLocalUserIdentity()
     this.seedIfNeeded()
     this.migrateSeedForP02IfNeeded()
     this.recomputeDerivedState()
@@ -55,8 +60,17 @@ export class GrowthTreeDatabase {
 
   private createSchema() {
     this.db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        display_name TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS reviews (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT 'local_user',
         review_date TEXT NOT NULL,
         title TEXT NOT NULL,
         content_markdown TEXT NOT NULL,
@@ -67,6 +81,7 @@ export class GrowthTreeDatabase {
 
       CREATE TABLE IF NOT EXISTS nodes (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT 'local_user',
         title TEXT NOT NULL,
         node_type TEXT NOT NULL,
         domain TEXT NOT NULL,
@@ -84,6 +99,7 @@ export class GrowthTreeDatabase {
 
       CREATE TABLE IF NOT EXISTS edges (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT 'local_user',
         source_node_id TEXT NOT NULL,
         target_node_id TEXT NOT NULL,
         relation_type TEXT NOT NULL,
@@ -93,6 +109,7 @@ export class GrowthTreeDatabase {
 
       CREATE TABLE IF NOT EXISTS node_evidence (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT 'local_user',
         node_id TEXT NOT NULL,
         review_id TEXT NOT NULL,
         excerpt TEXT NOT NULL,
@@ -101,6 +118,7 @@ export class GrowthTreeDatabase {
 
       CREATE TABLE IF NOT EXISTS reminders (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT 'local_user',
         node_id TEXT NOT NULL,
         reminder_type TEXT NOT NULL,
         status TEXT NOT NULL,
@@ -112,6 +130,7 @@ export class GrowthTreeDatabase {
 
       CREATE TABLE IF NOT EXISTS app_settings (
         id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL DEFAULT 'local_user',
         key TEXT NOT NULL UNIQUE,
         value TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -119,40 +138,82 @@ export class GrowthTreeDatabase {
     `)
   }
 
+  private migrateLocalUserIdentity() {
+    const now = new Date().toISOString()
+    this.db
+      .prepare(
+        `
+        INSERT INTO users (id, display_name, mode, created_at, updated_at)
+        VALUES (@id, @display_name, @mode, @created_at, @updated_at)
+        ON CONFLICT(id) DO UPDATE SET
+          display_name = excluded.display_name,
+          mode = excluded.mode,
+          updated_at = excluded.updated_at
+      `
+      )
+      .run({
+        id: LOCAL_USER_ID,
+        display_name: LOCAL_USER_DISPLAY_NAME,
+        mode: LOCAL_USER_MODE,
+        created_at: now,
+        updated_at: now
+      })
+
+    for (const table of ['reviews', 'nodes', 'edges', 'node_evidence', 'reminders', 'app_settings']) {
+      if (!this.hasColumn(table, 'user_id')) {
+        this.db.exec(`ALTER TABLE ${table} ADD COLUMN user_id TEXT NOT NULL DEFAULT '${LOCAL_USER_ID}'`)
+      }
+
+      this.db.prepare(`UPDATE ${table} SET user_id = ? WHERE user_id IS NULL OR user_id = ''`).run(LOCAL_USER_ID)
+    }
+  }
+
+  private hasColumn(table: string, column: string) {
+    const rows = this.db.prepare(`PRAGMA table_info(${table})`).all() as DatabaseRow[]
+    return rows.some((row) => String(row.name) === column)
+  }
+
+  private getCurrentUserId() {
+    return LOCAL_USER_ID
+  }
+
   private seedIfNeeded() {
-    const count = this.db.prepare('SELECT COUNT(*) as count FROM nodes').get() as { count: number }
+    const userId = this.getCurrentUserId()
+    const count = this.db
+      .prepare('SELECT COUNT(*) as count FROM nodes WHERE user_id = ?')
+      .get(userId) as { count: number }
     if (count.count > 0) {
       return
     }
 
     const insertReview = this.db.prepare(`
-      INSERT INTO reviews (id, review_date, title, content_markdown, markdown_path, created_at, updated_at)
-      VALUES (@id, @review_date, @title, @content_markdown, @markdown_path, @created_at, @updated_at)
+      INSERT INTO reviews (id, user_id, review_date, title, content_markdown, markdown_path, created_at, updated_at)
+      VALUES (@id, @user_id, @review_date, @title, @content_markdown, @markdown_path, @created_at, @updated_at)
     `)
 
     const insertNode = this.db.prepare(`
       INSERT INTO nodes (
-        id, title, node_type, domain, status, description, created_at, updated_at,
+        id, user_id, title, node_type, domain, status, description, created_at, updated_at,
         first_seen_at, last_active_at, evidence_count, weight_score, is_achievement, needs_review
       ) VALUES (
-        @id, @title, @node_type, @domain, @status, @description, @created_at, @updated_at,
+        @id, @user_id, @title, @node_type, @domain, @status, @description, @created_at, @updated_at,
         @first_seen_at, @last_active_at, @evidence_count, @weight_score, @is_achievement, @needs_review
       )
     `)
 
     const insertEdge = this.db.prepare(`
-      INSERT INTO edges (id, source_node_id, target_node_id, relation_type, created_at, updated_at)
-      VALUES (@id, @source_node_id, @target_node_id, @relation_type, @created_at, @updated_at)
+      INSERT INTO edges (id, user_id, source_node_id, target_node_id, relation_type, created_at, updated_at)
+      VALUES (@id, @user_id, @source_node_id, @target_node_id, @relation_type, @created_at, @updated_at)
     `)
 
     const insertEvidence = this.db.prepare(`
-      INSERT INTO node_evidence (id, node_id, review_id, excerpt, created_at)
-      VALUES (@id, @node_id, @review_id, @excerpt, @created_at)
+      INSERT INTO node_evidence (id, user_id, node_id, review_id, excerpt, created_at)
+      VALUES (@id, @user_id, @node_id, @review_id, @excerpt, @created_at)
     `)
 
     const insertSetting = this.db.prepare(`
-      INSERT INTO app_settings (id, key, value, updated_at)
-      VALUES (@id, @key, @value, @updated_at)
+      INSERT INTO app_settings (id, user_id, key, value, updated_at)
+      VALUES (@id, @user_id, @key, @value, @updated_at)
     `)
 
     this.runTransaction(() => {
@@ -160,6 +221,7 @@ export class GrowthTreeDatabase {
         const markdownPath = persistMarkdownReview(this.reviewsDir, review.reviewDate, review.contentMarkdown)
         insertReview.run({
           id: review.id,
+          user_id: userId,
           review_date: review.reviewDate,
           title: review.title,
           content_markdown: review.contentMarkdown,
@@ -183,6 +245,7 @@ export class GrowthTreeDatabase {
 
       insertSetting.run({
         id: 'setting-initialized',
+        user_id: userId,
         key: 'seed_initialized_at',
         value: new Date().toISOString(),
         updated_at: new Date().toISOString()
@@ -191,9 +254,10 @@ export class GrowthTreeDatabase {
   }
 
   private migrateSeedForP02IfNeeded() {
+    const userId = this.getCurrentUserId()
     const migrated = this.db
-      .prepare(`SELECT value FROM app_settings WHERE key = 'seed_p0_2_migrated'`)
-      .get() as DatabaseRow | undefined
+      .prepare(`SELECT value FROM app_settings WHERE key = 'seed_p0_2_migrated' AND user_id = ?`)
+      .get(userId) as DatabaseRow | undefined
     if (migrated) {
       return
     }
@@ -202,10 +266,10 @@ export class GrowthTreeDatabase {
       .prepare(
         `
         SELECT
-          (SELECT COUNT(*) FROM nodes) as node_count,
-          (SELECT COUNT(*) FROM reviews) as review_count,
-          (SELECT COUNT(*) FROM node_evidence) as evidence_count,
-          (SELECT COUNT(*) FROM reminders) as reminder_count
+          (SELECT COUNT(*) FROM nodes WHERE user_id = '${LOCAL_USER_ID}') as node_count,
+          (SELECT COUNT(*) FROM reviews WHERE user_id = '${LOCAL_USER_ID}') as review_count,
+          (SELECT COUNT(*) FROM node_evidence WHERE user_id = '${LOCAL_USER_ID}') as evidence_count,
+          (SELECT COUNT(*) FROM reminders WHERE user_id = '${LOCAL_USER_ID}') as reminder_count
       `
       )
       .get() as { node_count: number; review_count: number; evidence_count: number; reminder_count: number }
@@ -238,6 +302,7 @@ export class GrowthTreeDatabase {
               is_achievement = @is_achievement,
               needs_review = @needs_review
             WHERE id = @id
+              AND user_id = @user_id
           `
           )
           .run(this.toNodeRow(node))
@@ -247,19 +312,21 @@ export class GrowthTreeDatabase {
         .prepare(
           `
           DELETE FROM node_evidence
-          WHERE node_id IN ('node-deep-reading', 'node-question-journal', 'node-sleep-window', 'node-writing-output', 'node-offer-pipeline')
+          WHERE user_id = '${LOCAL_USER_ID}'
+            AND node_id IN ('node-deep-reading', 'node-question-journal', 'node-sleep-window', 'node-writing-output', 'node-offer-pipeline')
         `
         )
         .run()
 
       const insertEvidence = this.db.prepare(`
-        INSERT INTO node_evidence (id, node_id, review_id, excerpt, created_at)
-        VALUES (@id, @node_id, @review_id, @excerpt, @created_at)
+        INSERT INTO node_evidence (id, user_id, node_id, review_id, excerpt, created_at)
+        VALUES (@id, @user_id, @node_id, @review_id, @excerpt, @created_at)
       `)
 
       for (const evidence of seedEvidence) {
         insertEvidence.run({
           id: evidence.id,
+          user_id: userId,
           node_id: evidence.nodeId,
           review_id: this.mapSeedEvidenceReview(evidence.reviewId),
           excerpt: evidence.excerpt,
@@ -273,6 +340,7 @@ export class GrowthTreeDatabase {
           UPDATE reviews
           SET review_date = '2026-04-13', created_at = '2026-04-14T09:00:00.000Z', updated_at = '2026-04-14T09:00:00.000Z'
           WHERE id = 'review-2026-04-18'
+            AND user_id = '${LOCAL_USER_ID}'
         `
         )
         .run()
@@ -280,12 +348,13 @@ export class GrowthTreeDatabase {
       this.db
         .prepare(
           `
-          INSERT INTO app_settings (id, key, value, updated_at)
-          VALUES (@id, @key, @value, @updated_at)
+          INSERT INTO app_settings (id, user_id, key, value, updated_at)
+          VALUES (@id, @user_id, @key, @value, @updated_at)
         `
         )
         .run({
           id: 'setting-seed-p0-2-migrated',
+          user_id: userId,
           key: 'seed_p0_2_migrated',
           value: 'true',
           updated_at: new Date().toISOString()
@@ -293,31 +362,47 @@ export class GrowthTreeDatabase {
     })
   }
 
+  getCurrentUser(): UserRecord {
+    const userId = this.getCurrentUserId()
+    const row = this.db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as DatabaseRow | undefined
+    return {
+      id: String(row?.id ?? userId),
+      displayName: String(row?.display_name ?? LOCAL_USER_DISPLAY_NAME),
+      mode: String(row?.mode ?? LOCAL_USER_MODE) as UserRecord['mode'],
+      createdAt: String(row?.created_at ?? ''),
+      updatedAt: String(row?.updated_at ?? '')
+    }
+  }
+
   listRecentReviews(): ReviewRecord[] {
+    const userId = this.getCurrentUserId()
     const rows = this.db
       .prepare(
         `
         SELECT id, review_date, title, content_markdown, markdown_path, created_at, updated_at
         FROM reviews
+        WHERE user_id = ?
         ORDER BY review_date DESC, created_at DESC
         LIMIT 20
       `
       )
-      .all() as DatabaseRow[]
+      .all(userId) as DatabaseRow[]
 
     return rows.map((row) => this.fromReviewRow(row))
   }
 
   getReviewDetail(reviewId: string): ReviewDetail | null {
+    const userId = this.getCurrentUserId()
     const reviewRow = this.db
       .prepare(
         `
         SELECT id, review_date, title, content_markdown, markdown_path, created_at, updated_at
         FROM reviews
         WHERE id = ?
+          AND user_id = ?
       `
       )
-      .get(reviewId) as DatabaseRow | undefined
+      .get(reviewId, userId) as DatabaseRow | undefined
 
     if (!reviewRow) {
       return null
@@ -338,10 +423,12 @@ export class GrowthTreeDatabase {
         FROM node_evidence
         JOIN nodes ON nodes.id = node_evidence.node_id
         WHERE node_evidence.review_id = ?
+          AND node_evidence.user_id = ?
+          AND nodes.user_id = ?
         ORDER BY node_evidence.created_at DESC
       `
       )
-      .all(reviewId) as DatabaseRow[]
+      .all(reviewId, userId, userId) as DatabaseRow[]
 
     const seen = new Set<string>()
     const relatedNodes = relatedRows
@@ -370,6 +457,7 @@ export class GrowthTreeDatabase {
   }
 
   createReview(payload: ReviewCreatePayload): ReviewCreateResult {
+    const userId = this.getCurrentUserId()
     const now = new Date().toISOString()
     const reviewId = `review-${payload.reviewDate}-${Math.random().toString(36).slice(2, 8)}`
     const markdownPath = persistMarkdownReview(this.reviewsDir, payload.reviewDate, payload.contentMarkdown)
@@ -377,12 +465,13 @@ export class GrowthTreeDatabase {
     this.db
       .prepare(
         `
-        INSERT INTO reviews (id, review_date, title, content_markdown, markdown_path, created_at, updated_at)
-        VALUES (@id, @review_date, @title, @content_markdown, @markdown_path, @created_at, @updated_at)
+        INSERT INTO reviews (id, user_id, review_date, title, content_markdown, markdown_path, created_at, updated_at)
+        VALUES (@id, @user_id, @review_date, @title, @content_markdown, @markdown_path, @created_at, @updated_at)
       `
       )
       .run({
         id: reviewId,
+        user_id: userId,
         review_date: payload.reviewDate,
         title: payload.title,
         content_markdown: payload.contentMarkdown,
@@ -405,7 +494,15 @@ export class GrowthTreeDatabase {
   }
 
   applyExtraction(reviewId: string, updates: ExtractionUpdate[]): TreeSnapshot {
+    const userId = this.getCurrentUserId()
     const targetUpdates = updates.slice(0, 3)
+    const review = this.db
+      .prepare('SELECT id FROM reviews WHERE id = ? AND user_id = ?')
+      .get(reviewId, userId) as DatabaseRow | undefined
+
+    if (!review) {
+      return this.getTreeSnapshot()
+    }
 
     this.runTransaction(() => {
       for (const update of targetUpdates) {
@@ -419,6 +516,7 @@ export class GrowthTreeDatabase {
   }
 
   searchNodes(query: string): SearchNodeResult[] {
+    const userId = this.getCurrentUserId()
     this.recomputeDerivedState()
 
     const text = `%${query.trim()}%`
@@ -428,12 +526,13 @@ export class GrowthTreeDatabase {
         SELECT id, title, node_type, domain, status
         FROM nodes
         WHERE node_type != 'mainline'
+          AND user_id = @user_id
           AND (@query = '%%' OR title LIKE @query OR description LIKE @query)
         ORDER BY updated_at DESC
         LIMIT 8
       `
       )
-      .all({ query: text.length > 2 ? text : '%%' }) as DatabaseRow[]
+      .all({ query: text.length > 2 ? text : '%%', user_id: userId }) as DatabaseRow[]
 
     return rows.map((row) => ({
       id: String(row.id),
@@ -445,6 +544,7 @@ export class GrowthTreeDatabase {
   }
 
   getNodeDetail(nodeId: string): NodeDetail | null {
+    const userId = this.getCurrentUserId()
     this.recomputeDerivedState()
 
     const row = this.db
@@ -453,9 +553,10 @@ export class GrowthTreeDatabase {
         SELECT *
         FROM nodes
         WHERE id = ?
+          AND user_id = ?
       `
       )
-      .get(nodeId) as DatabaseRow | undefined
+      .get(nodeId, userId) as DatabaseRow | undefined
 
     if (!row) {
       return null
@@ -467,11 +568,12 @@ export class GrowthTreeDatabase {
         SELECT *
         FROM node_evidence
         WHERE node_id = ?
+          AND user_id = ?
         ORDER BY created_at DESC
         LIMIT 3
       `
       )
-      .all(nodeId) as DatabaseRow[]
+      .all(nodeId, userId) as DatabaseRow[]
 
     const reminderRows = this.db
       .prepare(
@@ -480,11 +582,13 @@ export class GrowthTreeDatabase {
         FROM reminders
         JOIN nodes ON nodes.id = reminders.node_id
         WHERE reminders.node_id = ?
+          AND reminders.user_id = ?
+          AND nodes.user_id = ?
           AND reminders.status = 'open'
         ORDER BY reminders.updated_at DESC
       `
       )
-      .all(nodeId) as DatabaseRow[]
+      .all(nodeId, userId, userId) as DatabaseRow[]
 
     const detailNode = this.computeNodeFromRow(row)
 
@@ -498,10 +602,13 @@ export class GrowthTreeDatabase {
   }
 
   markNodeReviewed(nodeId: string): NodeDetail | null {
+    const userId = this.getCurrentUserId()
     const now = new Date().toISOString()
 
     this.runTransaction(() => {
-      const row = this.db.prepare('SELECT * FROM nodes WHERE id = ?').get(nodeId) as DatabaseRow | undefined
+      const row = this.db
+        .prepare('SELECT * FROM nodes WHERE id = ? AND user_id = ?')
+        .get(nodeId, userId) as DatabaseRow | undefined
       if (!row) {
         return
       }
@@ -513,10 +620,12 @@ export class GrowthTreeDatabase {
           UPDATE nodes
           SET status = @status, needs_review = 0, updated_at = @updated_at
           WHERE id = @id
+            AND user_id = @user_id
         `
         )
         .run({
           id: nodeId,
+          user_id: userId,
           status: current.status === 'review' ? 'stable' : current.status,
           updated_at: now
         })
@@ -527,12 +636,14 @@ export class GrowthTreeDatabase {
           UPDATE reminders
           SET status = 'done', updated_at = @updated_at
           WHERE node_id = @node_id
+            AND user_id = @user_id
             AND reminder_type = 'review_due'
             AND status = 'open'
         `
         )
         .run({
           node_id: nodeId,
+          user_id: userId,
           updated_at: now
         })
 
@@ -543,6 +654,7 @@ export class GrowthTreeDatabase {
   }
 
   listAllReminders(): ReminderRecord[] {
+    const userId = this.getCurrentUserId()
     this.recomputeDerivedState()
 
     const rows = this.db
@@ -551,17 +663,22 @@ export class GrowthTreeDatabase {
         SELECT reminders.*, nodes.title as node_title, nodes.domain, nodes.status as node_status, nodes.last_active_at
         FROM reminders
         JOIN nodes ON nodes.id = reminders.node_id
+          AND nodes.user_id = reminders.user_id
+        WHERE reminders.user_id = ?
         ORDER BY CASE reminders.status WHEN 'open' THEN 0 ELSE 1 END, reminders.updated_at DESC, reminders.due_at ASC
       `
       )
-      .all() as DatabaseRow[]
+      .all(userId) as DatabaseRow[]
 
     return rows.map((row) => this.fromReminderRow(row))
   }
 
   completeReminder(reminderId: string, action: ReminderAction): { ok: true } {
+    const userId = this.getCurrentUserId()
     const now = new Date().toISOString()
-    const row = this.db.prepare('SELECT * FROM reminders WHERE id = ?').get(reminderId) as DatabaseRow | undefined
+    const row = this.db
+      .prepare('SELECT * FROM reminders WHERE id = ? AND user_id = ?')
+      .get(reminderId, userId) as DatabaseRow | undefined
     if (!row) {
       return { ok: true }
     }
@@ -573,16 +690,20 @@ export class GrowthTreeDatabase {
           UPDATE reminders
           SET status = 'done', updated_at = @updated_at
           WHERE id = @id
+            AND user_id = @user_id
         `
         )
         .run({
           id: reminderId,
+          user_id: userId,
           updated_at: now
         })
 
       if (action === 'reviewed' || String(row.reminder_type) === 'review_due') {
         const nodeId = String(row.node_id)
-        const nodeRow = this.db.prepare('SELECT * FROM nodes WHERE id = ?').get(nodeId) as DatabaseRow | undefined
+        const nodeRow = this.db
+          .prepare('SELECT * FROM nodes WHERE id = ? AND user_id = ?')
+          .get(nodeId, userId) as DatabaseRow | undefined
         if (nodeRow) {
           const current = this.fromNodeRow(nodeRow)
           this.db
@@ -591,10 +712,12 @@ export class GrowthTreeDatabase {
               UPDATE nodes
               SET status = @status, needs_review = 0, updated_at = @updated_at
               WHERE id = @id
+                AND user_id = @user_id
             `
             )
             .run({
               id: nodeId,
+              user_id: userId,
               status: current.status === 'review' ? 'stable' : current.status,
               updated_at: now
             })
@@ -608,6 +731,7 @@ export class GrowthTreeDatabase {
   }
 
   getWeeklyReview(): WeeklyReviewSummary {
+    const userId = this.getCurrentUserId()
     this.recomputeDerivedState()
     const nodes = this.getComputedNodes()
     const now = dayjs()
@@ -619,9 +743,10 @@ export class GrowthTreeDatabase {
         SELECT COUNT(*) as count
         FROM reviews
         WHERE datetime(created_at) >= datetime(?)
+          AND user_id = ?
       `
       )
-      .get(windowStart.toISOString()) as { count: number }
+      .get(windowStart.toISOString(), userId) as { count: number }
 
     const newNodes = nodes
       .filter((node) => node.nodeType !== 'mainline' && dayjs(node.createdAt).isAfter(windowStart))
@@ -694,6 +819,7 @@ export class GrowthTreeDatabase {
   }
 
   getTreeSnapshot(): TreeSnapshot {
+    const userId = this.getCurrentUserId()
     this.recomputeDerivedState()
 
     const nodeRows = this.db
@@ -701,12 +827,13 @@ export class GrowthTreeDatabase {
         `
         SELECT *
         FROM nodes
+        WHERE user_id = ?
         ORDER BY CASE node_type WHEN 'mainline' THEN 0 ELSE 1 END, domain, updated_at DESC
       `
       )
-      .all() as DatabaseRow[]
+      .all(userId) as DatabaseRow[]
 
-    const edgeRows = this.db.prepare('SELECT * FROM edges ORDER BY created_at ASC').all() as DatabaseRow[]
+    const edgeRows = this.db.prepare('SELECT * FROM edges WHERE user_id = ? ORDER BY created_at ASC').all(userId) as DatabaseRow[]
     const nodes = nodeRows.map((row) => this.fromNodeRow(row))
     const positionedNodes = this.withPositions(nodes)
 
@@ -718,6 +845,7 @@ export class GrowthTreeDatabase {
   }
 
   private recomputeDerivedState() {
+    const userId = this.getCurrentUserId()
     const nodes = this.getComputedNodes()
 
     for (const node of nodes) {
@@ -727,10 +855,12 @@ export class GrowthTreeDatabase {
           UPDATE nodes
           SET status = @status, needs_review = @needs_review
           WHERE id = @id
+            AND user_id = @user_id
         `
         )
         .run({
           id: node.id,
+          user_id: userId,
           status: node.computedStatus,
           needs_review: node.isReviewDue ? 1 : 0
         })
@@ -740,7 +870,8 @@ export class GrowthTreeDatabase {
   }
 
   private getComputedNodes(): ComputedNodeRecord[] {
-    const nodeRows = this.db.prepare('SELECT * FROM nodes').all() as DatabaseRow[]
+    const userId = this.getCurrentUserId()
+    const nodeRows = this.db.prepare('SELECT * FROM nodes WHERE user_id = ?').all(userId) as DatabaseRow[]
     return nodeRows.map((row) => this.computeNodeFromRow(row))
   }
 
@@ -789,6 +920,7 @@ export class GrowthTreeDatabase {
   }
 
   private syncReminders(nodes: ComputedNodeRecord[]) {
+    const userId = this.getCurrentUserId()
     const wanted = new Map<string, { node: ComputedNodeRecord; type: ReminderType; dueAt: string; reason: string }>()
 
     for (const node of nodes) {
@@ -824,7 +956,7 @@ export class GrowthTreeDatabase {
       }
     }
 
-    const reminderRows = this.db.prepare('SELECT * FROM reminders').all() as DatabaseRow[]
+    const reminderRows = this.db.prepare('SELECT * FROM reminders WHERE user_id = ?').all(userId) as DatabaseRow[]
     const grouped = new Map<string, DatabaseRow[]>()
     for (const row of reminderRows) {
       const key = `${String(row.node_id)}:${String(row.reminder_type)}`
@@ -842,10 +974,12 @@ export class GrowthTreeDatabase {
             UPDATE reminders
             SET due_at = @due_at, updated_at = @updated_at, last_triggered_at = @last_triggered_at
             WHERE id = @id
+              AND user_id = @user_id
           `
           )
           .run({
             id: String(openReminder.id),
+            user_id: userId,
             due_at: target.dueAt,
             updated_at: new Date().toISOString(),
             last_triggered_at: target.node.lastActiveAt
@@ -869,14 +1003,15 @@ export class GrowthTreeDatabase {
         .prepare(
           `
           INSERT INTO reminders (
-            id, node_id, reminder_type, status, due_at, created_at, updated_at, last_triggered_at
+            id, user_id, node_id, reminder_type, status, due_at, created_at, updated_at, last_triggered_at
           ) VALUES (
-            @id, @node_id, @reminder_type, @status, @due_at, @created_at, @updated_at, @last_triggered_at
+            @id, @user_id, @node_id, @reminder_type, @status, @due_at, @created_at, @updated_at, @last_triggered_at
           )
         `
         )
         .run({
           id: `reminder-${target.type}-${target.node.id}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
+          user_id: userId,
           node_id: target.node.id,
           reminder_type: target.type,
           status: 'open',
@@ -899,26 +1034,30 @@ export class GrowthTreeDatabase {
           UPDATE reminders
           SET status = 'done', updated_at = @updated_at
           WHERE id = @id
+            AND user_id = @user_id
         `
         )
         .run({
           id: String(row.id),
+          user_id: userId,
           updated_at: new Date().toISOString()
         })
     }
   }
 
   private getWeeklyEvidenceCount(nodeId: string): number {
+    const userId = this.getCurrentUserId()
     const row = this.db
       .prepare(
         `
         SELECT COUNT(*) as count
         FROM node_evidence
         WHERE node_id = ?
+          AND user_id = ?
           AND datetime(created_at) >= datetime(?)
       `
       )
-      .get(nodeId, dayjs().subtract(WEEKLY_WINDOW_DAYS, 'day').toISOString()) as { count: number }
+      .get(nodeId, userId, dayjs().subtract(WEEKLY_WINDOW_DAYS, 'day').toISOString()) as { count: number }
 
     return Number(row.count)
   }
@@ -931,6 +1070,7 @@ export class GrowthTreeDatabase {
   }
 
   private createNode(update: ExtractionUpdate): string {
+    const userId = this.getCurrentUserId()
     const now = new Date().toISOString()
     const nodeId = `node-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
 
@@ -938,16 +1078,17 @@ export class GrowthTreeDatabase {
       .prepare(
         `
         INSERT INTO nodes (
-          id, title, node_type, domain, status, description, created_at, updated_at,
+          id, user_id, title, node_type, domain, status, description, created_at, updated_at,
           first_seen_at, last_active_at, evidence_count, weight_score, is_achievement, needs_review
         ) VALUES (
-          @id, @title, @node_type, @domain, @status, @description, @created_at, @updated_at,
+          @id, @user_id, @title, @node_type, @domain, @status, @description, @created_at, @updated_at,
           @first_seen_at, @last_active_at, @evidence_count, @weight_score, @is_achievement, @needs_review
         )
       `
       )
       .run({
         id: nodeId,
+        user_id: userId,
         title: update.title,
         node_type: update.nodeType,
         domain: update.domain,
@@ -968,12 +1109,13 @@ export class GrowthTreeDatabase {
       this.db
         .prepare(
           `
-          INSERT INTO edges (id, source_node_id, target_node_id, relation_type, created_at, updated_at)
-          VALUES (@id, @source_node_id, @target_node_id, @relation_type, @created_at, @updated_at)
+          INSERT INTO edges (id, user_id, source_node_id, target_node_id, relation_type, created_at, updated_at)
+          VALUES (@id, @user_id, @source_node_id, @target_node_id, @relation_type, @created_at, @updated_at)
         `
         )
         .run({
           id: `edge-${mainline.id}-${nodeId}`,
+          user_id: userId,
           source_node_id: mainline.id,
           target_node_id: nodeId,
           relation_type: 'supports',
@@ -986,7 +1128,10 @@ export class GrowthTreeDatabase {
   }
 
   private touchNode(nodeId: string, description: string, reviewId: string, addEvidence: boolean) {
-    const row = this.db.prepare('SELECT * FROM nodes WHERE id = ?').get(nodeId) as DatabaseRow | undefined
+    const userId = this.getCurrentUserId()
+    const row = this.db
+      .prepare('SELECT * FROM nodes WHERE id = ? AND user_id = ?')
+      .get(nodeId, userId) as DatabaseRow | undefined
     if (!row) {
       return
     }
@@ -1016,10 +1161,12 @@ export class GrowthTreeDatabase {
           weight_score = @weight_score,
           needs_review = @needs_review
         WHERE id = @id
+          AND user_id = @user_id
       `
       )
       .run({
         id: nodeId,
+        user_id: userId,
         description: description || current.description,
         status: nextStatus,
         updated_at: now,
@@ -1033,12 +1180,13 @@ export class GrowthTreeDatabase {
       this.db
         .prepare(
           `
-          INSERT INTO node_evidence (id, node_id, review_id, excerpt, created_at)
-          VALUES (@id, @node_id, @review_id, @excerpt, @created_at)
+          INSERT INTO node_evidence (id, user_id, node_id, review_id, excerpt, created_at)
+          VALUES (@id, @user_id, @node_id, @review_id, @excerpt, @created_at)
         `
         )
         .run({
           id: `evidence-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+          user_id: userId,
           node_id: nodeId,
           review_id: reviewId,
           excerpt: description || current.description,
@@ -1108,6 +1256,7 @@ export class GrowthTreeDatabase {
   private toNodeRow(node: NodeRecord) {
     return {
       id: node.id,
+      user_id: this.getCurrentUserId(),
       title: node.title,
       node_type: node.nodeType,
       domain: node.domain,
@@ -1127,6 +1276,7 @@ export class GrowthTreeDatabase {
   private toEdgeRow(edge: TreeSnapshot['edges'][number]) {
     return {
       id: edge.id,
+      user_id: this.getCurrentUserId(),
       source_node_id: edge.sourceNodeId,
       target_node_id: edge.targetNodeId,
       relation_type: edge.relationType,
@@ -1138,6 +1288,7 @@ export class GrowthTreeDatabase {
   private toEvidenceRow(item: NodeDetail['recentEvidence'][number]) {
     return {
       id: item.id,
+      user_id: this.getCurrentUserId(),
       node_id: item.nodeId,
       review_id: item.reviewId,
       excerpt: item.excerpt,

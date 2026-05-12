@@ -45,8 +45,6 @@ Windows 优先负责：
 - 重资源处理
 - Codex skills
 - Claude / Codex 工作流文件
-- AI 工作流 / skills / 协议底座优化
-- project-state 状态卡、日志索引规则和同步说明
 - 脚本与工具链
 - 构建、打包、集成辅助
 - 文档与流程固化
@@ -80,16 +78,6 @@ Windows 优先负责：
 7. push 当前 feature 分支
 8. 输出本轮修改文件、验收结果、风险点、下一步建议
 9. 如本轮存在跨边界修改，输出跨边界声明与冲突检查结果
-
-## 5.1 AI 工作流同步验收
-
-当 Windows 端更新 AI 工作流、skills、协议底座、`docs/project-state/**` 或日志索引规则后：
-
-1. Windows 端必须 push 当前 feature 分支。
-2. Windows 端必须更新 `docs/handoff/MAC_NEXT_ACTION.md`，写清 Mac 拉取和验收命令。
-3. Mac 端同步后必须执行一次 pull 验收，确认 project-state 三件套和相关协议存在。
-4. Mac 端不要在同一轮同时改 `docs/project-state/**` 和 `docs/dev-protocol/**` 的核心内容，避免与 Windows 端冲突。
-5. Mac 端验收通过后只新增独立日志：`docs/dev-log/YYYY-MM/YYYY-MM-DD/mac-ai-workflow-sync-check.md`。
 
 ## 6. 合并规则
 

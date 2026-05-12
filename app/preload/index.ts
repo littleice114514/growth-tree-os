@@ -27,6 +27,9 @@ const api: GrowthTreeApi = {
   },
   appPaths: {
     getDataRoot: () => ipcRenderer.invoke('appPaths:getDataRoot')
+  },
+  accounts: {
+    getCurrentUser: () => ipcRenderer.invoke('accounts:getCurrentUser')
   }
 }
 

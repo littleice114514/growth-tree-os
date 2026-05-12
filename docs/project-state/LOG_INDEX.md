@@ -1,91 +1,22 @@
-# Log Index｜日志索引
+# LOG_INDEX｜开发日志压缩索引
 
-> 作用：用索引替代全文扫描。后续 Codex 默认只读最近 5 条索引，只有必要时再按路径读取相关 1 到 3 个原始日志。
+本文件只做索引，不替代原始日志。需要细节时再按路径读取对应日志。
 
-## 1. 读取规则
-
-1. 默认读取最近 5 条索引。
-2. 不默认扫描 `docs/dev-log/**` 全部历史。
-3. 如果本轮任务需要追溯历史依据，只读取索引指向的相关日志。
-4. 每次任务结束必须追加或更新一条索引。
-5. 索引只放摘要，不放完整日志正文。
-
-## 2. 日志索引模板
-
-```md
-## YYYY-MM-DD｜设备｜模块｜任务名
-
-- 日期：
-- 设备：
-- 模块：
-- 任务名：
-- 日志文件路径：
-- 修改文件：
-- 完成内容：
-- 验收结果：
-- 遗留问题：
-- 下一步：
-```
-
-## 3. 最近日志索引
-
-## 2026-05-08｜Mac｜AI Workflow｜Merge Workflow Foundation Into Main
-
-- 日期：2026-05-08
-- 设备：Mac
-- 模块：AI Workflow / Integration / Project State
-- 任务名：merge-ai-workflow-foundation-into-main
-- 日志文件路径：未新增独立 dev-log；本轮目标是合并 AI 工作流底座到主开发分支。
-- 修改文件：
-  - `AGENTS.md`
-  - `docs/project-state/CURRENT_STATUS.md`
-  - `docs/project-state/NEXT_ACTION.md`
-  - `docs/project-state/LOG_INDEX.md`
-  - `docs/handoff/MAC_NEXT_ACTION.md`
-  - `docs/dev-protocol/**`
-  - `docs/dev-log/2026-05/2026-05-07/*ai-workflow*.md`
-- 完成内容：将 `feature/mac-sync-ai-workflow-only` 的 AI 工作流底座合并到 `main`，并把下一步唯一任务切换为选择一个业务模块推进。
-- 验收结果：以文件存在检查、业务代码路径排除检查、`git status`、`git log --oneline -5`、commit 和 push 为准；本轮不运行业务构建，因为未修改业务代码。
-- 遗留问题：下一轮需要明确选择业务模块和修改边界。
-- 下一步：按 `AGENTS.md` + project-state 三件套开工，选择一个业务模块推进。
-
-## 2026-05-08｜Mac｜AI Workflow｜Codex v4 Project Workflow Foundation
-
-- 日期：2026-05-08
-- 设备：Mac
-- 模块：AI Workflow / Project State / Handoff
-- 任务名：codex-v4-project-workflow-foundation
-- 日志文件路径：未新增独立 dev-log；本轮用户限定只固化项目级工作流文件。
-- 修改文件：
-  - `AGENTS.md`
-  - `docs/project-state/CURRENT_STATUS.md`
-  - `docs/project-state/NEXT_ACTION.md`
-  - `docs/project-state/LOG_INDEX.md`
-  - `docs/handoff/MAC_NEXT_ACTION.md`
-- 完成内容：将 Codex 工作底座 v4 固化到项目根目录 `AGENTS.md`，并刷新 project-state 三件套与 Mac 接续卡。
-- 验收结果：以文件存在检查、`git diff --stat`、业务代码路径排除检查、commit 和 push 为准；本轮不运行业务构建，因为未修改业务代码。
-- 遗留问题：另一台设备需要拉取 `feature/mac-sync-ai-workflow-only` 后做只读验收。
-- 下一步：另一台设备按 `AGENTS.md` + project-state 三件套开工，确认不读取完整 dev-log、不扫描业务目录。
-
-## 2026-05-07｜Windows｜AI Workflow｜Token Saving Project State Workflow
-
-- 日期：2026-05-07
-- 设备：Windows
-- 模块：AI Workflow / Dev Protocol / Project State
-- 任务名：win-ai-workflow-token-saving
-- 日志文件路径：`docs/dev-log/2026-05/2026-05-07/win-ai-workflow-token-saving.md`
-- 修改文件：
-  - `docs/project-state/CURRENT_STATUS.md`
-  - `docs/project-state/LOG_INDEX.md`
-  - `docs/project-state/NEXT_ACTION.md`
-  - `docs/dev-protocol/AI_WORKFLOW_TOKEN_SAVING.md`
-  - `docs/dev-protocol/CODEX_STARTUP_CHECKLIST.md`
-  - `docs/dev-protocol/DUAL_DEVICE_WORKFLOW.md`
-  - `docs/dev-protocol/DEV_LOG_RULES.md`
-  - `docs/dev-protocol/PROJECT_HANDOFF_RULES.md`
-  - `docs/dev-log/2026-05/2026-05-07/win-ai-workflow-token-saving.md`
-  - `docs/handoff/MAC_NEXT_ACTION.md`
-- 完成内容：建立 project-state 三件套和省 token 开工规则，并接入启动、日志、双端和交接协议。
-- 验收结果：Windows 端完成文件存在检查、关键规则检索、git diff/stat 检查；业务构建未运行，因为本轮不改业务代码。
-- 遗留问题：Mac 端尚未拉取并写入同步验收日志。
-- 下一步：Mac 端拉取 `feature/win-ai-workflow-token-saving`，检查文件存在和读取顺序，然后新增 `mac-ai-workflow-sync-check.md`。
+- 2026-05-12｜Integration｜Time Debt + Wealth｜develop 已从 `origin/main @ 4df9ada` 创建并推送，`feature/integration-time-debt-wealth` 已创建；Time Debt merge 遇到项目底座文档冲突，正在按 integration 策略解决。
+- 2026-04-29｜Mac｜protocol-check｜确认 Mac 后续开发规则、日志规则和禁止事项；发现 HEAD 记录差异｜影响开发协同工作流层
+- 2026-04-29｜Mac｜flexible-ownership-check｜确认弹性分工、跨边界规则和 3D 协同摘要｜影响开发协同工作流层
+- 2026-04-29｜Windows｜flexible-ownership-rules｜新增/确认双端弹性 ownership 协议；`git diff --check` 通过｜影响开发协同工作流层
+- 2026-04-29｜Mac｜Time Debt Today UI｜重构今日时间操作中心，新增开始计时/补记/规划入口；build 通过，真实点击未验收｜影响本地产品层
+- 2026-04-29｜Mac｜Time Debt Plan Flow｜优化计划流、重叠时间块和状态流；typecheck/build 通过，真实桌面验收待补｜影响本地产品层
+- 2026-04-29｜Mac｜Time Debt Form/Plan/Stats/Calendar Fix｜修复表单、计划限制、动态统计、日历问题；tsc 通过，build 受 Rollup 签名阻塞｜影响本地产品层
+- 2026-04-29｜Mac｜Time Debt Fields + Weekly Calendar｜新增字段配置与周视图；tsc 通过，build 受环境阻塞｜影响本地产品层
+- 2026-04-29｜Mac｜Time Debt Modal/Timer Stability｜修复重复分类、Modal 空白、计时状态丢失；build 通过｜影响本地产品层
+- 2026-04-29｜Mac｜Reminder x Time Debt｜计划任务接入 Reminder，支持跳转、计时、延后、补记、归档；build 通过｜影响本地产品层
+- 2026-04-30｜Mac｜Time Debt Calendar View V1｜新增日/周/月/自定义天数、时间刻度、定位和重叠算法；部分验证受环境阻塞｜影响本地产品层
+- 2026-04-30｜Mac｜Time Debt Calendar UI Density｜优化日历密度和详情字段；typecheck/build/浏览器 smoke 通过｜影响本地产品层
+- 2026-04-30｜Mac｜Time Debt Calendar Interaction Stability｜修复详情持续显示、非当天事件、拖拽落位、重叠布局；dev/browser smoke 通过｜影响本地产品层
+- 2026-05-06｜Mac｜Account Foundation｜新增 `local_user`、`user_id` 预留和幂等迁移；TypeScript/SQLite smoke 通过，build/dev 受环境阻塞｜影响数据库层/用户系统层
+- 2026-05-06｜Mac｜Account Foundation Validation｜补齐 `user_id` 查询/写入过滤验证；SQLite smoke 通过，真实页面 smoke 待补｜影响数据库层/用户系统层
+- 2026-05-06｜Mac｜M12.1 Startup Env Fix｜恢复 pnpm、重装依赖、定位 Rollup native 签名问题；`pnpm typecheck` 通过｜影响运维维护层
+- 2026-05-06｜Mac｜Time Debt / Wealth localStorage Account Namespace｜为 Time Debt / Wealth localStorage 补账户命名空间；`pnpm typecheck` 和 `pnpm smoke` 通过｜影响数据层轻预留
+- 2026-05-10｜受控业务开发第一轮闭环验证｜Codex Time Debt commit 0c35ad9；Claude Wealth commit abef583；并行边界、GitHub Sync Gate、handoff 接续有效；下一步补验 Time Debt Mac UI smoke。

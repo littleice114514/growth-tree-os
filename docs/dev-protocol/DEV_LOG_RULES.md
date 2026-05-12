@@ -4,14 +4,6 @@
 
 开发日志必须继续记录，但不得让 Mac 和 Windows 同时写入同一个日志文件。
 
-后续开工不默认读取完整 dev-log 历史。默认先读：
-
-1. `docs/project-state/CURRENT_STATUS.md`
-2. `docs/project-state/LOG_INDEX.md` 最近 5 条
-3. `docs/project-state/NEXT_ACTION.md`
-
-只有当日志索引指向某条历史日志且任务确实需要追溯时，才读取相关 1 到 3 个原始日志。
-
 禁止两端同时修改：
 
 - docs/dev-log/latest.md
@@ -95,14 +87,3 @@ integration-summary.md
 - 不要互相覆盖。
 - 将冲突内容拆成 mac-*.md 和 win-*.md。
 - integration-summary.md 只在合并阶段整理。
-
-## 6. 日志分层规则
-
-本项目日志分为四层：
-
-1. `docs/project-state/CURRENT_STATUS.md`：当前状态，只记录当前阶段、允许范围、禁止范围、卡点和下一步唯一任务。
-2. `docs/project-state/LOG_INDEX.md`：日志索引，只记录最近任务摘要、日志路径、修改文件、验收结果、遗留问题和下一步。
-3. `docs/dev-log/**`：完整归档，保存每轮详细日志，不作为默认开工入口。
-4. 阶段交接卡：只在阶段收口、设备切换或用户明确要求时生成。
-
-下次任务默认不读完整 dev-log。每轮结束必须更新 `CURRENT_STATUS.md`、`LOG_INDEX.md` 和本轮独立 dev-log；如果未更新，必须在日志中说明原因。

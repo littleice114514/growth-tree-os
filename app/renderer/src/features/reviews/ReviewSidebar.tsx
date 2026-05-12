@@ -10,6 +10,7 @@ export function ReviewSidebar() {
   const selectedReviewId = useWorkspaceStore((state) => state.selectedReviewId)
   const rightPanelMode = useWorkspaceStore((state) => state.rightPanelMode)
   const dataRoot = useWorkspaceStore((state) => state.dataRoot)
+  const currentUser = useWorkspaceStore((state) => state.currentUser)
 
   return (
     <ShellCard className="flex h-full min-h-0 flex-col overflow-hidden bg-[var(--panel-bg)] p-4">
@@ -75,7 +76,22 @@ export function ReviewSidebar() {
       </div>
 
       <div className="mt-3 shrink-0 rounded-xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3 text-xs leading-5 text-[color:var(--text-secondary)]">
-        <div className="uppercase tracking-[0.16em] text-[color:var(--text-muted)]">Data Root</div>
+        <div className="uppercase tracking-[0.16em] text-[color:var(--text-muted)]">Account</div>
+        <div className="mt-2 grid gap-1.5">
+          <div className="flex items-center justify-between gap-3">
+            <span>当前模式</span>
+            <span className="font-medium text-[color:var(--text-primary)]">{currentUser?.displayName ?? '本地账户'}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span>数据保存</span>
+            <span className="font-medium text-[color:var(--text-primary)]">本机</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span>登录同步</span>
+            <span className="font-medium text-[color:var(--text-primary)]">暂未开放</span>
+          </div>
+        </div>
+        <div className="mt-3 border-t border-[color:var(--panel-border)] pt-3 uppercase tracking-[0.16em] text-[color:var(--text-muted)]">Data Root</div>
         <div className="mt-2 break-all">{dataRoot || '初始化中...'}</div>
       </div>
     </ShellCard>
