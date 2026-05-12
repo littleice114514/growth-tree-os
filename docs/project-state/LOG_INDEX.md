@@ -2,6 +2,7 @@
 
 本文件只做索引，不替代原始日志。需要细节时再按路径读取对应日志。
 
+- 2026-05-12｜Mac｜SystemX MVP｜新增 SystemX 系统感知模块：主导航入口、手动输入、mock sense engine、localStorage 保存、历史回看；补齐 ECharts 依赖后 `pnpm typecheck`、`pnpm build` 通过｜影响本地产品层。
 - 2026-05-12｜Integration｜Time Debt + Wealth｜develop 已从 `origin/main @ 4df9ada` 创建并推送，`feature/integration-time-debt-wealth` 已创建；Time Debt 已合入，merge commit `eb2cdef`；Wealth merge 发生共享文档冲突，正在处理；待命令与 UI 验证。
 - 2026-05-10｜受控业务开发第一轮闭环验证｜Codex Time Debt commit 0c35ad9；Claude Wealth commit abef583；并行边界、GitHub Sync Gate、handoff 接续有效；下一步补验 Time Debt Mac UI smoke。
 - 2026-05-06｜Mac｜Time Debt / Wealth localStorage Account Namespace｜为 Time Debt / Wealth localStorage 补账户命名空间；`pnpm typecheck` 和 `pnpm smoke` 通过｜影响数据层轻预留。

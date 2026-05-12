@@ -13,6 +13,7 @@ import { LifeVitalityTreeCanvas } from '@/features/life-vitality-tree/LifeVitali
 import { LifeCurveDashboard } from '@/features/life-curve/LifeCurveDashboard'
 import { WealthDashboard } from '@/features/wealth/WealthDashboard'
 import { TimeDebtDashboard } from '@/features/time-debt/TimeDebtDashboard'
+import { SystemXPage } from '@/features/systemx'
 import { LifeDashboardPreview } from '@/features/dashboard-preview'
 
 export function MainWorkspacePage() {
@@ -96,6 +97,7 @@ export function MainWorkspacePage() {
         {currentView === 'lifeCurve' ? <LifeCurveDashboard /> : null}
         {currentView === 'wealth' ? <WealthDashboard /> : null}
         {currentView === 'timeDebt' ? <TimeDebtDashboard /> : null}
+        {currentView === 'systemx' ? <SystemXPage /> : null}
         {currentView === 'weeklyReview' ? (
           <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_340px] gap-4">
             <div className="min-h-0">

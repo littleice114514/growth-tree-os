@@ -18,6 +18,36 @@
 - 当前问题：
 - 下一步：
 
+### 2026-05-12｜SystemX MVP / 系统感知模块
+
+- 设备：MacBook / Codex
+- 分支：feature/integration-time-debt-wealth
+- commit：本轮最终 hash 见最终汇报
+- 本轮目标：在 Time Debt + Wealth 集成分支上新增 SystemX MVP，完成页面入口、手动输入、mock 分析、localStorage 保存、历史回看。
+- 修改文件：
+  - `app/renderer/src/features/systemx/**`
+  - `app/renderer/src/components/Toolbar.tsx`
+  - `app/renderer/src/pages/MainWorkspacePage.tsx`
+  - `app/renderer/src/types/ui.ts`
+  - `docs/project-map/SYSTEMX_ROUTE_MAP.md`
+  - `docs/project-state/**`
+  - `docs/handoff/MAC_NEXT_ACTION.md`
+- 完成内容：
+  - 新增 SystemX 输入类型、系统标签、记录、原则候选、行动候选和分析类型。
+  - 新增 mock sense engine，不调用真实 AI。
+  - 新增 localStorage 存储工具，key 为 `growth-tree-os:systemx-records:v1`，最多保留 100 条。
+  - 新增 SystemX 页面，支持输入、分析、结果展示、历史记录和清空历史确认。
+  - 主导航新增 `SystemX`，不改变默认启动页。
+- 验收结果：
+  - `pnpm typecheck` 通过。
+  - `pnpm build` 通过。
+  - 本地 `node_modules` 未物化 ECharts 依赖导致首次 typecheck 失败，已通过 pnpm 安装流程补齐本地依赖；`package.json` / `pnpm-lock.yaml` 已包含对应依赖。
+- 当前问题：
+  - SystemX 仍是 MVP，不接真实 AI，不读写 Time Debt / Wealth。
+  - 真实 Electron UI 点击 smoke 待 Mac 端补验。
+- 下一步：
+  - 在 Mac 端验收 SystemX 输入 / 分析 / 历史回看，并确认 Time Debt / Wealth 入口仍可访问。
+
 ### 2026-04-28｜Dashboard 可读性优化 / InteractiveStackedBar V0.1
 
 - 设备：MacBook / Codex

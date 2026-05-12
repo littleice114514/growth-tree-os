@@ -11,6 +11,7 @@ const workspaceViews: Array<[WorkspaceView, string]> = [
   ['lifeCurve', '人生曲线'],
   ['wealth', '财富'],
   ['timeDebt', '时间负债'],
+  ['systemx', 'SystemX'],
   ['reminders', '提醒'],
   ['weeklyReview', '周回看']
 ]
@@ -22,6 +23,7 @@ const workspaceTitles: Record<WorkspaceView, string> = {
   lifeCurve: 'Life Curve Dashboard',
   wealth: '财富操作系统',
   timeDebt: '时间负债',
+  systemx: 'SystemX 系统感知',
   reminders: '提醒工作台',
   weeklyReview: '周回看'
 }

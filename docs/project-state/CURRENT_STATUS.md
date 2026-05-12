@@ -1,17 +1,19 @@
 # CURRENT_STATUS｜当前项目状态摘要
 
 更新时间：2026-05-12
-来源：`feature/integration-time-debt-wealth` 集成现场
+来源：`feature/integration-time-debt-wealth` 集成现场 + SystemX MVP 本轮推进
 
 ## 1. 当前项目阶段
 
-Integration｜Time Debt + Wealth 双模块集成验证阶段。
+Integration｜Time Debt + Wealth 双模块集成验证阶段；SystemX MVP 已在该集成分支进入本地闭环验证。
 
 本文件记录 integration 分支当前状态，不代表 `main` 或 `develop` 已完成集成。
 
 ## 2. 当前主线
 
 当前唯一主线是把 Time Debt 最新成果与 Wealth 最新成果整合到同一个预览版本中，验证两个模块能否共存运行。
+
+本轮用户明确覆盖旧的“不开发新功能”限制，在 `feature/integration-time-debt-wealth` 上新增 SystemX MVP，但边界严格限制为 renderer 内页面、mock engine 与 localStorage，不改 Time Debt / Wealth 业务逻辑。
 
 - `develop` 已从 `origin/main @ 4df9ada` 创建并推送。
 - 当前集成分支：`feature/integration-time-debt-wealth`。
@@ -24,6 +26,7 @@ Integration｜Time Debt + Wealth 双模块集成验证阶段。
 - 成长树基础闭环：复盘、结构更新、节点/证据/边、树快照、节点详情、提醒、周回看已有 SQLite / IPC / store 主链路。
 - Time Debt：今日台、计划、计时、提醒联动、日/周/月/自定义日历、拖拽/调整、详情面板和账户命名空间已有日志证据；本集成分支已合入最新 Time Debt 分支。
 - Wealth：本地记录流、汇总计算、baseConfig 持久化、现金流 ECharts 图表、记录搜索 / 分组、支出类型占比饼图等成果已进入 Wealth 分支；本集成分支正在合入并待验证。
+- SystemX：新增系统感知 MVP，支持手动输入、mock 分析、localStorage 保存、历史回看和主导航入口；当前不接真实 AI、不读写 Time Debt / Wealth。
 - Account Foundation：SQLite 核心表 `user_id` 和 `local_user` 轻预留已有 smoke 记录。
 - 开发协同：`docs/dev-protocol/**`、`docs/handoff/**`、`docs/project-map/**` 已形成协同入口。
 
@@ -44,7 +47,7 @@ Integration｜Time Debt + Wealth 双模块集成验证阶段。
 
 ## 6. 当前明确不做
 
-- 不开发新功能。
+- 除本轮已明确授权的 SystemX MVP 外，不继续开发新功能。
 - 不做 AI 自动抽取、RAG、Agent。
 - 不做云同步或真实多端数据合并。
 - 不做商业化功能。

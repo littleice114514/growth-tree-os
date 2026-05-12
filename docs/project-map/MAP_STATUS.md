@@ -1,28 +1,30 @@
 # MAP_STATUS｜当前项目地图位置
 
 更新时间：2026-05-12
-定位来源：`feature/integration-time-debt-wealth` 集成现场、Time Debt merge commit `eb2cdef`、Wealth merge 当前工作区。
+定位来源：`feature/integration-time-debt-wealth` 集成现场、Time Debt merge commit `eb2cdef`、Wealth merge 当前工作区、SystemX MVP 本轮推进。
 
 ## 1. 当前地图位置
 
-- 当前阶段：Integration｜Time Debt + Wealth 双模块集成验证。
+- 当前阶段：Integration｜Time Debt + Wealth 双模块集成验证；SystemX MVP 已作为第三个本地模块入口接入。
 - 集成基线：`develop` 已从 `origin/main @ 4df9ada` 创建并推送。
 - 当前分支：`feature/integration-time-debt-wealth`。
 - Time Debt：已合入，来源 `origin/feature/mac-time-debt-plan-flow-overlap-ui @ 3a74cf0`，merge commit `eb2cdef`。
 - Wealth：正在合入，来源 `origin/feature/claude-wealth-baseconfig-persistence-latest @ edd4a1a`，当前处理共享文档冲突；业务文件与 ECharts 依赖已进入工作区，待命令与 UI 验证。
+- SystemX：已新增 renderer 内 MVP，支持手动输入、mock 分析、localStorage 保存、历史回看；不接真实 AI、不读写 Time Debt / Wealth。
 - 本状态只代表 integration 分支，不代表 `main` 或 `develop` 已完成集成。
 
 ## 2. 本轮集成目标
 
 验证 Time Debt 最新成果与 Wealth 最新成果能否在同一个版本共存运行。
 
-本轮不开发新功能，不做 Wealth 新需求，不做 Time Debt 新需求，不做 UI 大改，不合回 `develop`，不 push `main`。
+本轮用户明确授权新增 SystemX MVP；除此之外不做 Wealth 新需求，不做 Time Debt 新需求，不做 UI 大改，不合回 `develop`，不 push `main`。
 
 ## 3. 已合入 / 待验证能力
 
 - Time Debt 已合入：计时闭环稳定化、短任务真实时长与视觉高度分离、跨天分段详情只读、Calendar UI 修复、时区入口 UI-only MVP、短任务点击误触 resize 修复。
 - Wealth 待集成验证：连续透支天数、日期 / 周期查看、现金流趋势、UI-IA 重构、分类项目 chip、ECharts 现金流图表、记录搜索 / 分组、支出类型占比饼图。
 - Wealth 依赖待确认保留：`echarts`、`echarts-for-react`。
+- SystemX 已接入：输入类型、标题、正文、mock sense engine、结构化分析展示、原则候选、行动候选、风险提醒、验证方式、系统标签、本地历史记录。
 
 ## 4. 当前项目底座
 
@@ -56,4 +58,4 @@ pnpm smoke
 pnpm dev
 ```
 
-验证通过后新增 `docs/handoff/INTEGRATION_TIME_DEBT_WEALTH_NEXT_ACTION.md` 并 push `feature/integration-time-debt-wealth`。
+验证通过后继续从 `docs/project-map/SYSTEMX_ROUTE_MAP.md` 评估 Floating Capture 和 Time Debt / Wealth 只读数据桥，不直接扩大到真实 AI。
