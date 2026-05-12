@@ -4,7 +4,7 @@
 
 - 项目名称：growth-tree-os
 - 项目定位：本地优先的个人成长操作系统。
-- 当前阶段：Demo 可运行层基本成立，正在收口本地产品层和开发协同工作流层。
+- 当前阶段：Integration｜Time Debt + Wealth 双模块集成验证。
 
 ## 2. 开工必读文件
 
@@ -47,11 +47,14 @@
 - Codex：Time Debt / 时间负债、数据记录链路、项目地图状态接续、日志压缩索引、开发协同文档。
 - Claude：Wealth / 财富模块、财富规则配置、DashboardPreview 真实数据接入、展示优化。
 
-## 6. 并行开发禁止事项
+## 6. 并行开发与集成边界
 
 - 不要同时修改 `app/renderer/src/features/time-debt/**` 和 `app/renderer/src/features/wealth/**`。
 - 不要两端同时改 `app/main/db.ts`、`app/main/ipc.ts`、`app/renderer/src/app/store.ts`、`app/renderer/src/pages/MainWorkspacePage.tsx`。
 - 不要同时覆盖 `docs/project-state/**` 或 `docs/project-map/MAP_STATUS.md`。
+- 集成分支中可以同时带入 Time Debt 与 Wealth 成果，但共享文件冲突必须手工合并。
+- Wealth 图表路线依赖 `echarts` 与 `echarts-for-react`，集成时必须保留。
+- Wealth Records Insight 相关能力包括记录搜索、日期/类型/分类分组、支出类型占比饼图与分类 chip，集成后需要 smoke。
 - 不要 merge、rebase、reset 或 push，除非用户明确要求。
 
 ## 7. GitHub Sync Gate
