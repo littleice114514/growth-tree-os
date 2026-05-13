@@ -15,11 +15,17 @@ import { WealthDashboard } from '@/features/wealth/WealthDashboard'
 import { TimeDebtDashboard } from '@/features/time-debt/TimeDebtDashboard'
 import { SystemXPage } from '@/features/systemx'
 import { LifeDashboardPreview } from '@/features/dashboard-preview'
+import type { WorkspaceView } from '@/types/ui'
+
+function resolveRenderedWorkspaceView(view: WorkspaceView): WorkspaceView {
+  return view === 'wealth' || view === 'timeDebt' ? view : 'timeDebt'
+}
 
 export function MainWorkspacePage() {
   const isReviewComposerOpen = useWorkspaceStore((state) => state.isReviewComposerOpen)
   const extractionReview = useWorkspaceStore((state) => state.extractionReview)
   const currentView = useWorkspaceStore((state) => state.currentView)
+  const setCurrentView = useWorkspaceStore((state) => state.setCurrentView)
   const rightPanelMode = useWorkspaceStore((state) => state.rightPanelMode)
   const selectedNodeId = useWorkspaceStore((state) => state.selectedNodeId)
   const selectedReviewId = useWorkspaceStore((state) => state.selectedReviewId)
@@ -27,6 +33,13 @@ export function MainWorkspacePage() {
   const searchQuery = useWorkspaceStore((state) => state.searchQuery)
   const setSearchQuery = useWorkspaceStore((state) => state.setSearchQuery)
   const exitInspectMode = useWorkspaceStore((state) => state.exitInspectMode)
+  const renderedView = resolveRenderedWorkspaceView(currentView)
+
+  useEffect(() => {
+    if (currentView !== 'timeDebt' && currentView !== 'wealth') {
+      void setCurrentView('timeDebt')
+    }
+  }, [currentView, setCurrentView])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -68,7 +81,7 @@ export function MainWorkspacePage() {
     <div className="h-full bg-transparent px-5 py-4 text-base-100">
       <div className="flex h-full flex-col gap-4">
         <Toolbar />
-        {currentView === 'tree' ? (
+        {renderedView === 'tree' ? (
           <main className="grid min-h-0 flex-1 grid-cols-[280px_minmax(0,1fr)_340px] gap-4">
             <div className="min-h-0">
               <ReviewSidebar />
@@ -82,7 +95,7 @@ export function MainWorkspacePage() {
             </div>
           </main>
         ) : null}
-        {currentView === 'reminders' ? (
+        {renderedView === 'reminders' ? (
           <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_340px] gap-4">
             <div className="min-h-0">
               <ReminderPanel />
@@ -92,13 +105,13 @@ export function MainWorkspacePage() {
             </div>
           </main>
         ) : null}
-        {currentView === 'lifeDashboard' ? <LifeDashboardPreview /> : null}
-        {currentView === 'lifeVitalityTree' ? <LifeVitalityTreeCanvas /> : null}
-        {currentView === 'lifeCurve' ? <LifeCurveDashboard /> : null}
-        {currentView === 'wealth' ? <WealthDashboard /> : null}
-        {currentView === 'timeDebt' ? <TimeDebtDashboard /> : null}
-        {currentView === 'systemx' ? <SystemXPage /> : null}
-        {currentView === 'weeklyReview' ? (
+        {renderedView === 'lifeDashboard' ? <LifeDashboardPreview /> : null}
+        {renderedView === 'lifeVitalityTree' ? <LifeVitalityTreeCanvas /> : null}
+        {renderedView === 'lifeCurve' ? <LifeCurveDashboard /> : null}
+        {renderedView === 'wealth' ? <WealthDashboard /> : null}
+        {renderedView === 'timeDebt' ? <TimeDebtDashboard /> : null}
+        {renderedView === 'systemx' ? <SystemXPage /> : null}
+        {renderedView === 'weeklyReview' ? (
           <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_340px] gap-4">
             <div className="min-h-0">
               <WeeklyReviewPanel />

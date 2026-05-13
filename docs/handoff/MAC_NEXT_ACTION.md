@@ -6,31 +6,23 @@
 - GitHub 仓库：git@github.com:Littleice114514/growth-tree-os.git
 - 分支：feature/integration-time-debt-wealth
 - 最新 commit：以本轮最终汇报的 `git rev-parse --short HEAD` 为准
-- 当前设备完成时间：2026-05-12
+- 当前设备完成时间：2026-05-13
 
 ## 2. 本轮已完成
 
-- 新增 SystemX / 系统感知 MVP 页面入口。
-- 支持手动选择输入类型、填写标题和正文。
-- 使用 mock sense engine 生成结构化分析，不接真实 AI。
-- 使用 localStorage 保存最近 100 条 SystemX 历史记录。
-- 支持点击历史记录回看分析结果，支持清空历史确认。
-- 保留 Time Debt 和 Wealth 入口，不改其业务逻辑。
-- 确认集成分支所需 `echarts` / `echarts-for-react` 依赖可被本地安装物化。
+- 完成 MVP 使用版收口。
+- 主界面只暴露 `时间负债` 和 `财富` 两个入口。
+- 隐藏 SystemX、成长树、Review、提醒、人生总览、人生生长树、人生曲线、周回看等未作为本轮使用版开放的入口。
+- 默认进入 `Time Debt / 时间负债`。
+- 对旧 view 状态增加兜底：非 `timeDebt` / `wealth` 会回落到 `timeDebt`。
+- 未删除旧模块源码，未修改 Time Debt / Wealth 业务逻辑。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/systemx/**`
 - `app/renderer/src/components/Toolbar.tsx`
+- `app/renderer/src/app/store.ts`
 - `app/renderer/src/pages/MainWorkspacePage.tsx`
-- `app/renderer/src/types/ui.ts`
-- `docs/project-map/SYSTEMX_ROUTE_MAP.md`
-- `docs/project-map/MAP_STATUS.md`
-- `docs/project-state/CURRENT_STATUS.md`
-- `docs/project-state/NEXT_ACTION.md`
-- `docs/project-state/LOG_INDEX.md`
-- `docs/dev-log/2026-05/2026-05-12/mac-systemx-mvp.md`
-- `docs/handoff/DEVELOPMENT_LOG.md`
+- `docs/dev-log/2026-05/2026-05-13/mvp-surface-freeze.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
 
 ## 4. 当前验证结果
@@ -39,14 +31,13 @@
 
 - `pnpm typecheck` 通过。
 - `pnpm build` 通过。
-- SystemX 未接真实 AI。
-- SystemX 未改 SQLite / IPC / preload / main process。
+- `pnpm dev` 可启动，renderer 地址为 `http://localhost:5173/`。
+- 浏览器 smoke 已确认：默认可见 `时间负债`，主导航只显示 `时间负债` / `财富`，点击两者均不白屏。
 
 ### 未验证 / 风险
 
-- 真实 Electron UI 点击 smoke 待 Mac 端补验。
-- SystemX 当前只使用 mock engine 和 localStorage。
-- SystemX 当前不读取 Time Debt / Wealth 真实数据。
+- 旧模块源码仍保留，只是从主界面入口隐藏。
+- 当前分支仍有本轮之前遗留的未提交 project-state / SystemX 文档改动，Mac 端接手时不要覆盖本地未提交内容。
 
 ## 5. Mac 端第一步操作
 
@@ -88,20 +79,18 @@ pnpm dev
 
 请在 Mac 端检查：
 
-- 主导航中能看到 `SystemX`。
-- 点击 `SystemX` 能进入 `SystemX｜系统感知台`。
-- 选择“决策判断”，输入标题和正文。
-- 点击“开始系统感知分析”后能看到摘要、事实、模式、原则、行动、风险、验证方式和系统标签。
-- 刷新或切换页面后历史记录仍然存在。
-- 点击历史记录后能重新查看对应分析结果。
-- Time Debt 入口仍可访问。
-- Wealth 入口仍可访问。
+- App 默认进入 `时间负债 / Time Debt`。
+- 主导航只看到 `时间负债` 和 `财富`。
+- 点击 `时间负债` 后页面正常显示，不白屏。
+- 点击 `财富` 后页面正常显示，不白屏。
+- 主界面看不到 `SystemX`、成长树、Review、提醒、人生总览、人生生长树、人生曲线、周回看、AI OS、3D、Obsidian 等入口。
+- 如果通过旧状态进入隐藏 view，应自动回到 `timeDebt`。
 
 ## 8. Mac 端下一轮任务
 
 请让 Mac 端 Codex 接着完成：
 
-用真实 Electron UI 对 SystemX MVP 做轻量 smoke：验证输入、mock 分析、历史保存、刷新回看、清空历史确认，并确认 Time Debt / Wealth 入口仍正常；只记录验收结果，不扩大到真实 AI、数据库、浮窗或数据桥。
+只做真实 Electron UI smoke：验证默认进入 Time Debt、主导航只剩 Time Debt / Wealth、两个模块都不白屏，并记录截图或控制台首个错误；不要开发新功能。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
@@ -110,7 +99,9 @@ pnpm dev
 - `git status` 输出；
 - `git rev-parse --short HEAD` 输出；
 - `pnpm install`、`pnpm typecheck`、`pnpm build` 或 `pnpm dev` 的完整报错；
-- SystemX 页面异常截图；
+- 默认首页截图；
+- 导航栏截图；
+- Time Debt / Wealth 页面异常截图；
 - DevTools 控制台首个关键错误。
 
 ## 10. 注意事项
@@ -118,4 +109,5 @@ pnpm dev
 - 不要直接覆盖本地未提交改动。
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
-- 不要把 SystemX 扩展到真实 AI、SQLite、IPC、preload、main process、浮窗、阅读或 3D。
+- 不要重新开放 SystemX、成长树、Review、提醒、Life Dashboard、3D 或 Obsidian 入口。
+- 不要修改 Time Debt / Wealth 业务逻辑。

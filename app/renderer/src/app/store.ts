@@ -36,6 +36,13 @@ type WorkspaceActions = {
   markNodeReviewed: (nodeId: string) => Promise<void>
 }
 
+const defaultWorkspaceView: WorkspaceView = 'timeDebt'
+const mvpWorkspaceViews = new Set<WorkspaceView>(['timeDebt', 'wealth'])
+
+function resolveMvpWorkspaceView(view: WorkspaceView): WorkspaceView {
+  return mvpWorkspaceViews.has(view) ? view : defaultWorkspaceView
+}
+
 const makeDraft = (): ExtractionDraft => ({
   key: Math.random().toString(36).slice(2, 9),
   mode: 'create',
@@ -48,7 +55,7 @@ const makeDraft = (): ExtractionDraft => ({
 })
 
 export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>((set, get) => ({
-  currentView: 'tree',
+  currentView: defaultWorkspaceView,
   tree: null,
   recentReviews: [],
   reminders: [],
@@ -140,7 +147,7 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>((set,
 
     const detail = await api.getNodeDetail(nodeId)
     set({
-      currentView: 'tree',
+      currentView: defaultWorkspaceView,
       rightPanelMode: 'node',
       selectedNodeId: nodeId,
       selectedNodeDetail: detail,
@@ -159,18 +166,11 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>((set,
   setHoverCard: (hoverCard) => set({ hoverCard }),
   setHoveredNodeId: (hoveredNodeId) => set({ hoveredNodeId }),
   setCurrentView: async (currentView) => {
-    set({ currentView })
-    if (currentView === 'reminders') {
-      await get().loadReminders()
-      return
-    }
-    if (currentView === 'weeklyReview') {
-      await get().loadWeeklyReview()
-    }
+    set({ currentView: resolveMvpWorkspaceView(currentView) })
   },
   exitInspectMode: () => {
     set({
-      currentView: 'tree',
+      currentView: defaultWorkspaceView,
       rightPanelMode: 'node',
       selectedNodeId: null,
       selectedNodeDetail: null,
