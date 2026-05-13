@@ -14,6 +14,8 @@ const LOGS_KEY = accountLocalStorageKey('time-debt', 'logs')
 const STANDARDS_KEY = accountLocalStorageKey('time-debt', 'standards')
 const PARAMS_KEY = accountLocalStorageKey('time-debt', 'params')
 
+export const timeDebtLogsChangeEvent = 'time-debt-logs-change'
+
 export function loadTimeDebtLogs(): TimeDebtLog[] {
   migrateTimeDebtLegacyKeys()
   return loadArray(LOGS_KEY, isTimeDebtLog)
@@ -22,6 +24,7 @@ export function loadTimeDebtLogs(): TimeDebtLog[] {
 export function saveTimeDebtLogs(logs: TimeDebtLog[]): void {
   migrateTimeDebtLegacyKeys()
   window.localStorage.setItem(LOGS_KEY, JSON.stringify(logs))
+  dispatchTimeDebtLogsChange()
 }
 
 export function appendTimeDebtLog(log: TimeDebtLog): TimeDebtLog[] {
@@ -92,6 +95,13 @@ function migrateTimeDebtLegacyKeys(): void {
   migrateLegacyLocalStorageKey(LEGACY_LOGS_KEY, LOGS_KEY)
   migrateLegacyLocalStorageKey(LEGACY_STANDARDS_KEY, STANDARDS_KEY)
   migrateLegacyLocalStorageKey(LEGACY_PARAMS_KEY, PARAMS_KEY)
+}
+
+function dispatchTimeDebtLogsChange(): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+  window.dispatchEvent(new Event(timeDebtLogsChangeEvent))
 }
 
 function loadArray<T>(key: string, guard: (value: unknown) => value is T): T[] {

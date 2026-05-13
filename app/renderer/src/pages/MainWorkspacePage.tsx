@@ -13,6 +13,7 @@ import { LifeVitalityTreeCanvas } from '@/features/life-vitality-tree/LifeVitali
 import { LifeCurveDashboard } from '@/features/life-curve/LifeCurveDashboard'
 import { WealthDashboard } from '@/features/wealth/WealthDashboard'
 import { TimeDebtDashboard } from '@/features/time-debt/TimeDebtDashboard'
+import { TimeDebtQuickFloat } from '@/features/time-debt/components/TimeDebtQuickFloat'
 import { SystemXPage } from '@/features/systemx'
 import { LifeDashboardPreview } from '@/features/dashboard-preview'
 import type { WorkspaceView } from '@/types/ui'
@@ -137,6 +138,7 @@ export function MainWorkspacePage() {
       </div>
 
       {isReviewComposerOpen ? <ReviewComposer /> : null}
+      <TimeDebtQuickFloat />
     </div>
   )
 }

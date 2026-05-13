@@ -24,6 +24,7 @@ import {
   loadWorkTimeStandards,
   saveTimeDebtLogs,
   saveTimeDebtParams,
+  timeDebtLogsChangeEvent,
   timeDebtStorageKeys
 } from './timeDebtStorage'
 import { SmartOptionInput } from './SmartOptionInput'
@@ -181,6 +182,18 @@ export function TimeDebtDashboard() {
     const intervalId = window.setInterval(() => setTimerNow(Date.now()), runningTimer ? 1000 : 30000)
     return () => window.clearInterval(intervalId)
   }, [runningTimer])
+
+  useEffect(() => {
+    const reloadActiveTimer = () => setRunningTimer(activeTimerToRunningTimer(loadActiveTimeDebtTimer()))
+    window.addEventListener('time-debt-active-timer-change', reloadActiveTimer)
+    return () => window.removeEventListener('time-debt-active-timer-change', reloadActiveTimer)
+  }, [])
+
+  useEffect(() => {
+    const reloadLogs = () => setLogs(loadTimeDebtLogs())
+    window.addEventListener(timeDebtLogsChangeEvent, reloadLogs)
+    return () => window.removeEventListener(timeDebtLogsChangeEvent, reloadLogs)
+  }, [])
 
   const persistLog = (draft: LogDraft): TimeDebtLog | null => {
     if (!draft.title.trim() || !draft.startTime || !draft.endTime || calculateDurationMinutes(draft.startTime, draft.endTime) <= 0) {
