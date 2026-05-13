@@ -18,7 +18,10 @@ import { LifeDashboardPreview } from '@/features/dashboard-preview'
 import type { WorkspaceView } from '@/types/ui'
 
 function resolveRenderedWorkspaceView(view: WorkspaceView): WorkspaceView {
-  return view === 'wealth' || view === 'timeDebt' ? view : 'timeDebt'
+  if (view === 'wealth' || view === 'timeDebt' || view === 'reviews' || view === 'reminders' || view === 'weeklyReview') {
+    return view
+  }
+  return 'timeDebt'
 }
 
 export function MainWorkspacePage() {
@@ -36,10 +39,10 @@ export function MainWorkspacePage() {
   const renderedView = resolveRenderedWorkspaceView(currentView)
 
   useEffect(() => {
-    if (currentView !== 'timeDebt' && currentView !== 'wealth') {
+    if (currentView !== renderedView) {
       void setCurrentView('timeDebt')
     }
-  }, [currentView, setCurrentView])
+  }, [currentView, renderedView, setCurrentView])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -102,6 +105,16 @@ export function MainWorkspacePage() {
             </div>
             <div className="min-h-0">
               {rightPanelMode === 'review' ? <ReviewDetailPanel /> : <NodeDetailPanel />}
+            </div>
+          </main>
+        ) : null}
+        {renderedView === 'reviews' ? (
+          <main className="grid min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)] gap-4">
+            <div className="min-h-0">
+              <ReviewSidebar />
+            </div>
+            <div className="min-h-0">
+              <ReviewDetailPanel />
             </div>
           </main>
         ) : null}

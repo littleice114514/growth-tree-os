@@ -6,12 +6,18 @@ import { loadActiveTimeDebtTimer, type ActiveTimeDebtTimer } from '@/features/ti
 
 const workspaceViews: Array<[WorkspaceView, string]> = [
   ['timeDebt', '时间负债'],
-  ['wealth', '财富']
+  ['wealth', '财富'],
+  ['reviews', '复盘记录'],
+  ['reminders', '提醒'],
+  ['weeklyReview', 'Review']
 ]
 
 const workspaceTitles: Partial<Record<WorkspaceView, string>> = {
   wealth: '财富操作系统',
-  timeDebt: '时间负债'
+  timeDebt: '时间负债',
+  reviews: '复盘记录',
+  reminders: '提醒工作台',
+  weeklyReview: 'Review'
 }
 
 export function Toolbar() {

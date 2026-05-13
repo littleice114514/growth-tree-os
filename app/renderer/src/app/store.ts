@@ -37,7 +37,7 @@ type WorkspaceActions = {
 }
 
 const defaultWorkspaceView: WorkspaceView = 'timeDebt'
-const mvpWorkspaceViews = new Set<WorkspaceView>(['timeDebt', 'wealth'])
+const mvpWorkspaceViews = new Set<WorkspaceView>(['timeDebt', 'wealth', 'reviews', 'reminders', 'weeklyReview'])
 
 function resolveMvpWorkspaceView(view: WorkspaceView): WorkspaceView {
   return mvpWorkspaceViews.has(view) ? view : defaultWorkspaceView
@@ -166,7 +166,19 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>((set,
   setHoverCard: (hoverCard) => set({ hoverCard }),
   setHoveredNodeId: (hoveredNodeId) => set({ hoveredNodeId }),
   setCurrentView: async (currentView) => {
-    set({ currentView: resolveMvpWorkspaceView(currentView) })
+    const resolvedView = resolveMvpWorkspaceView(currentView)
+    set({ currentView: resolvedView })
+    if (resolvedView === 'reviews') {
+      await get().loadRecentReviews()
+      return
+    }
+    if (resolvedView === 'reminders') {
+      await get().loadReminders()
+      return
+    }
+    if (resolvedView === 'weeklyReview') {
+      await get().loadWeeklyReview()
+    }
   },
   exitInspectMode: () => {
     set({
