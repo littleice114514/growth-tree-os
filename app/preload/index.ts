@@ -30,6 +30,12 @@ const api: GrowthTreeApi = {
   },
   accounts: {
     getCurrentUser: () => ipcRenderer.invoke('accounts:getCurrentUser')
+  },
+  market: {
+    hasApiKey: () => ipcRenderer.invoke('market:hasApiKey'),
+    fetchQuote: (symbol) => ipcRenderer.invoke('market:fetchQuote', symbol),
+    fetchQuotes: (symbols) => ipcRenderer.invoke('market:fetchQuotes', symbols),
+    fetchCandles: (symbol) => ipcRenderer.invoke('market:fetchCandles', symbol)
   }
 }
 

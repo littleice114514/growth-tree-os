@@ -1,21 +1,61 @@
-import { useMemo, useState } from 'react'
-import type { MarketWatchlistItem } from './marketDataTypes'
+import { useEffect, useMemo, useState } from 'react'
+import type { MarketWatchlistItem, MarketCandle } from './marketDataTypes'
 import { marketGroupOrder } from './marketDataTypes'
 import { getMarketWatchlist, getMarketCandles } from './marketDataService'
 import { MarketKlineChart } from './MarketKlineChart'
 
 export function MarketQuotesPanel() {
-  const watchlist = useMemo(() => getMarketWatchlist(), [])
+  const [watchlist, setWatchlist] = useState<MarketWatchlistItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [apiKeyAvailable, setApiKeyAvailable] = useState(false)
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
+  const [selectedSource, setSelectedSource] = useState<string | null>(null)
+  const [candles, setCandles] = useState<MarketCandle[]>([])
+  const [candlesLoading, setCandlesLoading] = useState(false)
+
+  // Load watchlist on mount
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const items = await getMarketWatchlist()
+      if (!cancelled) {
+        setWatchlist(items)
+        setLoading(false)
+        // Check if any finnhub item is using real data
+        setApiKeyAvailable(items.some((i) => i.source === 'finnhub' && !i.isMock))
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
+
+  // Load candles when symbol changes
+  useEffect(() => {
+    if (!selectedSymbol || !selectedSource) {
+      setCandles([])
+      return
+    }
+    let cancelled = false
+    setCandlesLoading(true)
+    ;(async () => {
+      const data = await getMarketCandles(selectedSymbol, selectedSource as any)
+      if (!cancelled) {
+        setCandles(data)
+        setCandlesLoading(false)
+      }
+    })()
+    return () => { cancelled = true }
+  }, [selectedSymbol, selectedSource])
 
   const selectedQuote = selectedSymbol ? watchlist.find((q) => q.symbol === selectedSymbol) : null
-  const selectedCandles = useMemo(
-    () => (selectedSymbol ? getMarketCandles(selectedSymbol) : []),
-    [selectedSymbol]
-  )
 
-  const toggleSymbol = (symbol: string) => {
-    setSelectedSymbol((prev) => (prev === symbol ? null : symbol))
+  const toggleSymbol = (symbol: string, source: string) => {
+    if (selectedSymbol === symbol) {
+      setSelectedSymbol(null)
+      setSelectedSource(null)
+    } else {
+      setSelectedSymbol(symbol)
+      setSelectedSource(source)
+    }
   }
 
   return (
@@ -26,32 +66,43 @@ export function MarketQuotesPanel() {
           <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Market</div>
           <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">行情观察</h3>
           <p className="mt-1 text-xs text-[color:var(--text-muted)]">
-            固定标的行情快照 · 点击标的查看 30 日 K 线 · 数据为 mock 演示
+            固定标的行情快照 · 点击标的查看 30 日 K 线
+            {loading
+              ? ' · 加载中…'
+              : apiKeyAvailable
+                ? ' · 海外行情来自 Finnhub'
+                : ' · 未配置 Finnhub API Key，当前显示 mock 数据'}
           </p>
         </div>
 
-        {/* Watchlist by market group */}
-        {marketGroupOrder.map((group) => {
-          const items = watchlist.filter((q) => group.types.includes(q.marketType))
-          if (items.length === 0) return null
-          return (
-            <div key={group.key} className="mb-4 last:mb-0">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
-                {group.label}
+        {loading ? (
+          <div className="flex items-center justify-center py-8 text-sm text-[color:var(--text-muted)]">
+            加载行情数据…
+          </div>
+        ) : (
+          /* Watchlist by market group */
+          marketGroupOrder.map((group) => {
+            const items = watchlist.filter((q) => group.types.includes(q.marketType))
+            if (items.length === 0) return null
+            return (
+              <div key={group.key} className="mb-4 last:mb-0">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+                  {group.label}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-2">
+                  {items.map((item) => (
+                    <QuoteCard
+                      key={item.symbol}
+                      item={item}
+                      isSelected={selectedSymbol === item.symbol}
+                      onClick={() => toggleSymbol(item.symbol, item.source)}
+                    />
+                  ))}
+                </div>
               </div>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-2">
-                {items.map((item) => (
-                  <QuoteCard
-                    key={item.symbol}
-                    item={item}
-                    isSelected={selectedSymbol === item.symbol}
-                    onClick={() => toggleSymbol(item.symbol)}
-                  />
-                ))}
-              </div>
-            </div>
-          )
-        })}
+            )
+          })
+        )}
       </section>
 
       {/* K-line detail */}
@@ -67,17 +118,23 @@ export function MarketQuotesPanel() {
             </div>
             <button
               type="button"
-              onClick={() => setSelectedSymbol(null)}
+              onClick={() => { setSelectedSymbol(null); setSelectedSource(null) }}
               className="rounded-lg border border-[color:var(--input-border)] px-2 py-1 text-xs text-[color:var(--text-muted)] transition hover:bg-[var(--control-hover)]"
             >
               关闭
             </button>
           </div>
-          <MarketKlineChart
-            candles={selectedCandles}
-            symbol={selectedQuote.symbol}
-            name={selectedQuote.name}
-          />
+          {candlesLoading ? (
+            <div className="flex items-center justify-center py-8 text-sm text-[color:var(--text-muted)]">
+              加载 K 线数据…
+            </div>
+          ) : (
+            <MarketKlineChart
+              candles={candles}
+              symbol={selectedQuote.symbol}
+              name={selectedQuote.name}
+            />
+          )}
         </section>
       ) : null}
     </div>
@@ -100,6 +157,8 @@ function QuoteCard({
     ? 'rounded-2xl border border-[color:var(--node-selected-border)] bg-[var(--control-hover)] p-3 cursor-pointer transition'
     : 'rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3 cursor-pointer transition hover:bg-[var(--control-hover)]'
 
+  const isLive = item.source === 'finnhub' && !item.isMock
+
   return (
     <button type="button" onClick={onClick} className={cardClass}>
       <div className="flex items-start justify-between gap-2">
@@ -112,7 +171,11 @@ function QuoteCard({
             <span className="rounded-md border border-[color:var(--input-border)] bg-[var(--control-bg)] px-1.5 py-0.5">
               {item.marketLabel}
             </span>
-            <span className="rounded-md border border-[color:var(--input-border)] bg-[var(--control-bg)] px-1.5 py-0.5">
+            <span className={`rounded-md border px-1.5 py-0.5 ${
+              isLive
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                : 'border-[color:var(--input-border)] bg-[var(--control-bg)]'
+            }`}>
               {item.sourceLabel}
             </span>
           </div>

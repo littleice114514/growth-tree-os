@@ -188,6 +188,29 @@ export type WeeklyReviewSummary = {
   restartedNodes: WeeklyReviewItem[]
 }
 
+export type FinnhubQuoteResult = {
+  symbol: string
+  price: number
+  changePercent: number
+  updatedAt: string
+  error?: string
+}
+
+export type FinnhubCandle = {
+  time: string
+  open: number
+  high: number
+  low: number
+  close: number
+  volume: number
+}
+
+export type FinnhubCandlesResult = {
+  symbol: string
+  candles: FinnhubCandle[]
+  error?: string
+}
+
 export interface GrowthTreeApi {
   reviews: {
     create(payload: ReviewCreatePayload): Promise<ReviewCreateResult>
@@ -217,5 +240,11 @@ export interface GrowthTreeApi {
   }
   accounts: {
     getCurrentUser(): Promise<UserRecord>
+  }
+  market: {
+    hasApiKey(): Promise<boolean>
+    fetchQuote(symbol: string): Promise<FinnhubQuoteResult>
+    fetchQuotes(symbols: string[]): Promise<FinnhubQuoteResult[]>
+    fetchCandles(symbol: string): Promise<FinnhubCandlesResult>
   }
 }

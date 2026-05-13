@@ -4,22 +4,22 @@ import { marketTypeLabels, marketSourceLabels } from './marketDataTypes'
 // ── Fixed watchlist ──
 
 const watchlistDef: { symbol: string; name: string; marketType: MarketType; source: MarketSource }[] = [
-  // 国内
+  // 国内 (mock)
   { symbol: '000001', name: '上证指数', marketType: 'cn-index', source: 'akshare' },
   { symbol: '000300', name: '沪深300', marketType: 'cn-index', source: 'akshare' },
   { symbol: '600519', name: '贵州茅台', marketType: 'cn-stock', source: 'akshare' },
   { symbol: '005827', name: '易方达蓝筹精选', marketType: 'cn-fund', source: 'akshare' },
-  // 海外
+  // 海外 (finnhub)
   { symbol: 'SPY', name: 'SPDR S&P 500', marketType: 'us-etf', source: 'finnhub' },
   { symbol: 'QQQ', name: 'Invesco QQQ', marketType: 'us-etf', source: 'finnhub' },
   { symbol: 'NVDA', name: 'NVIDIA', marketType: 'us-stock', source: 'finnhub' },
   { symbol: 'TSLA', name: 'Tesla', marketType: 'us-stock', source: 'finnhub' },
-  // 加密
+  // 加密 (finnhub)
   { symbol: 'BTC-USD', name: 'Bitcoin', marketType: 'crypto', source: 'finnhub' },
   { symbol: 'ETH-USD', name: 'Ethereum', marketType: 'crypto', source: 'finnhub' }
 ]
 
-// ── Mock data generators ──
+// ── Mock data generators (fallback) ──
 
 function seededRandom(seed: number) {
   let s = seed
@@ -64,7 +64,8 @@ function generateMockQuote(def: (typeof watchlistDef)[number], seed: number): Ma
     source: def.source,
     price,
     changePercent,
-    updatedAt: hourAgo.toISOString()
+    updatedAt: hourAgo.toISOString(),
+    isMock: true
   }
 }
 
@@ -132,35 +133,97 @@ function hashSymbol(symbol: string): number {
   return Math.abs(hash) + 1
 }
 
+// ── Source label with live/mock indicator ──
+
+function getSourceLabel(source: MarketSource, isMock: boolean): string {
+  if (source === 'finnhub') {
+    return isMock ? 'Finnhub · Mock' : 'Finnhub · Live'
+  }
+  return 'AKShare · Mock'
+}
+
 // ── Public API ──
 
 /**
- * Returns the fixed market watchlist with mock quotes.
- *
- * Future integration points:
- * - AKShare: 国内指数/股票/基金行情需通过本地 Python 服务或脚本代理接入
- *   接入方式：前端 → IPC → main process → spawn python script / HTTP to local AKShare server
- * - Finnhub: 海外股票/ETF/加密行情需通过主进程 IPC 或后端代理接入
- *   接入方式：前端 → IPC → main process → fetch Finnhub API (API key 存在主进程，不暴露前端)
+ * Returns the market watchlist with real Finnhub quotes where available,
+ * falling back to mock data for domestic (akshare) or when API key is missing.
  */
-export function getMarketWatchlist(): MarketWatchlistItem[] {
+export async function getMarketWatchlist(): Promise<MarketWatchlistItem[]> {
+  let hasKey = false
+  try {
+    hasKey = await window.growthTree.market.hasApiKey()
+  } catch {
+    // IPC not available — fallback to mock
+  }
+
+  let finnhubQuotes: Record<string, { price: number; changePercent: number; updatedAt: string }> = {}
+
+  if (hasKey) {
+    const finnhubSymbols = watchlistDef.filter((d) => d.source === 'finnhub').map((d) => d.symbol)
+    try {
+      const results = await window.growthTree.market.fetchQuotes(finnhubSymbols)
+      for (const r of results) {
+        if (!r.error) {
+          finnhubQuotes[r.symbol] = { price: r.price, changePercent: r.changePercent, updatedAt: r.updatedAt }
+        }
+      }
+    } catch {
+      // IPC call failed — all finnhub items will fall back to mock
+    }
+  }
+
   return watchlistDef.map((def, i) => {
-    const quote = generateMockQuote(def, hashSymbol(def.symbol) + i * 7)
+    let quote: MarketQuote
+
+    if (def.source === 'finnhub' && finnhubQuotes[def.symbol]) {
+      const real = finnhubQuotes[def.symbol]
+      quote = {
+        symbol: def.symbol,
+        name: def.name,
+        marketType: def.marketType,
+        source: def.source,
+        price: real.price,
+        changePercent: real.changePercent,
+        updatedAt: real.updatedAt,
+        isMock: false
+      }
+    } else {
+      quote = generateMockQuote(def, hashSymbol(def.symbol) + i * 7)
+    }
+
     return {
       ...quote,
       marketLabel: marketTypeLabels[quote.marketType],
-      sourceLabel: marketSourceLabels[quote.source]
+      sourceLabel: getSourceLabel(quote.source, quote.isMock ?? true)
     }
   })
 }
 
 /**
- * Returns mock 30-day K-line candles for a given symbol.
- *
- * Future integration points:
- * - AKShare: ak.stock_zh_a_hist() / ak.index_zh_a_hist() / ak.fund_open_fund_info_em()
- * - Finnhub: GET /stock/candle?symbol={symbol}&resolution=D&count=30
+ * Returns 30-day K-line candles for a given symbol.
+ * Uses Finnhub for overseas/crypto symbols when API key is available,
+ * falls back to mock data otherwise.
  */
-export function getMarketCandles(symbol: string): MarketCandle[] {
+export async function getMarketCandles(symbol: string, source?: MarketSource): Promise<MarketCandle[]> {
+  if (source === 'finnhub') {
+    let hasKey = false
+    try {
+      hasKey = await window.growthTree.market.hasApiKey()
+    } catch {
+      // IPC not available
+    }
+
+    if (hasKey) {
+      try {
+        const result = await window.growthTree.market.fetchCandles(symbol)
+        if (!result.error && result.candles.length > 0) {
+          return result.candles
+        }
+      } catch {
+        // IPC call failed — fall through to mock
+      }
+    }
+  }
+
   return generateMockCandles(symbol, 30)
 }

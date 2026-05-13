@@ -16,6 +16,7 @@ export type MarketQuote = {
   price: number
   changePercent: number
   updatedAt: string
+  isMock?: boolean
 }
 
 export type MarketCandle = {

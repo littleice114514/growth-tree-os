@@ -36,20 +36,44 @@
 ## 4. 当前进度
 
 - A｜行情 K 线观察看板：已完成 MVP
+- A1｜K 线组件升级：已完成（TradingView Lightweight Charts）
+- A2｜Finnhub 真实数据接入：已完成（SPY/QQQ/NVDA/TSLA/BTC/ETH）
+- A3｜AKShare 国内数据接入：未开始
 - B｜投资记录绑定行情代码：未开始
 - C｜买入时间点 / 买入单价对标：未开始
 
 ## 5. 下一步唯一任务
 
-A 阶段真实数据接入评估：AKShare 本地服务方案 + Finnhub API key 代理方案。
+A3｜AKShare 国内数据接入评估（如需要）。
+
+## 5b. 财富记录 / 投资记录 / 行情看板关系
+
+三层结构：
+
+- **财富记录** = 流水账 / 财富事件账（收入、支出、稳定理财、资产变化等）
+- **投资记录** = 持仓账 / 投资资产账（资产名称、本金、当前估值、定投状态等）
+- **行情看板** = 市场观察窗（行情价格、K 线走势）
+
+当前阶段三者保持分离，不互相吞并。
+
+后续方向：
+- 投资记录绑定 marketSymbol
+- 财富记录中的「资产变化」可关联投资记录
+- K 线图上可标记买入时间点和买入单价
+- 但这些都是 B/C 阶段的事，当前不做
 
 ## 6. 文件边界
 
 允许修改：
 - `app/renderer/src/features/wealth/**/*`
+- `app/main/finnhub.ts`
+- `app/main/ipc.ts`（仅 market: 相关 handler）
+- `app/preload/index.ts`（仅 market: 相关 bridge）
+- `app/shared/contracts.ts`（仅 market 相关类型）
 - `docs/project-map/WEALTH_MARKET_DATA_MODE.md`
 - `docs/handoff/CLAUDE_WEALTH_NEXT_ACTION.md`
-- `docs/dev-log/2026-05/2026-05-13/claude-wealth-market-data-a.md`
+- `docs/dev-log/2026-05/2026-05-13/`
+- `.env.example`
 
 禁止修改：
 - `app/renderer/src/features/time-debt/**/*`
@@ -116,6 +140,7 @@ type MarketCandle = {
 
 ## 10. K 线图实现
 
-第一版使用 ECharts（项目已有 echarts + echarts-for-react），使用 candlestick 图。
+第一版原型使用 ECharts candlestick（已废弃）。
+第二版升级为 TradingView Lightweight Charts v5.2.0，真正的金融级 candlestick + volume。
 周期只做 30 日。
 组件名：MarketKlineChart。
