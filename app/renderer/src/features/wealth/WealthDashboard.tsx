@@ -25,8 +25,11 @@ import { CashflowComboChart } from './CashflowComboChart'
 import { ExpenseBreakdownPie } from './ExpenseBreakdownPie'
 import { searchRecords, groupRecords, type GroupMode, type InsightPeriod } from './wealthRecordInsights'
 import { WealthDashboardPreview } from '@/features/dashboard-preview'
+import { loadInvestmentRecords, type InvestmentRecord } from './investmentStorage'
+import { InvestmentRecordsPanel } from './InvestmentRecordsPanel'
+import { MarketQuotesPanel } from './MarketQuotesPanel'
 
-type WealthTab = 'overview' | 'records' | 'config'
+type WealthTab = 'overview' | 'records' | 'investment' | 'market' | 'config'
 type RecordDraft = {
   date: string
   type: WealthRecordType
@@ -55,6 +58,8 @@ const today = new Date().toISOString().slice(0, 10)
 const tabLabels: Record<WealthTab, string> = {
   overview: '总览',
   records: '记录',
+  investment: '投资',
+  market: '行情',
   config: '参数'
 }
 
@@ -93,6 +98,7 @@ export function WealthDashboard() {
   const [trendPeriod, setTrendPeriod] = useState<'last7' | 'last30'>('last7')
   const [isRecorderOpen, setIsRecorderOpen] = useState(false)
   const [draft, setDraft] = useState<RecordDraft>(() => createDraft())
+  const [investmentRecords, setInvestmentRecords] = useState<InvestmentRecord[]>(() => loadInvestmentRecords())
 
   const overdraftStreak = useMemo(
     () => calculateOverdraftStreak(records, baseConfig.dailySafeLine, baseConfig.date),
@@ -213,6 +219,14 @@ export function WealthDashboard() {
 
         {currentTab === 'records' ? (
           <RecordsTab records={records} onDelete={removeRecord} referenceDate={baseConfig.date} />
+        ) : null}
+
+        {currentTab === 'investment' ? (
+          <InvestmentRecordsPanel records={investmentRecords} onRecordsChange={setInvestmentRecords} investableSurplus={snapshot.investableSurplus} dailySafeLine={baseConfig.dailySafeLine} />
+        ) : null}
+
+        {currentTab === 'market' ? (
+          <MarketQuotesPanel />
         ) : null}
 
         {currentTab === 'config' ? (
