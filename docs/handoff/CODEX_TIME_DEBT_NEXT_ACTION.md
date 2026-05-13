@@ -51,4 +51,23 @@ pnpm build
 
 ## 5. 下一轮唯一任务
 
-只做 A 线真实 Electron UI smoke：验证浮窗入口、开始/结束计时、刷新恢复、Time Debt 记录可见、Wealth 不受影响。不要开发 B/C/D，不要改 Wealth，不要改 project-state 三件套。
+本轮已完成 A 线真实 Electron UI smoke，结论：通过。
+
+下一轮唯一任务：封存 A 线验收结论，并只在发现 A 线回归时做修复。不要开发 B/C/D，不要改 Wealth，不要改 project-state 三件套。
+
+## 6. A 线 Smoke 结果｜2026-05-13
+
+- `pnpm typecheck`：通过。
+- `pnpm build`：通过。
+- `pnpm dev`：可启动。
+- 右下角 `记录` 按钮：通过。
+- `快速记录时间` 展开面板：通过。
+- 空任务名提示 `先写一下这次在做什么`：通过。
+- `浮窗A线smoke测试` 开始计时：通过。
+- 切换 Wealth 不丢计时且 Wealth 不白屏：通过。
+- 切回 Time Debt 后计时仍在：通过。
+- 计时中刷新后恢复，开始时间未重置：通过。
+- 结束计时后写入 Time Debt：通过。
+- 日历出现 `浮窗A线smoke测试 / 1 min / 已完成`：通过。
+- 测试记录：已保留，未删除。
+- Wealth 并行未提交文件：本轮未修改、未回退、未提交。
