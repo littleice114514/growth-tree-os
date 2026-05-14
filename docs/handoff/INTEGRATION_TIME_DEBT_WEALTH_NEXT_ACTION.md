@@ -1,5 +1,27 @@
 # Integration｜Time Debt + Wealth 下一步操作卡
 
+## 0. 2026-05-14 Integration 验收更新
+
+- 本轮目标：集成验收 Wealth 投资/行情 + Time Debt 浮窗 A/B/C，并清点并行未提交文件归属。
+- 当前分支：`feature/integration-time-debt-wealth`
+- 本地起始 HEAD：`9e9c9e3`
+- 远程 HEAD：`origin/feature/integration-time-debt-wealth @ 9e9c9e3`
+- 本轮不做 Settings、不进入 Time Debt D 线、不开发新 Wealth 能力。
+- `pnpm typecheck`：通过。
+- `pnpm build`：通过。
+- `pnpm dev`：真实 Electron App 启动成功。
+- Time Debt C 线注册日志：`[time-debt] registered global shortcut: CommandOrControl+Shift+Space`。
+- 文件归属：
+  - Time Debt docs：`docs/dev-log/2026-05/2026-05-14/codex-time-debt-floating-window-b-smoke.md`
+  - Wealth / 行情：`app/main/finnhub.ts`、`app/main/env.ts`、`MarketQuotesPanel.tsx`、`marketDataService.ts`、`marketDataTypes.ts`
+  - Integration shared：`app/main/ipc.ts`、`app/preload/index.ts`、`app/shared/contracts.ts`
+- Shared 冲突检查：`app/main/ipc.ts`、`app/preload/index.ts`、`app/shared/contracts.ts` 只新增 Wealth market IPC/bridge/type，未覆盖 Time Debt C 线快捷键链路。
+- Time Debt smoke：`integration-time-debt-float-test` 创建并结束成功；记录已保留；今日记录更新为 3 条 / 6 min。
+- Time Debt 快捷键：在 Wealth 页面触发 `Cmd+Shift+Space` 后 App 聚焦、浮窗展开、不切页。
+- Wealth 投资：投资页、投资约束提醒、投资记录空态可见，不白屏。
+- Wealth 行情：watchlist 可见；国内为 `AKShare · Mock`；海外/加密 quote 为 `Finnhub · Live`；BTC / ETH / NVDA / TSLA K 线均显示正确标的与 `Candle · Yahoo Live`。
+- 本轮结论：integration smoke 通过。下一步唯一建议：Settings Foundation。
+
 ## 1. 项目信息
 
 - 项目名：growth-tree-os
