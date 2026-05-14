@@ -6,7 +6,7 @@
 - 分支：feature/integration-time-debt-wealth
 - 模块：Time Debt / 快速记录浮窗
 - 当前路线：C 线全局快捷键 / 系统级唤起
-- 当前状态：A 线已完成；B 线已完成并通过真实 Electron UI smoke；C 线本轮实现全局快捷键唤起 App 内浮窗，下一步必须做 C 线真实 Electron UI smoke
+- 当前状态：A 线已封存；B 线已封存；C 线已完成并通过真实 Electron UI smoke 复验，可封存；D 线暂不开始
 
 ## 2. 本轮完成
 
@@ -25,6 +25,8 @@
 - C 线：preload 暴露 `window.growthTree.timeDebt.onOpenQuickFloat(callback)` 安全订阅接口，不暴露任意 `ipcRenderer`。
 - C 线：renderer 收到事件后展开既有 B 线 `时间控制台` 浮窗，并显示轻提示 `已通过快捷键打开`。
 - C 线：不强制切换页面；在 Wealth 页面触发后仍停留 Wealth，只展开右下角 Time Debt 浮窗。
+- C 线复验：`5cb88bd` 已通过真实 Electron UI smoke，实际快捷键为 `CommandOrControl+Shift+Space`，fallback 未触发。
+- C 线复验：使用 `浮窗C线复验测试` 创建真实测试记录，记录已保留。
 
 ## 3. 修改文件
 
@@ -35,6 +37,7 @@
 - `docs/project-map/TIME_DEBT_FLOATING_WINDOW_MODE.md`
 - `docs/handoff/CODEX_TIME_DEBT_NEXT_ACTION.md`
 - `docs/dev-log/2026-05/2026-05-14/codex-time-debt-floating-window-c-hotkey.md`
+- `docs/dev-log/2026-05/2026-05-14/codex-time-debt-floating-window-c-smoke.md`
 - `docs/dev-log/2026-05/2026-05-14/codex-time-debt-floating-window-b-console.md`
 
 ## 4. 验证
@@ -71,9 +74,9 @@ pnpm build
 
 ## 5. 下一轮唯一任务
 
-本轮完成 C 线实现后，下一轮唯一任务是做 C 线真实 Electron UI smoke。
+C 线已完成并通过真实 Electron UI smoke 复验，可封存。
 
-不要直接进入 D，不做桌面级悬浮球，不做系统托盘，不做 always-on-top 桌面小窗，不做快捷键设置页，不改 Wealth，不改 project-state 三件套。
+当前不要进入 D 线，除非用户明确要求桌面级悬浮球。下一轮唯一建议：等待 Wealth/行情线程收口后做 integration 验收，不改 project-state 三件套，不 push 未确认的并行现场。
 
 ## 6. A 线 Smoke 结果｜2026-05-13
 
