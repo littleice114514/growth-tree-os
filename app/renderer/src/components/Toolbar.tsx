@@ -9,7 +9,8 @@ const workspaceViews: Array<[WorkspaceView, string]> = [
   ['wealth', '财富'],
   ['reviews', '复盘记录'],
   ['reminders', '提醒'],
-  ['weeklyReview', 'Review']
+  ['weeklyReview', 'Review'],
+  ['settings', '设置']
 ]
 
 const workspaceTitles: Partial<Record<WorkspaceView, string>> = {
@@ -17,7 +18,8 @@ const workspaceTitles: Partial<Record<WorkspaceView, string>> = {
   timeDebt: '时间负债',
   reviews: '复盘记录',
   reminders: '提醒工作台',
-  weeklyReview: 'Review'
+  weeklyReview: 'Review',
+  settings: '设置'
 }
 
 export function Toolbar() {

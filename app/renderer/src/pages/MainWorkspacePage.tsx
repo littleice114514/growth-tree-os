@@ -15,11 +15,12 @@ import { WealthDashboard } from '@/features/wealth/WealthDashboard'
 import { TimeDebtDashboard } from '@/features/time-debt/TimeDebtDashboard'
 import { TimeDebtQuickFloat } from '@/features/time-debt/components/TimeDebtQuickFloat'
 import { SystemXPage } from '@/features/systemx'
+import { SettingsPage } from '@/features/settings/SettingsPage'
 import { LifeDashboardPreview } from '@/features/dashboard-preview'
 import type { WorkspaceView } from '@/types/ui'
 
 function resolveRenderedWorkspaceView(view: WorkspaceView): WorkspaceView {
-  if (view === 'wealth' || view === 'timeDebt' || view === 'reviews' || view === 'reminders' || view === 'weeklyReview') {
+  if (view === 'wealth' || view === 'timeDebt' || view === 'reviews' || view === 'reminders' || view === 'weeklyReview' || view === 'settings') {
     return view
   }
   return 'timeDebt'
@@ -124,6 +125,7 @@ export function MainWorkspacePage() {
         {renderedView === 'lifeCurve' ? <LifeCurveDashboard /> : null}
         {renderedView === 'wealth' ? <WealthDashboard /> : null}
         {renderedView === 'timeDebt' ? <TimeDebtDashboard /> : null}
+        {renderedView === 'settings' ? <SettingsPage /> : null}
         {renderedView === 'systemx' ? <SystemXPage /> : null}
         {renderedView === 'weeklyReview' ? (
           <main className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_340px] gap-4">

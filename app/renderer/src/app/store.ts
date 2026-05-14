@@ -37,7 +37,7 @@ type WorkspaceActions = {
 }
 
 const defaultWorkspaceView: WorkspaceView = 'timeDebt'
-const mvpWorkspaceViews = new Set<WorkspaceView>(['timeDebt', 'wealth', 'reviews', 'reminders', 'weeklyReview'])
+const mvpWorkspaceViews = new Set<WorkspaceView>(['timeDebt', 'wealth', 'reviews', 'reminders', 'weeklyReview', 'settings'])
 
 function resolveMvpWorkspaceView(view: WorkspaceView): WorkspaceView {
   return mvpWorkspaceViews.has(view) ? view : defaultWorkspaceView

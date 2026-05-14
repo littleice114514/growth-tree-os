@@ -10,7 +10,7 @@ import type {
   WeeklyReviewSummary
 } from '@shared/contracts'
 
-export type WorkspaceView = 'tree' | 'lifeDashboard' | 'lifeVitalityTree' | 'lifeCurve' | 'wealth' | 'timeDebt' | 'systemx' | 'reminders' | 'weeklyReview' | 'reviews'
+export type WorkspaceView = 'tree' | 'lifeDashboard' | 'lifeVitalityTree' | 'lifeCurve' | 'wealth' | 'timeDebt' | 'systemx' | 'reminders' | 'weeklyReview' | 'reviews' | 'settings'
 export type RightPanelMode = 'node' | 'review'
 
 export type HoverCardState = {
