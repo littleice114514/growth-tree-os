@@ -11,6 +11,7 @@ export function MarketQuotesPanel() {
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   const [candles, setCandles] = useState<MarketCandle[]>([])
+  const [candleSource, setCandleSource] = useState<'finnhub-live' | 'yahoo-live' | 'mock'>('mock')
   const [candlesLoading, setCandlesLoading] = useState(false)
 
   // Load watchlist on mount
@@ -32,19 +33,23 @@ export function MarketQuotesPanel() {
   useEffect(() => {
     if (!selectedSymbol || !selectedSource) {
       setCandles([])
+      setCandleSource('mock')
       return
     }
     let cancelled = false
     setCandlesLoading(true)
     ;(async () => {
-      const data = await getMarketCandles(selectedSymbol, selectedSource as any)
+      const quotePrice = watchlist.find(q => q.symbol === selectedSymbol)?.price
+      console.info('[market-ui] selected', { selectedSymbol, selectedSource, quotePrice })
+      const result = await getMarketCandles(selectedSymbol, selectedSource as any, quotePrice)
       if (!cancelled) {
-        setCandles(data)
+        setCandles(result.candles)
+        setCandleSource(result.candleSource)
         setCandlesLoading(false)
       }
     })()
     return () => { cancelled = true }
-  }, [selectedSymbol, selectedSource])
+  }, [selectedSymbol, selectedSource, watchlist])
 
   const selectedQuote = selectedSymbol ? watchlist.find((q) => q.symbol === selectedSymbol) : null
 
@@ -115,6 +120,15 @@ export function MarketQuotesPanel() {
                 {selectedQuote.name}
                 <span className="ml-2 text-sm font-normal text-[color:var(--text-muted)]">{selectedQuote.symbol}</span>
               </h3>
+              <span className={`mt-1 inline-block rounded-md border px-1.5 py-0.5 text-[10px] ${
+                candleSource === 'mock'
+                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
+                  : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+              }`}>
+                {candleSource === 'finnhub-live' ? 'Candle · Finnhub Live'
+                  : candleSource === 'yahoo-live' ? 'Candle · Yahoo Live'
+                  : 'Candle · Mock'}
+              </span>
             </div>
             <button
               type="button"
@@ -130,6 +144,7 @@ export function MarketQuotesPanel() {
             </div>
           ) : (
             <MarketKlineChart
+              key={selectedQuote.symbol}
               candles={candles}
               symbol={selectedQuote.symbol}
               name={selectedQuote.name}

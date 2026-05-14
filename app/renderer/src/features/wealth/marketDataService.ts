@@ -1,4 +1,4 @@
-import type { MarketQuote, MarketCandle, MarketWatchlistItem, MarketType, MarketSource } from './marketDataTypes'
+import type { MarketQuote, MarketCandle, MarketCandleResult, MarketWatchlistItem, MarketType, MarketSource } from './marketDataTypes'
 import { marketTypeLabels, marketSourceLabels } from './marketDataTypes'
 
 // ── Fixed watchlist ──
@@ -69,10 +69,10 @@ function generateMockQuote(def: (typeof watchlistDef)[number], seed: number): Ma
   }
 }
 
-function generateMockCandles(symbol: string, days: number = 30): MarketCandle[] {
+function generateMockCandles(symbol: string, days: number = 30, basePriceOverride?: number): MarketCandle[] {
   const seed = hashSymbol(symbol)
   const rand = seededRandom(seed)
-  const basePrice =
+  const defaultBase =
     symbol.startsWith('BTC')
       ? 65000
       : symbol.startsWith('ETH')
@@ -92,6 +92,8 @@ function generateMockCandles(symbol: string, days: number = 30): MarketCandle[] 
                     : symbol === '600519'
                       ? 1700
                       : 2.0
+  const basePrice = basePriceOverride ?? defaultBase
+  console.info('[market-data] mock candle base', { symbol, basePrice, override: basePriceOverride })
 
   const candles: MarketCandle[] = []
   let lastClose = basePrice
@@ -201,29 +203,25 @@ export async function getMarketWatchlist(): Promise<MarketWatchlistItem[]> {
 
 /**
  * Returns 30-day K-line candles for a given symbol.
- * Uses Finnhub for overseas/crypto symbols when API key is available,
- * falls back to mock data otherwise.
+ * Finnhub symbols (us-stock, us-etf, crypto) → Yahoo Finance via IPC (free, real data).
+ * Domestic symbols (akshare) → mock fallback.
  */
-export async function getMarketCandles(symbol: string, source?: MarketSource): Promise<MarketCandle[]> {
-  if (source === 'finnhub') {
-    let hasKey = false
-    try {
-      hasKey = await window.growthTree.market.hasApiKey()
-    } catch {
-      // IPC not available
-    }
+export async function getMarketCandles(symbol: string, source?: MarketSource, quotePrice?: number): Promise<MarketCandleResult> {
+  console.info('[market-data] candles request', { symbol, source, quotePrice })
 
-    if (hasKey) {
-      try {
-        const result = await window.growthTree.market.fetchCandles(symbol)
-        if (!result.error && result.candles.length > 0) {
-          return result.candles
-        }
-      } catch {
-        // IPC call failed — fall through to mock
+  // For finnhub-sourced symbols, try Yahoo Finance via IPC (avoids CORS)
+  if (source === 'finnhub') {
+    try {
+      const result = await window.growthTree.market.fetchYahooCandles(symbol)
+      if (!result.error && result.candles.length > 0) {
+        console.info('[market-data] yahoo candle OK', { symbol, bars: result.candles.length })
+        return { candles: result.candles, candleSource: 'yahoo-live' }
       }
+    } catch (e) {
+      console.warn('[market-data] yahoo candle failed', { symbol, error: String(e) })
     }
   }
 
-  return generateMockCandles(symbol, 30)
+  // Fallback: mock candles aligned to quote price
+  return { candles: generateMockCandles(symbol, 30, quotePrice), candleSource: 'mock' }
 }

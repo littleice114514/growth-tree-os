@@ -249,5 +249,6 @@ export interface GrowthTreeApi {
     fetchQuote(symbol: string): Promise<FinnhubQuoteResult>
     fetchQuotes(symbols: string[]): Promise<FinnhubQuoteResult[]>
     fetchCandles(symbol: string): Promise<FinnhubCandlesResult>
+    fetchYahooCandles(symbol: string): Promise<FinnhubCandlesResult>
   }
 }

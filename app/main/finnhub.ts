@@ -1,6 +1,6 @@
 /**
  * Finnhub API service — runs in Electron main process.
- * API key is read from process.env.FINNHUB_API_KEY, never exposed to renderer.
+ * API key is read via getEnvValue (process.env -> root .env fallback), never exposed to renderer.
  *
  * Endpoints used:
  *   Quote:    GET https://finnhub.io/api/v1/quote?symbol={symbol}&token={key}
@@ -11,6 +11,8 @@
  *   ETH-USD -> BINANCE:ETHUSDT
  */
 
+import { getEnvValue } from './env'
+
 const BASE_URL = 'https://finnhub.io/api/v1'
 
 // Map our internal crypto symbols to Finnhub symbols
@@ -20,8 +22,16 @@ function toFinnhubSymbol(symbol: string): string {
   return symbol
 }
 
+let _keyCache: { value: string | null } | null = null
+
 function getApiKey(): string | null {
-  return process.env.FINNHUB_API_KEY || null
+  if (!_keyCache) {
+    const raw = getEnvValue('FINNHUB_API_KEY')
+    const value = raw || null
+    _keyCache = { value }
+    console.info('[finnhub] api key configured:', Boolean(value), 'length:', value?.length ?? 0)
+  }
+  return _keyCache.value
 }
 
 export interface FinnhubQuoteResult {
@@ -114,12 +124,14 @@ export async function fetchCandles(symbol: string): Promise<FinnhubCandlesResult
   try {
     const res = await fetch(url)
     if (!res.ok) {
+      console.warn(`[finnhub] candle ${symbol} (${fhSymbol}) → HTTP ${res.status}`)
       return { symbol, candles: [], error: `HTTP_${res.status}` }
     }
     const data = await res.json()
 
     // Finnhub returns { c: [...], h: [...], l: [...], o: [...], t: [...], v: [...], s: "ok" | "no_data" }
     if (data.s !== 'ok' || !Array.isArray(data.t) || data.t.length === 0) {
+      console.warn(`[finnhub] candle ${symbol} (${fhSymbol}) → s=${data.s}`)
       return { symbol, candles: [], error: 'NO_DATA' }
     }
 
@@ -137,6 +149,51 @@ export async function fetchCandles(symbol: string): Promise<FinnhubCandlesResult
 
     return { symbol, candles: last30 }
   } catch (e) {
+    return { symbol, candles: [], error: 'FETCH_FAILED' }
+  }
+}
+
+/**
+ * Fetch 1-month daily candles from Yahoo Finance (free, no key needed).
+ * Called from main process to avoid CORS issues in renderer.
+ */
+export async function fetchYahooCandles(symbol: string): Promise<FinnhubCandlesResult> {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1mo&interval=1d`
+  try {
+    const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+    if (!res.ok) {
+      console.warn(`[yahoo] candle ${symbol} → HTTP ${res.status}`)
+      return { symbol, candles: [], error: `HTTP_${res.status}` }
+    }
+    const data = await res.json()
+    const result = data?.chart?.result?.[0]
+    if (!result) return { symbol, candles: [], error: 'NO_DATA' }
+
+    const timestamps: number[] = result.timestamp ?? []
+    const quote = result.indicators?.quote?.[0]
+    if (!quote || timestamps.length === 0) return { symbol, candles: [], error: 'NO_DATA' }
+
+    const opens: number[] = quote.open ?? []
+    const highs: number[] = quote.high ?? []
+    const lows: number[] = quote.low ?? []
+    const closes: number[] = quote.close ?? []
+    const volumes: number[] = quote.volume ?? []
+
+    const candles: FinnhubCandle[] = timestamps
+      .map((ts, i) => ({
+        time: new Date(ts * 1000).toISOString().slice(0, 10),
+        open: +(opens[i] ?? 0).toFixed(2),
+        high: +(highs[i] ?? 0).toFixed(2),
+        low: +(lows[i] ?? 0).toFixed(2),
+        close: +(closes[i] ?? 0).toFixed(2),
+        volume: volumes[i] ?? 0
+      }))
+      .filter(c => !isNaN(c.close) && c.close > 0)
+
+    console.info(`[yahoo] candle ${symbol} → ${candles.length} bars`)
+    return { symbol, candles: candles.slice(-30) }
+  } catch (e) {
+    console.warn(`[yahoo] candle ${symbol} → FETCH_FAILED`)
     return { symbol, candles: [], error: 'FETCH_FAILED' }
   }
 }

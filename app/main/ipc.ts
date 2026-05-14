@@ -2,7 +2,7 @@ import { ipcMain } from 'electron'
 import type { ExtractionUpdate, ReviewCreatePayload } from '@shared/contracts'
 import type { AppPaths } from './storage'
 import { GrowthTreeDatabase } from './db'
-import { fetchQuote, fetchQuotes, fetchCandles, hasApiKey } from './finnhub'
+import { fetchQuote, fetchQuotes, fetchCandles, fetchYahooCandles, hasApiKey } from './finnhub'
 
 export function registerIpc(db: GrowthTreeDatabase, appPaths: AppPaths) {
   ipcMain.handle('reviews:create', (_event, payload: ReviewCreatePayload) => db.createReview(payload))
@@ -28,4 +28,5 @@ export function registerIpc(db: GrowthTreeDatabase, appPaths: AppPaths) {
   ipcMain.handle('market:fetchQuote', (_event, symbol: string) => fetchQuote(symbol))
   ipcMain.handle('market:fetchQuotes', (_event, symbols: string[]) => fetchQuotes(symbols))
   ipcMain.handle('market:fetchCandles', (_event, symbol: string) => fetchCandles(symbol))
+  ipcMain.handle('market:fetchYahooCandles', (_event, symbol: string) => fetchYahooCandles(symbol))
 }

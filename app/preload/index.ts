@@ -44,7 +44,8 @@ const api: GrowthTreeApi = {
     hasApiKey: () => ipcRenderer.invoke('market:hasApiKey'),
     fetchQuote: (symbol) => ipcRenderer.invoke('market:fetchQuote', symbol),
     fetchQuotes: (symbols) => ipcRenderer.invoke('market:fetchQuotes', symbols),
-    fetchCandles: (symbol) => ipcRenderer.invoke('market:fetchCandles', symbol)
+    fetchCandles: (symbol) => ipcRenderer.invoke('market:fetchCandles', symbol),
+    fetchYahooCandles: (symbol) => ipcRenderer.invoke('market:fetchYahooCandles', symbol)
   }
 }
 

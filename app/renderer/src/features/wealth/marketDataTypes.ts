@@ -28,6 +28,11 @@ export type MarketCandle = {
   volume?: number
 }
 
+export type MarketCandleResult = {
+  candles: MarketCandle[]
+  candleSource: 'finnhub-live' | 'yahoo-live' | 'mock'
+}
+
 export type MarketWatchlistItem = MarketQuote & {
   marketLabel: string
   sourceLabel: string
