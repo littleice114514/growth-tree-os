@@ -6,42 +6,45 @@
 - GitHub 仓库：git@github.com:littleice114514/growth-tree-os.git
 - 分支：feature/integration-time-debt-wealth
 - 最新 commit：以本轮最终汇报的 `git rev-parse --short HEAD` 为准
-- 当前设备完成时间：2026-05-13
+- 当前设备完成时间：2026-05-14 17:59 CST
 
 ## 2. 本轮已完成
 
-- 完成 Time Debt 浮窗 A 线：App 内右下角快速记录入口。
-- 新增 `记录` 浮窗按钮，支持展开/收起。
-- 展开面板支持任务名称输入、空任务名提示、开始计时、计时中状态展示、已用时长展示、结束计时。
-- 复用现有 Time Debt active timer 与 logs 存储，不新增第二套长期记录系统。
-- 结束计时后写入 Time Debt 现有记录列表，并通知 Time Debt 页面刷新。
-- 固化 `TIME_DEBT_FLOATING_WINDOW_MODE.md`，记录 A → B → C → D 浮窗路线。
-- 未修改 Wealth 投资模块、project-state 三件套、`MAP_STATUS.md`、依赖文件、Electron IPC 或数据库结构。
+- 完成 Time Debt C 线全局快捷键回归排查。
+- 确认快捷键链路仍在：main `globalShortcut` -> preload `onOpenQuickFloat` -> renderer `TimeDebtQuickFloat`。
+- 确认当前实际主快捷键仍为 `CommandOrControl+Shift+Space`。
+- 确认 fallback 仍为 `CommandOrControl+Shift+L`。
+- 确认真实 Electron App 启动时注册成功，终端输出 `[time-debt] registered global shortcut: CommandOrControl+Shift+Space`。
+- 确认 App 聚焦时 `Cmd+Shift+Space` 可展开右下角 Time Debt `时间控制台`。
+- 确认 App 不聚焦时，先切到 Finder 后触发 `Cmd+Shift+Space`，Electron App 可被重新聚焦并展开浮窗。
+- 确认 Wealth 页面未白屏，且快捷键触发后不强制切页。
+- 因主快捷键可用，本轮未改为 `CommandOrControl+Alt+T`。
+- 本轮未修改 Wealth、未修改依赖文件、未修改 project-state / project-map 禁止文件。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/time-debt/components/TimeDebtQuickFloat.tsx`
-- `app/renderer/src/features/time-debt/timeDebtQuickTimer.ts`
-- `app/renderer/src/features/time-debt/timeDebtStorage.ts`
-- `app/renderer/src/features/time-debt/TimeDebtDashboard.tsx`
-- `app/renderer/src/pages/MainWorkspacePage.tsx`
-- `docs/project-map/TIME_DEBT_FLOATING_WINDOW_MODE.md`
+- `docs/dev-log/2026-05/2026-05-14/codex-time-debt-hotkey-regression-check.md`
 - `docs/handoff/CODEX_TIME_DEBT_NEXT_ACTION.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
-- `docs/dev-log/2026-05/2026-05-13/codex-time-debt-floating-window.md`
 
 ## 4. 当前验证结果
 
 ### 已验证
 
-- `pnpm typecheck` 通过。
-- `pnpm build` 通过。
-- 边界检查：本轮 staged 范围不包含 Wealth、project-state 三件套、`MAP_STATUS.md`、`package.json`、`pnpm-lock.yaml`。
+- `git branch --show-current`：`feature/integration-time-debt-wealth`。
+- 起始 `git rev-parse --short HEAD`：`9d89025`。
+- `pnpm typecheck`：通过。
+- `pnpm build`：通过。
+- `pnpm dev`：真实 Electron App 可启动。
+- 主进程注册日志：`[time-debt] registered global shortcut: CommandOrControl+Shift+Space`。
+- App 聚焦时主快捷键生效。
+- App 不聚焦时主快捷键生效。
+- Wealth 页面不白屏。
 
 ### 未验证 / 风险
 
-- 真实 Electron UI 点击 smoke 待 Mac 端复验。
-- 当前工作区存在另一个分支/代理留下的 Wealth 未提交改动；本轮未提交这些 Wealth 文件。
+- fallback `CommandOrControl+Shift+L` 未触发；原因是主快捷键已注册并生效，本轮无须切到 fallback。
+- 当前工作区仍存在并行 Wealth 未提交现场；本轮未提交这些文件。
 
 ## 5. Mac 端第一步操作
 
@@ -83,22 +86,21 @@ pnpm dev
 
 请在 Mac 端检查：
 
-- App 打开后右下角能看到 `记录` 浮窗按钮。
-- 点击 `记录` 后展开 `快速记录时间` 面板。
-- 不输入任务名点击 `开始计时` 时提示 `先写一下这次在做什么`。
-- 输入任务名后可以开始计时。
-- 浮窗显示当前任务名和已用时长。
-- 切换到 `财富` 页面后计时状态不丢失，Wealth 不白屏。
-- 切回 `时间负债` 页面后计时状态仍在。
-- 刷新页面后未结束计时能恢复。
-- 点击 `结束计时` 后，Time Debt 中能看到新生成的记录。
-- 不要验收 C/D 线，不要测试全局快捷键或桌面置顶小窗。
+- 必须打开真实 Electron App，不要只打开浏览器里的 localhost。
+- 终端应出现 `[time-debt] registered global shortcut: CommandOrControl+Shift+Space`。
+- 打开 App 后右下角能看到 Time Debt 浮窗入口。
+- 在 Wealth 页面收起浮窗。
+- App 聚焦时按 `Cmd+Shift+Space`，预期右下角展开 `时间控制台` 并显示 `已通过快捷键打开`。
+- 再次收起浮窗，切到 Finder / 浏览器 / 终端。
+- App 不聚焦时按 `Cmd+Shift+Space`，预期 Electron App 被聚焦，右下角展开 `时间控制台`。
+- 如果主快捷键没有反应，再测试 `Cmd+Shift+L`。
+- Wealth 页面不白屏，快捷键唤起时不强制切到 Time Debt 页面。
 
 ## 8. Mac 端下一轮任务
 
 请让 Mac 端 Codex 接着完成：
 
-只做 Time Debt 浮窗 A 线真实 Electron UI smoke：验证右下角浮窗入口、开始计时、页面切换保持、刷新恢复、结束写入 Time Debt 记录、Wealth 不受影响。不要开发 B/C/D，不要修改 Wealth，不要修改 project-state 三件套。
+等待 Wealth/行情线程收口后做 integration 验收：确认 Time Debt C 线全局快捷键、Wealth 行情改动、preload/contracts IPC 增量可以共存。不要进入 D 线，不要做 Settings 页面，不要做快捷键自定义，不要做桌面悬浮球。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
@@ -107,12 +109,10 @@ pnpm dev
 - `git status` 输出；
 - `git rev-parse --short HEAD` 输出；
 - `pnpm install`、`pnpm typecheck`、`pnpm build` 或 `pnpm dev` 的完整报错；
+- `pnpm dev` 终端中与 `globalShortcut` 或 `time-debt` 相关的日志；
 - 默认首页截图；
-- 右下角浮窗按钮截图；
-- 浮窗展开态截图；
-- 计时中状态截图；
-- Time Debt 记录列表截图；
-- Wealth 页面异常截图；
+- Wealth 页面截图；
+- 快捷键触发前后的右下角浮窗截图；
 - DevTools 控制台首个关键错误。
 
 ## 10. 注意事项
@@ -120,6 +120,6 @@ pnpm dev
 - 不要直接覆盖本地未提交改动。
 - 如果 Mac 端已有本地修改，先运行 `git status`，不要直接 pull。
 - 如果出现冲突，先停止并输出冲突文件列表。
-- 不要修改 Wealth 投资模块。
+- 不要修改 Wealth 投资模块，除非下一轮任务明确进入 Wealth integration 验收。
 - 不要修改 project-state 三件套或 `MAP_STATUS.md`。
-- 不要推进全局快捷键、Electron 主进程、IPC、数据库或桌面级置顶窗口。
+- 不要推进 D 线、Settings 页面、快捷键自定义、系统托盘或桌面级置顶窗口。

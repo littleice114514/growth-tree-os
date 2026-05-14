@@ -1,12 +1,35 @@
 # Codex Time Debt 下一步操作卡
 
+## 0. 2026-05-14 快捷键回归排查更新
+
+- 本轮目标：排查 Time Debt C 线全局快捷键是否仍可用，只做诊断和必要的最小修复。
+- Skill 选择：已搜索本机已有 skill，未命中专门覆盖 Electron 全局快捷键回归排查的 skill；本轮采用“工程回归诊断 + 真实 Electron smoke + 文档交接 + GitHub Sync Gate”基础工作流。
+- 工作流模板：工程回归诊断 / 文档交接 / 双设备协同交接。
+- 当前分支：`feature/integration-time-debt-wealth`。
+- 起始 commit：`9d89025`。
+- C 线代码仍存在：main `globalShortcut`、preload `onOpenQuickFloat`、contracts 类型声明、renderer 监听与 `MainWorkspacePage` 挂载均仍在。
+- 当前实际主快捷键：`CommandOrControl+Shift+Space`。
+- fallback：`CommandOrControl+Shift+L`。
+- IPC channel：`time-debt:open-quick-float`。
+- `pnpm typecheck`：通过。
+- `pnpm build`：通过。
+- `pnpm dev`：真实 Electron App 可启动，并输出 `[time-debt] registered global shortcut: CommandOrControl+Shift+Space`。
+- 真实 Electron smoke：App 聚焦时 `Cmd+Shift+Space` 可展开 `时间控制台` 并显示 `已通过快捷键打开`。
+- 真实 Electron smoke：App 不聚焦时先切到 Finder，再触发 `Cmd+Shift+Space`，Electron App 可被重新聚焦并展开 Time Debt 浮窗。
+- Wealth 页面：快捷键触发后仍停留 Wealth 页面，未白屏。
+- fallback：主快捷键已注册并生效，本轮未触发 fallback。
+- 是否修改默认快捷键：否。
+- 是否修改 Wealth：否。
+- 候选沉淀项：`Electron globalShortcut 回归排查 SOP`，本轮只记录为候选，不生成正式 skill。
+- 下一步建议：不要进入 D 线或 Settings 页面；等待 Wealth/行情线程收口后做 integration 验收。
+
 ## 1. 当前任务
 
 - 项目：growth-tree-os
 - 分支：feature/integration-time-debt-wealth
 - 模块：Time Debt / 快速记录浮窗
-- 当前路线：C 线全局快捷键 / 系统级唤起
-- 当前状态：A 线已封存；B 线已封存；C 线已完成并通过真实 Electron UI smoke 复验，可封存；D 线暂不开始
+- 当前路线：C 线全局快捷键 / 系统级唤起回归排查
+- 当前状态：A 线已封存；B 线已封存；C 线已完成并通过真实 Electron UI smoke 与 2026-05-14 回归排查，可继续封存；D 线暂不开始
 
 ## 2. 本轮完成
 
