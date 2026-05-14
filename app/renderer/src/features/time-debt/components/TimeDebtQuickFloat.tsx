@@ -46,6 +46,14 @@ export function TimeDebtQuickFloat() {
     return () => window.removeEventListener(timeDebtLogsChangeEvent, reloadRecentTasks)
   }, [])
 
+  useEffect(() => {
+    return window.growthTree.timeDebt.onOpenQuickFloat(() => {
+      setUiState((current) => ({ ...current, isOpen: true }))
+      setMessage('已通过快捷键打开')
+      setTimerNow(Date.now())
+    })
+  }, [])
+
   const handleStart = () => {
     const result = startQuickTimeDebtTimer(taskTitle)
     if (!result.ok) {

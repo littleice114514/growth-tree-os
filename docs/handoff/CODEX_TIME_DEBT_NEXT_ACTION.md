@@ -5,8 +5,8 @@
 - 项目：growth-tree-os
 - 分支：feature/integration-time-debt-wealth
 - 模块：Time Debt / 快速记录浮窗
-- 当前路线：B 线 App 内小控制台
-- 当前状态：A 线已完成并通过真实 Electron UI smoke；B 线已进入实现，下一步必须做真实 Electron UI smoke
+- 当前路线：C 线全局快捷键 / 系统级唤起
+- 当前状态：A 线已完成；B 线已完成并通过真实 Electron UI smoke；C 线本轮实现全局快捷键唤起 App 内浮窗，下一步必须做 C 线真实 Electron UI smoke
 
 ## 2. 本轮完成
 
@@ -19,12 +19,22 @@
 - 从已有 Time Debt logs 提取最多 3 个最近任务名，支持快捷填入。
 - 继续复用现有 Time Debt active timer localStorage，不新建第二套长期记录系统。
 - 结束计时后仍写入现有 Time Debt logs，Time Debt 页面可通过 logs 变更事件刷新。
+- C 线：Electron main 进程注册 Time Debt 全局快捷键。
+- C 线：首选快捷键为 `CommandOrControl+Shift+Space`，注册失败时 fallback 到 `CommandOrControl+Shift+L`。
+- C 线：快捷键触发后聚焦/显示主窗口，并发送 `time-debt:open-quick-float` 给 renderer。
+- C 线：preload 暴露 `window.growthTree.timeDebt.onOpenQuickFloat(callback)` 安全订阅接口，不暴露任意 `ipcRenderer`。
+- C 线：renderer 收到事件后展开既有 B 线 `时间控制台` 浮窗，并显示轻提示 `已通过快捷键打开`。
+- C 线：不强制切换页面；在 Wealth 页面触发后仍停留 Wealth，只展开右下角 Time Debt 浮窗。
 
 ## 3. 修改文件
 
+- `app/main/index.ts`
+- `app/preload/index.ts`
+- `app/shared/contracts.ts`
 - `app/renderer/src/features/time-debt/components/TimeDebtQuickFloat.tsx`
 - `docs/project-map/TIME_DEBT_FLOATING_WINDOW_MODE.md`
 - `docs/handoff/CODEX_TIME_DEBT_NEXT_ACTION.md`
+- `docs/dev-log/2026-05/2026-05-14/codex-time-debt-floating-window-c-hotkey.md`
 - `docs/dev-log/2026-05/2026-05-14/codex-time-debt-floating-window-b-console.md`
 
 ## 4. 验证
@@ -51,12 +61,19 @@ pnpm build
 - 结束后面板底部显示最近一次记录反馈。
 - 有历史 logs 时，最近任务快捷项最多显示 3 个，点击可填入任务名称。
 - Wealth 不白屏。
+- C 线真实 Electron UI smoke：
+  - App 正常启动，终端无 `globalShortcut` 注册崩溃。
+  - 在非展开浮窗状态按实际注册快捷键，App 被聚焦，右下角浮窗展开为 `时间控制台`。
+  - 在 Wealth 页面按快捷键后不切页，Wealth 不白屏，Time Debt 浮窗展开。
+  - 计时中收起浮窗后按快捷键，计时状态仍存在且继续递增。
+  - 使用 `浮窗C线快捷键测试` 结束计时后，Time Debt 日志出现记录且不重复。
+  - 退出并重启 App 后快捷键仍可注册。
 
 ## 5. 下一轮唯一任务
 
-本轮完成 B 线实现后，下一轮唯一任务是做 B 线真实 Electron UI smoke。
+本轮完成 C 线实现后，下一轮唯一任务是做 C 线真实 Electron UI smoke。
 
-不要直接进入 C/D，不做全局快捷键，不做系统托盘，不做 always-on-top 桌面小窗，不改 Wealth，不改 project-state 三件套。
+不要直接进入 D，不做桌面级悬浮球，不做系统托盘，不做 always-on-top 桌面小窗，不做快捷键设置页，不改 Wealth，不改 project-state 三件套。
 
 ## 6. A 线 Smoke 结果｜2026-05-13
 

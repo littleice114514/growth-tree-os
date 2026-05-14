@@ -241,6 +241,9 @@ export interface GrowthTreeApi {
   accounts: {
     getCurrentUser(): Promise<UserRecord>
   }
+  timeDebt: {
+    onOpenQuickFloat(callback: () => void): () => void
+  }
   market: {
     hasApiKey(): Promise<boolean>
     fetchQuote(symbol: string): Promise<FinnhubQuoteResult>
