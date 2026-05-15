@@ -1,5 +1,25 @@
 # Codex Time Debt 下一步操作卡
 
+## 0. 2026-05-15 快捷键稳定化与产品地图更新
+
+- 本轮目标：先修正 Time Debt 产品地图，并把全局快捷键默认值从更易冲突的 `CommandOrControl+Shift+Space` 稳定到 `CommandOrControl+Alt+T`。
+- Skill 选择：已搜索本机已有 skill，未命中专门覆盖 Electron `globalShortcut` 回归排查的 skill；本轮采用“工程最小改动 + 文档地图更新 + 真实 Electron smoke + GitHub Sync Gate”基础工作流。
+- 工作流模板：integration / Time Debt 产品地图修正 / 快捷键稳定化 / 双设备协同交接。
+- 当前分支：`feature/integration-time-debt-wealth`。
+- 起始 commit：`e3c96d0`。
+- 新增产品地图：`docs/project-map/TIME_DEBT_PRODUCT_MODE.md`。
+- Time Debt 新方向：今日时间使用仪表盘 + 明日时间布局 + 实际执行反馈 + 浮窗快速记录 + 分类 / 任务复用。
+- 两种模式：反映模式、布局模式。
+- 新主快捷键：`CommandOrControl+Alt+T`。
+- macOS 显示：`Cmd + Option + T`。
+- fallback：`CommandOrControl+Shift+L`，与主快捷键同时注册，作为真实备用入口。
+- 不使用 `Command+X`，因为它是 macOS 系统剪切快捷键，会干扰输入框编辑行为。
+- 不再默认使用 `CommandOrControl+Shift+Space`，因为它可能与输入法、系统搜索或空间切换类快捷键冲突。
+- 验证结果：`pnpm typecheck`、`pnpm build` 通过；`pnpm dev` 注册主快捷键和 fallback 成功。
+- 验证风险：Computer Use、macOS System Events 和 CGEvent 自动发送快捷键时未能展开浮窗，Mac 端需要手动物理按键复核。
+- 本轮不做 Settings 页面、不做快捷键自定义、不做完整 Time Debt 首页仪表盘、不做浮窗字段增强、不做结束计时补充框、不做 D 线桌面悬浮球、不改 Wealth、不改数据库结构。
+- 下一轮建议：先做浮窗字段增强，再做结束计时补充框，再做 Time Debt 首页仪表盘，最后再把配置收进 Settings。
+
 ## 0. 2026-05-14 快捷键回归排查更新
 
 - 本轮目标：排查 Time Debt C 线全局快捷键是否仍可用，只做诊断和必要的最小修复。
@@ -8,7 +28,7 @@
 - 当前分支：`feature/integration-time-debt-wealth`。
 - 起始 commit：`9d89025`。
 - C 线代码仍存在：main `globalShortcut`、preload `onOpenQuickFloat`、contracts 类型声明、renderer 监听与 `MainWorkspacePage` 挂载均仍在。
-- 当前实际主快捷键：`CommandOrControl+Shift+Space`。
+- 当时实际主快捷键：`CommandOrControl+Shift+Space`。
 - fallback：`CommandOrControl+Shift+L`。
 - IPC channel：`time-debt:open-quick-float`。
 - `pnpm typecheck`：通过。
@@ -43,7 +63,7 @@
 - 继续复用现有 Time Debt active timer localStorage，不新建第二套长期记录系统。
 - 结束计时后仍写入现有 Time Debt logs，Time Debt 页面可通过 logs 变更事件刷新。
 - C 线：Electron main 进程注册 Time Debt 全局快捷键。
-- C 线：首选快捷键为 `CommandOrControl+Shift+Space`，注册失败时 fallback 到 `CommandOrControl+Shift+L`。
+- C 线：首选快捷键已更新为 `CommandOrControl+Alt+T`，fallback `CommandOrControl+Shift+L` 与主快捷键同时注册。
 - C 线：快捷键触发后聚焦/显示主窗口，并发送 `time-debt:open-quick-float` 给 renderer。
 - C 线：preload 暴露 `window.growthTree.timeDebt.onOpenQuickFloat(callback)` 安全订阅接口，不暴露任意 `ipcRenderer`。
 - C 线：renderer 收到事件后展开既有 B 线 `时间控制台` 浮窗，并显示轻提示 `已通过快捷键打开`。

@@ -48,10 +48,12 @@ B 线 App 内小控制台已完成，真实 Electron UI smoke 已通过，可信
 
 C 线本轮只推进全局快捷键唤起 App 内浮窗控制台：
 
-- 首选快捷键：`CommandOrControl+Shift+Space`。
-- fallback 快捷键：`CommandOrControl+Shift+L`。
+- 首选快捷键：`CommandOrControl+Alt+T`。
+- fallback 快捷键：`CommandOrControl+Shift+L`，与主快捷键同时注册，避免主快捷键被当前前台应用或系统菜单捕获时没有备用入口。
 - 快捷键触发后由 Electron main 进程聚焦/显示主窗口，并通过 IPC 通知 renderer 展开 Time Debt 浮窗控制台。
 - 不强制切换到 Time Debt 页面；在 Wealth 页面触发后仍停留 Wealth，只展开右下角 Time Debt 浮窗。
+- 不使用 `Command+X`，因为它是 macOS 系统剪切快捷键，会干扰输入框编辑行为。
+- 不再默认使用 `CommandOrControl+Shift+Space`，因为它更容易与输入法、系统快捷键或空间切换类操作冲突。
 
 D 线桌面级悬浮球 / always-on-top 小窗仍暂不开始。
 
@@ -100,8 +102,8 @@ C/D 线：
 
 C 线：
 
-- `CommandOrControl+Shift+Space` 可注册时优先使用。
-- 首选快捷键不可注册时 fallback 到 `CommandOrControl+Shift+L`。
+- `CommandOrControl+Alt+T` 可注册时优先使用。
+- fallback `CommandOrControl+Shift+L` 与首选快捷键同时注册，作为真实备用入口。
 - 快捷键触发后 App 被聚焦，Time Debt 浮窗展开为 `时间控制台`。
 - 在 Wealth 页面触发后不切页，Wealth 不白屏，浮窗仍展开。
 - 计时中触发快捷键后计时状态保持，已用时继续递增。

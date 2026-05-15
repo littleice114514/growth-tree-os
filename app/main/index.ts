@@ -5,11 +5,11 @@ import { GrowthTreeDatabase } from './db'
 import { registerIpc } from './ipc'
 
 const timeDebtOpenQuickFloatChannel = 'time-debt:open-quick-float'
-const preferredTimeDebtShortcut = 'CommandOrControl+Shift+Space'
+const preferredTimeDebtShortcut = 'CommandOrControl+Alt+T'
 const fallbackTimeDebtShortcut = 'CommandOrControl+Shift+L'
 
 let mainWindow: BrowserWindow | null = null
-let registeredTimeDebtShortcut: string | null = null
+let registeredTimeDebtShortcuts: string[] = []
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -78,22 +78,24 @@ function sendOpenTimeDebtQuickFloat(targetWindow: BrowserWindow) {
 }
 
 function registerTimeDebtShortcut() {
-  if (registeredTimeDebtShortcut) {
+  if (registeredTimeDebtShortcuts.length > 0) {
     return
   }
 
   for (const shortcut of [preferredTimeDebtShortcut, fallbackTimeDebtShortcut]) {
     const registered = globalShortcut.register(shortcut, openTimeDebtQuickFloat)
     if (registered) {
-      registeredTimeDebtShortcut = shortcut
+      registeredTimeDebtShortcuts = [...registeredTimeDebtShortcuts, shortcut]
       console.info(`[time-debt] registered global shortcut: ${shortcut}`)
-      return
+      continue
     }
 
     console.warn(`[time-debt] failed to register global shortcut: ${shortcut}`)
   }
 
-  console.warn('[time-debt] no global shortcut registered for quick float')
+  if (registeredTimeDebtShortcuts.length === 0) {
+    console.warn('[time-debt] no global shortcut registered for quick float')
+  }
 }
 
 app.whenReady().then(() => {
