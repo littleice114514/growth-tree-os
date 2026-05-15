@@ -8,7 +8,7 @@ import {
 } from './timeDebtActiveTimerStorage'
 import { appendTimeDebtLog, loadTimeDebtParams } from './timeDebtStorage'
 
-const quickTimerPrimaryCategory = '工作'
+const quickTimerFallbackPrimaryCategory = '其他'
 const quickTimerSecondaryProject = 'growth-tree-os'
 
 export type QuickTimeDebtTimerResult =
@@ -19,11 +19,12 @@ export type FinishQuickTimeDebtTimerResult =
   | { ok: true; log: TimeDebtLog }
   | { ok: false; error: string }
 
-export function startQuickTimeDebtTimer(title: string): QuickTimeDebtTimerResult {
+export function startQuickTimeDebtTimer(title: string, primaryCategory: string): QuickTimeDebtTimerResult {
   const normalizedTitle = title.trim()
   if (!normalizedTitle) {
     return { ok: false, error: '先写一下这次在做什么' }
   }
+  const normalizedPrimaryCategory = primaryCategory.trim() || quickTimerFallbackPrimaryCategory
 
   const currentTimer = loadActiveTimeDebtTimer()
   if (currentTimer) {
@@ -33,7 +34,7 @@ export function startQuickTimeDebtTimer(title: string): QuickTimeDebtTimerResult
   const now = new Date()
   const timer = createActiveTimeDebtTimer({
     title: normalizedTitle,
-    primaryCategory: quickTimerPrimaryCategory,
+    primaryCategory: normalizedPrimaryCategory,
     secondaryProject: quickTimerSecondaryProject,
     actualStart: formatLocalDateTimeInput(now),
     startTimestampMs: now.getTime(),

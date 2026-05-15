@@ -1,5 +1,20 @@
 # Codex Time Debt 下一步操作卡
 
+## 0. 2026-05-15 浮窗一级分类第一阶段
+
+- 本轮目标：补做 Time Debt 浮窗字段增强第一阶段，让右下角浮窗真实出现 `一级分类` 控件。
+- Skill 选择：已按本机可用 skill 判断，未命中专门覆盖 Time Debt 浮窗字段增强的 skill；本轮采用“工程最小实现 + 真实 Electron UI smoke 硬门槛 + 文档交接 + GitHub Sync Gate”基础工作流。
+- 工作流模板：工程代码修改 / UI 字段增强 / 真实 Electron smoke / 双设备协同交接。
+- 起始 commit：`81f6076`。
+- 实现范围：`TimeDebtQuickFloat`、`timeDebtQuickTimer`、`timeDebtStorage` 和对应 Time Debt 文档。
+- 空闲态浮窗必须显示：任务名称、一级分类、最近任务、开始计时。
+- 一级分类固定选项：工作 / 学习 / 休息 / 生活 / 其他。
+- 默认一级分类：学习。
+- 计时中卡片必须显示任务名、分类、开始时间、已用时、结束计时。
+- 最近任务点击后必须回填任务名和一级分类；老记录缺分类时 fallback 为 `其他`。
+- 验收硬门槛结果：真实 Electron UI smoke 已看到 `一级分类`，并完成 `浮窗分类测试 / 学习` 的开始、刷新恢复、结束写入、最近任务回填和 Wealth 不白屏检查。
+- 本轮不做 Settings、不做 Time Debt 首页仪表盘、不做结束计时补充框、不做 AI 赋能占比、不做 D 线桌面悬浮球、不改 Wealth。
+
 ## 0. 2026-05-15 快捷键稳定化与产品地图更新
 
 - 本轮目标：先修正 Time Debt 产品地图，并把全局快捷键默认值从更易冲突的 `CommandOrControl+Shift+Space` 稳定到 `CommandOrControl+Alt+T`。

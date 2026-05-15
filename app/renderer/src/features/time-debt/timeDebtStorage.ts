@@ -15,10 +15,12 @@ const STANDARDS_KEY = accountLocalStorageKey('time-debt', 'standards')
 const PARAMS_KEY = accountLocalStorageKey('time-debt', 'params')
 
 export const timeDebtLogsChangeEvent = 'time-debt-logs-change'
+const fallbackPrimaryCategory = '其他'
+const fallbackSecondaryProject = '未归属项目'
 
 export function loadTimeDebtLogs(): TimeDebtLog[] {
   migrateTimeDebtLegacyKeys()
-  return loadArray(LOGS_KEY, isTimeDebtLog)
+  return loadArray(LOGS_KEY, isTimeDebtLog).map(normalizeTimeDebtLog)
 }
 
 export function saveTimeDebtLogs(logs: TimeDebtLog[]): void {
@@ -129,12 +131,18 @@ function isTimeDebtLog(value: unknown): value is TimeDebtLog {
   return (
     typeof candidate.id === 'string' &&
     typeof candidate.title === 'string' &&
-    typeof candidate.primaryCategory === 'string' &&
-    typeof candidate.secondaryProject === 'string' &&
     typeof candidate.startTime === 'string' &&
     typeof candidate.endTime === 'string' &&
     typeof candidate.durationMinutes === 'number'
   )
+}
+
+function normalizeTimeDebtLog(log: TimeDebtLog): TimeDebtLog {
+  return {
+    ...log,
+    primaryCategory: log.primaryCategory?.trim() || fallbackPrimaryCategory,
+    secondaryProject: log.secondaryProject?.trim() || fallbackSecondaryProject
+  }
 }
 
 function isWorkTimeStandard(value: unknown): value is WorkTimeStandard {

@@ -5,6 +5,9 @@ import { loadTimeDebtLogs, timeDebtLogsChangeEvent } from '../timeDebtStorage'
 
 const floatingUiStorageKey = 'growth-tree-os:time-debt-floating-ui:v1'
 const recentTaskLimit = 3
+const primaryCategoryOptions = ['工作', '学习', '休息', '生活', '其他'] as const
+const defaultPrimaryCategory = '学习'
+const fallbackPrimaryCategory = '其他'
 
 type FloatingUiState = {
   isOpen: boolean
@@ -13,12 +16,14 @@ type FloatingUiState = {
 
 type RecentTaskOption = {
   title: string
+  primaryCategory: string
   lastUsedAt: string
 }
 
 export function TimeDebtQuickFloat() {
   const [uiState, setUiState] = useState<FloatingUiState>(() => loadFloatingUiState())
   const [taskTitle, setTaskTitle] = useState('')
+  const [primaryCategory, setPrimaryCategory] = useState(defaultPrimaryCategory)
   const [activeTimer, setActiveTimer] = useState<ActiveTimeDebtTimer | null>(() => loadActiveTimeDebtTimer())
   const [timerNow, setTimerNow] = useState(() => Date.now())
   const [message, setMessage] = useState('')
@@ -55,7 +60,7 @@ export function TimeDebtQuickFloat() {
   }, [])
 
   const handleStart = () => {
-    const result = startQuickTimeDebtTimer(taskTitle)
+    const result = startQuickTimeDebtTimer(taskTitle, primaryCategory)
     if (!result.ok) {
       setMessage(result.error)
       return
@@ -108,6 +113,7 @@ export function TimeDebtQuickFloat() {
               <div className="text-[10px] uppercase tracking-[0.18em] text-accent-green">当前计时</div>
               <div className="mt-2 break-words text-sm font-semibold leading-5">正在记录：{activeTimer.title}</div>
               <div className="mt-2 grid gap-1 text-xs text-[color:var(--text-secondary)]">
+                <div>分类：{normalizePrimaryCategory(activeTimer.primaryCategory)}</div>
                 <div>开始：{formatTimeOnly(activeTimer.actualStart)}</div>
                 <div>
                   已用时：
@@ -145,6 +151,25 @@ export function TimeDebtQuickFloat() {
                   className="w-full rounded-2xl border border-[color:var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none transition placeholder:text-[color:var(--text-muted)] focus:border-[color:var(--node-selected-border)] focus:bg-[var(--control-hover)]"
                 />
               </label>
+              <label className="grid gap-1.5 text-sm">
+                <span className="text-xs text-[color:var(--text-secondary)]">一级分类</span>
+                <select
+                  value={primaryCategory}
+                  onChange={(event) => {
+                    setPrimaryCategory(normalizePrimaryCategory(event.target.value))
+                    if (message) {
+                      setMessage('')
+                    }
+                  }}
+                  className="w-full rounded-2xl border border-[color:var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none transition focus:border-[color:var(--node-selected-border)] focus:bg-[var(--control-hover)]"
+                >
+                  {primaryCategoryOptions.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {recentTasks.length > 0 ? (
                 <div className="grid gap-2">
                   <div className="text-xs text-[color:var(--text-secondary)]">最近任务</div>
@@ -155,10 +180,11 @@ export function TimeDebtQuickFloat() {
                         type="button"
                         onClick={() => {
                           setTaskTitle(task.title)
+                          setPrimaryCategory(task.primaryCategory)
                           setMessage('')
                         }}
                         className="max-w-full truncate rounded-full border border-[color:var(--panel-border)] bg-[var(--control-bg)] px-3 py-1.5 text-xs text-[color:var(--text-secondary)] transition hover:bg-[var(--control-hover)] hover:text-[color:var(--text-primary)]"
-                        title={task.title}
+                        title={`${task.title} / ${task.primaryCategory}`}
                       >
                         {task.title}
                       </button>
@@ -232,9 +258,10 @@ function loadRecentTaskOptions(): RecentTaskOption[] {
     }
     const lastUsedAt = log.endTime || log.startTime
     const key = title.toLowerCase()
+    const primaryCategory = normalizePrimaryCategory(log.primaryCategory)
     const current = byTitle.get(key)
     if (!current || lastUsedAt.localeCompare(current.lastUsedAt) > 0) {
-      byTitle.set(key, { title, lastUsedAt })
+      byTitle.set(key, { title, primaryCategory, lastUsedAt })
     }
   }
 
@@ -261,4 +288,14 @@ function formatMinutes(minutes: number): string {
 
 function padDatePart(value: number): string {
   return String(value).padStart(2, '0')
+}
+
+function normalizePrimaryCategory(value: string | undefined): string {
+  const normalized = value?.trim()
+  if (!normalized) {
+    return fallbackPrimaryCategory
+  }
+  return primaryCategoryOptions.includes(normalized as (typeof primaryCategoryOptions)[number])
+    ? normalized
+    : fallbackPrimaryCategory
 }

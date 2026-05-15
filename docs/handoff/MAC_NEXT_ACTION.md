@@ -10,23 +10,27 @@
 
 ## 2. 本轮已完成
 
-- 新增 Time Debt 产品模式地图：`docs/project-map/TIME_DEBT_PRODUCT_MODE.md`。
-- 记录 Time Debt 新方向：今日时间使用仪表盘、明日时间布局、实际执行反馈、浮窗快速记录、分类 / 任务复用。
-- 明确 Time Debt 同时支持反映模式与布局模式。
-- 明确未完成任务后续进入迁移、放弃、拆小、计划过载或复盘，不作为简单失败。
-- 将 Time Debt 全局快捷键默认值改为 `CommandOrControl+Alt+T`。
-- 保留 fallback：`CommandOrControl+Shift+L`，并与主快捷键同时注册为真实备用入口。
-- 更新 Time Debt 浮窗路线图、Codex handoff 和本轮 dev-log。
-- 本轮未做 Settings 页面、完整首页仪表盘、浮窗字段增强、结束计时补充框、D 线桌面悬浮球、数据库结构或 Wealth 改动。
+- 补做 Time Debt 浮窗字段增强第一阶段。
+- 右下角 Time Debt 浮窗空闲态新增 `一级分类` 控件。
+- 一级分类固定选项：工作 / 学习 / 休息 / 生活 / 其他。
+- 默认一级分类：学习。
+- 开始计时后 active timer 保存一级分类。
+- 计时中卡片显示分类。
+- 结束计时后 Time Debt log 写入一级分类。
+- 最近任务点击后同时回填任务名和一级分类。
+- 老日志缺分类时 fallback 为 `其他`。
+- 本轮未做 Settings、Time Debt 首页仪表盘、结束计时补充框、AI 赋能占比、D 线桌面悬浮球或 Wealth 改动。
 
 ## 3. 本轮修改文件
 
-- `app/main/index.ts`
+- `app/renderer/src/features/time-debt/components/TimeDebtQuickFloat.tsx`
+- `app/renderer/src/features/time-debt/timeDebtQuickTimer.ts`
+- `app/renderer/src/features/time-debt/timeDebtStorage.ts`
 - `docs/project-map/TIME_DEBT_FLOATING_WINDOW_MODE.md`
 - `docs/project-map/TIME_DEBT_PRODUCT_MODE.md`
 - `docs/handoff/CODEX_TIME_DEBT_NEXT_ACTION.md`
 - `docs/handoff/MAC_NEXT_ACTION.md`
-- `docs/dev-log/2026-05/2026-05-14/time-debt-hotkey-stabilization.md`
+- `docs/dev-log/2026-05/2026-05-15/time-debt-floating-category-phase1.md`
 
 ## 4. 当前验证结果
 
@@ -35,16 +39,19 @@
 - `pnpm typecheck`：通过。
 - `pnpm build`：通过。
 - `pnpm dev`：真实 Electron App 启动成功。
-- Electron 注册全局快捷键日志：`CommandOrControl+Alt+T`。
-- Electron 注册 fallback 快捷键日志：`CommandOrControl+Shift+L`。
+- 真实 Electron 浮窗中看到了 `一级分类`。
+- 一级分类选项包含：工作 / 学习 / 休息 / 生活 / 其他。
+- `浮窗分类测试 / 学习` 可开始计时。
+- 计时中卡片显示任务名和 `分类：学习`。
+- 收起浮窗后状态不丢。
+- 刷新后 active timer 恢复，分类仍为 `学习`。
+- 结束计时后记录写入成功，反馈显示 `已记录：浮窗分类测试 · 1 分钟`。
+- 最近任务出现 `浮窗分类测试`，并能回填任务名和分类 `学习`。
 - Wealth 页面可打开，未白屏。
-- Time Debt 浮窗按钮可展开 `时间控制台`。
 
 ### 未验证 / 风险
 
-- Settings 中若仍展示旧快捷键，需要后续 Settings 接入任务单独更新 UI 文案或配置来源。
-- 本轮使用 Computer Use、macOS System Events 和 CGEvent 自动发送 `Cmd + Option + T` / `Cmd + Shift + L`，未能触发全局快捷键展开浮窗；需要 Mac 端手动物理按键复核。
-- 如果 `Cmd + Option + T` 被当前前台应用或系统菜单捕获，使用 fallback `Cmd + Shift + L` 继续验收同一浮窗唤起链路。
+- 老 active timer 若来自更早版本且缺分类，建议先结束或清空后重新开始；本轮新建 timer 会保存分类。
 
 ## 5. Mac 端第一步操作
 
@@ -87,27 +94,29 @@ pnpm dev
 请在 Mac 端检查：
 
 - 必须打开真实 Electron App，不要只打开浏览器里的 localhost。
-- `pnpm dev` 终端出现：`[time-debt] registered global shortcut: CommandOrControl+Alt+T`。
-- `pnpm dev` 终端出现：`[time-debt] registered global shortcut: CommandOrControl+Shift+L`。
-- App 聚焦时手动按 `Cmd + Option + T`，右下角 Time Debt 浮窗应展开为 `时间控制台`。
-- App 不聚焦时手动按 `Cmd + Option + T`，App 应被聚焦且 Time Debt 浮窗展开。
-- 如果 `Cmd + Option + T` 未触发，手动按 `Cmd + Shift + L` 复核 fallback。
-- 在 Wealth 页面手动按快捷键后应不切页，右下角 Time Debt 浮窗展开，Wealth 不白屏。
-- Time Debt 浮窗仍可展开、收起、开始计时、结束计时。
-- `docs/project-map/TIME_DEBT_PRODUCT_MODE.md` 存在，并包含反映模式、布局模式、首页仪表盘、浮窗字段增强和快捷键策略。
+- 必须打开真实 Electron App，不要只打开浏览器里的 localhost。
+- 展开右下角 Time Debt 浮窗。
+- 确认空闲态可见：任务名称、一级分类、最近任务、开始计时。
+- 确认一级分类选项包含：工作 / 学习 / 休息 / 生活 / 其他。
+- 选择 `学习`，输入 `浮窗分类测试`，点击开始计时。
+- 计时中卡片应显示：`正在记录：浮窗分类测试` 和 `分类：学习`。
+- 收起浮窗后状态不丢。
+- 刷新后 active timer 恢复，分类仍为 `学习`。
+- 点击结束计时后，Time Debt 日志写入成功且分类为 `学习`。
+- 最近任务出现 `浮窗分类测试`；再次点击后任务名和分类都回填。
+- Wealth 页面不白屏。
 
 ## 8. Mac 端下一轮任务
 
 请让 Mac 端 Codex 接着完成：
 
-浮窗字段增强第一阶段：
+结束计时补充框第一阶段：
 
-- 开始计时时支持任务名。
-- 开始计时时支持一级分类：工作 / 学习 / 休息 / 生活。
-- 页面记录分类与浮窗记录分类同步。
-- 支持从已有任务名中复用或新建任务名。
+- 备注。
+- AI 赋能占比。
+- 完成状态。
 
-暂不做结束计时补充框、完整 Time Debt 首页仪表盘、Settings 快捷键自定义或 D 线桌面悬浮球。
+暂不做完整 Time Debt 首页仪表盘、Settings 快捷键自定义或 D 线桌面悬浮球。
 
 ## 9. 如果 Mac 端失败，请返回这些信息
 
