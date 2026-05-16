@@ -24,6 +24,7 @@ import { categoryPresets } from './wealthCategoryOptions'
 import { CashflowComboChart } from './CashflowComboChart'
 import { ExpenseBreakdownPie } from './ExpenseBreakdownPie'
 import { IncomeBreakdownPie } from './IncomeBreakdownPie'
+import { WealthQuickRecordFloat } from './WealthQuickRecordFloat'
 import { searchRecords, groupRecords, type GroupMode, type InsightPeriod } from './wealthRecordInsights'
 import { WealthDashboardPreview } from '@/features/dashboard-preview'
 import { loadInvestmentRecords, type InvestmentRecord } from './investmentStorage'
@@ -252,6 +253,8 @@ export function WealthDashboard() {
           onSave={saveRecord}
         />
       ) : null}
+
+      <WealthQuickRecordFloat />
     </main>
   )
 }

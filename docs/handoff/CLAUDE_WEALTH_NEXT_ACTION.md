@@ -46,15 +46,21 @@
   - 统计口径：real_income / passive_income / system_income / stable_finance / asset_change(increase)。
   - 指标：收入总额、最大来源、稳定收入占比、睡后收入占比。
   - 支持今天/近7天/近30天切换。
+- **Wealth App 内快捷记录浮窗完成（路线 B）**：
+  - 新增 `WealthQuickRecordFloat.tsx`，固定定位右下角。
+  - 支持三类事件：收入 / 支出 / 持续出血。
+  - 收入：选择来源类型（现实/睡后/系统/稳定理财/其他），写入对应 WealthRecordType。
+  - 支出：选择分类（生活/学习/工具/交通/饮食/娱乐/其他），写入 real_expense。
+  - 持续出血：选择周期（每天/每周/每月/每年），写入 ongoing_cost + meta.cycle。
+  - 完全复用现有 appendWealthRecord，不新建记录系统。
+  - 最小校验：名称非空、金额>0、持续出血必选周期。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/wealth/marketDataService.ts`（修改：mock candle 最后一根 close 锚定 quote.price）
-- `app/renderer/src/features/wealth/wealthRecordInsights.ts`（修改：新增 income breakdown 计算函数）
-- `app/renderer/src/features/wealth/IncomeBreakdownPie.tsx`（新增：ECharts 收入来源饼图组件）
-- `app/renderer/src/features/wealth/WealthDashboard.tsx`（修改：OverviewTab 集成收入来源饼图）
+- `app/renderer/src/features/wealth/WealthQuickRecordFloat.tsx`（新增：财富快捷记录浮窗组件）
+- `app/renderer/src/features/wealth/WealthDashboard.tsx`（修改：挂载 WealthQuickRecordFloat）
 - `docs/handoff/CLAUDE_WEALTH_NEXT_ACTION.md`（更新本轮记录）
-- `docs/dev-log/2026-05/2026-05-16/claude-wealth-income-source-pie.md`（新增：开发记录）
+- `docs/dev-log/2026-05/2026-05-16/claude-wealth-quick-record-float.md`（新增：开发记录）
 
 ## 4. 未做事项
 
@@ -64,8 +70,8 @@
 - 未做投资模块（已有路线设计，见 `WEALTH_INVESTMENT_MODE.md`）。
 - ~~未做收入来源饼图~~ → 已完成。
 - ~~行情 K 线绑定 bug~~ → 已修复。
-- 未做 Wealth App 内快捷浮窗（路线 B，当前下一步）。
-- 未做系统快捷键浮窗（路线 C）。
+- ~~Wealth App 内快捷浮窗~~ → 已完成。
+- 未做系统快捷键浮窗（路线 C，当前下一步）。
 - 未做浮窗与投资记录关联（路线 D，待定）。
 
 ## 5. 与 Codex 的文件边界
@@ -81,8 +87,8 @@
 按优先级：
 1. ~~修复行情 K 线绑定 bug~~ → 已完成。
 2. ~~收入来源结构图（路线 A）~~ → 已完成。
-3. **Wealth App 内快捷浮窗（路线 B）** — 支持收入/支出/持续出血三类快速记录。当前下一步。
-4. **系统快捷键 Option + Cmd + Z（路线 C）** — 浮窗稳定后再做。
+3. ~~Wealth App 内快捷浮窗（路线 B）~~ → 已完成。
+4. **系统快捷键 Option + Cmd + Z（路线 C）** — 当前下一步。
 
 ## 7. 手动验收方式
 
