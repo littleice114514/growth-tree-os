@@ -13,7 +13,7 @@ import { LifeVitalityTreeCanvas } from '@/features/life-vitality-tree/LifeVitali
 import { LifeCurveDashboard } from '@/features/life-curve/LifeCurveDashboard'
 import { WealthDashboard } from '@/features/wealth/WealthDashboard'
 import { TimeDebtDashboard } from '@/features/time-debt/TimeDebtDashboard'
-import { TimeDebtQuickFloat } from '@/features/time-debt/components/TimeDebtQuickFloat'
+import { UnifiedQuickRecordFloat } from '@/features/quick-record/UnifiedQuickRecordFloat'
 import { SystemXPage } from '@/features/systemx'
 import { SettingsPage } from '@/features/settings/SettingsPage'
 import { LifeDashboardPreview } from '@/features/dashboard-preview'
@@ -140,7 +140,7 @@ export function MainWorkspacePage() {
       </div>
 
       {isReviewComposerOpen ? <ReviewComposer /> : null}
-      <TimeDebtQuickFloat />
+      <UnifiedQuickRecordFloat />
     </div>
   )
 }
