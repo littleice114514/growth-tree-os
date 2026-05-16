@@ -2,8 +2,16 @@ import { type WealthBaseConfig } from '@shared/wealth'
 
 const STORAGE_KEY = 'growth-tree-os:wealth-base-config:v1'
 
+function getLocalDateKey(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 const defaultConfig: WealthBaseConfig = {
-  date: new Date().toISOString().slice(0, 10),
+  date: getLocalDateKey(),
   openingBalance: 42860,
   dailySafeLine: 260,
   monthlyRemainingDisposable: 4160,
@@ -32,7 +40,7 @@ export function loadWealthBaseConfig(): WealthBaseConfig {
     if (!isWealthBaseConfig(parsed)) {
       return { ...defaultConfig }
     }
-    return { ...defaultConfig, ...parsed }
+    return { ...defaultConfig, ...parsed, date: getLocalDateKey() }
   } catch {
     return { ...defaultConfig }
   }
@@ -43,7 +51,7 @@ export function saveWealthBaseConfig(config: WealthBaseConfig): void {
 }
 
 export function resetWealthBaseConfig(): WealthBaseConfig {
-  const config = { ...defaultConfig, date: new Date().toISOString().slice(0, 10) }
+  const config = { ...defaultConfig, date: getLocalDateKey() }
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
   return config
 }

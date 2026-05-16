@@ -113,10 +113,14 @@ function resolvePeriodRange(period: PeriodKey, today: string): { startDate: stri
   return { startDate: shiftDate(today, -daysBack), endDate: today }
 }
 
+function localDateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function shiftDate(dateStr: string, delta: number): string {
   const d = new Date(dateStr + 'T00:00:00')
   d.setDate(d.getDate() + delta)
-  return d.toISOString().slice(0, 10)
+  return localDateKey(d)
 }
 
 function buildDateRange(start: string, end: string): string[] {
@@ -124,7 +128,7 @@ function buildDateRange(start: string, end: string): string[] {
   const current = new Date(start + 'T00:00:00')
   const last = new Date(end + 'T00:00:00')
   while (current <= last) {
-    dates.push(current.toISOString().slice(0, 10))
+    dates.push(localDateKey(current))
     current.setDate(current.getDate() + 1)
   }
   return dates

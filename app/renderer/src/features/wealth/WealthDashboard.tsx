@@ -55,7 +55,10 @@ type RecordDraft = {
   direction: 'increase' | 'decrease'
 }
 
-const today = new Date().toISOString().slice(0, 10)
+const today = (() => {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+})()
 
 const tabLabels: Record<WealthTab, string> = {
   overview: '总览',
@@ -565,9 +568,31 @@ function RecordsTab({ records, onDelete, referenceDate }: { records: WealthRecor
   const [searchQuery, setSearchQuery] = useState('')
   const [groupMode, setGroupMode] = useState<GroupMode>('date')
   const [insightPeriod, setInsightPeriod] = useState<InsightPeriod>('last7')
+  const [recordsExpanded, setRecordsExpanded] = useState(false)
 
   const filteredRecords = useMemo(() => searchRecords(records, searchQuery), [records, searchQuery])
   const groups = useMemo(() => groupRecords(filteredRecords, groupMode), [filteredRecords, groupMode])
+
+  const collapsedLimit = 5
+  const totalRecords = filteredRecords.length
+  const isTruncated = !recordsExpanded && totalRecords > collapsedLimit
+  const displayGroups = useMemo(() => {
+    if (!isTruncated) return groups
+    let count = 0
+    const result: typeof groups = []
+    for (const group of groups) {
+      if (count >= collapsedLimit) break
+      const remaining = collapsedLimit - count
+      if (group.records.length <= remaining) {
+        result.push(group)
+        count += group.records.length
+      } else {
+        result.push({ ...group, records: group.records.slice(0, remaining) })
+        count = collapsedLimit
+      }
+    }
+    return result
+  }, [groups, isTruncated])
 
   return (
     <div className="flex flex-col gap-5">
@@ -627,7 +652,7 @@ function RecordsTab({ records, onDelete, referenceDate }: { records: WealthRecor
           )
         ) : (
           <div className="space-y-4">
-            {groups.map((group) => (
+            {displayGroups.map((group) => (
               <div key={group.key}>
                 <div className="mb-2 flex items-center gap-2">
                   <span className="text-xs font-semibold text-[color:var(--text-secondary)]">{group.label}</span>
@@ -636,6 +661,15 @@ function RecordsTab({ records, onDelete, referenceDate }: { records: WealthRecor
                 <RecordList records={group.records} onDelete={onDelete} />
               </div>
             ))}
+            {totalRecords > collapsedLimit ? (
+              <button
+                type="button"
+                onClick={() => setRecordsExpanded((prev) => !prev)}
+                className="w-full rounded-xl border border-[color:var(--panel-border)] bg-[var(--control-bg)] py-2 text-xs text-[color:var(--text-secondary)] transition hover:bg-[var(--control-hover)] hover:text-[color:var(--text-primary)]"
+              >
+                {recordsExpanded ? '收起' : `展开全部 ${totalRecords} 条记录`}
+              </button>
+            ) : null}
           </div>
         )}
       </section>

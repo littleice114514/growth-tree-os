@@ -28,7 +28,10 @@ const cycleOptions: { value: 'daily' | 'weekly' | 'monthly' | 'yearly'; label: s
   { value: 'yearly', label: '每年' }
 ]
 
-const today = new Date().toISOString().slice(0, 10)
+const today = (() => {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+})()
 
 type FormState = {
   eventType: QuickEventType

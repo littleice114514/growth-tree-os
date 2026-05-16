@@ -102,7 +102,7 @@ function generateMockCandles(symbol: string, days: number = 30, basePriceOverrid
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date()
     date.setDate(date.getDate() - i)
-    const dateStr = date.toISOString().slice(0, 10)
+    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 
     const volatility = basePrice * 0.015
     const open = lastClose + (rand() - 0.5) * volatility

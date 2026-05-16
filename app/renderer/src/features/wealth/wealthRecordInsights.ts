@@ -179,6 +179,10 @@ export const insightPeriodLabels: Record<InsightPeriod, string> = {
   last30: '近 30 天'
 }
 
+function localDateKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function getDateRange(period: InsightPeriod, referenceDate: string): { start: string; end: string } {
   const end = referenceDate
   if (period === 'today') return { start: end, end }
@@ -186,7 +190,7 @@ function getDateRange(period: InsightPeriod, referenceDate: string): { start: st
   const days = period === 'last7' ? 6 : 29 // inclusive: today + N-1 previous days
   const d = new Date(end + 'T00:00:00')
   d.setDate(d.getDate() - days)
-  const start = d.toISOString().slice(0, 10)
+  const start = localDateKey(d)
   return { start, end }
 }
 

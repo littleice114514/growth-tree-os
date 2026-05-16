@@ -62,12 +62,18 @@
 
 ## 3. 本轮修改文件
 
-- `app/main/index.ts`（修改：新增 Wealth 全局快捷键注册 + IPC 通道）
-- `app/preload/index.ts`（修改：新增 wealth.onOpenQuickFloat 暴露）
-- `app/shared/contracts.ts`（修改：新增 wealth 命名空间类型）
-- `app/renderer/src/features/wealth/WealthQuickRecordFloat.tsx`（修改：新增快捷键监听）
+- `app/renderer/src/features/wealth/wealthConfigStorage.ts`（修改：强制 loadWealthBaseConfig 用当前本地日期）
+- `app/renderer/src/features/wealth/WealthDashboard.tsx`（修改：today 本地日期 + RecordsTab 折叠/展开）
+- `app/renderer/src/features/wealth/WealthQuickRecordFloat.tsx`（修改：today 本地日期）
+- `app/renderer/src/features/wealth/wealthRecordInsights.ts`（修改：getDateRange 日期偏移用本地日期）
+- `app/renderer/src/features/wealth/overdraftTracker.ts`（修改：shiftDate/buildDateRange 用本地日期）
+- `app/renderer/src/features/wealth/marketDataService.ts`（修改：mock candle 日期用本地日期）
 - `docs/handoff/CLAUDE_WEALTH_NEXT_ACTION.md`（更新本轮记录）
-- `docs/dev-log/2026-05/2026-05-16/claude-wealth-global-shortcut.md`（新增：开发记录）
+- `docs/dev-log/2026-05/2026-05-16/claude-wealth-validation-fixes.md`（新增：开发记录）
+- **统一验收缺陷修复完成**：
+  - 修复收入来源饼图不显示：根因是 baseConfig.date 被旧日期覆盖。
+  - 修复"今日"日期错误：所有 toISOString().slice(0,10) 改为本地日期计算。
+  - 修复全部财富记录过长：RecordsTab 支持折叠/展开，默认显示前 5 条。
 
 ## 4. 未做事项
 
@@ -79,6 +85,10 @@
 - ~~行情 K 线绑定 bug~~ → 已修复。
 - ~~Wealth App 内快捷浮窗~~ → 已完成。
 - ~~系统快捷键浮窗~~ → 已完成。
+- ~~今日日期 bug~~ → 已修复。
+- ~~全部记录折叠~~ → 已完成。
+- **P0｜统一记录入口重构**（后续）：把 Time Debt 和 Wealth 快捷记录合并为统一入口，先选择「记录时间 / 记录财富」再进入表单。解决 Wealth 快捷键只在 Wealth 页面有效的架构问题。
+- **P2｜行情 K 线历史本地缓存**（后续）：保存已拉取/生成的日 K 数据到本地，支持超过 30 天的长期趋势观察。
 - 未做浮窗与投资记录关联（路线 D，待定）。
 
 ## 5. 与 Codex 的文件边界
@@ -96,8 +106,10 @@
 2. ~~收入来源结构图（路线 A）~~ → 已完成。
 3. ~~Wealth App 内快捷浮窗（路线 B）~~ → 已完成。
 4. ~~系统快捷键 Option + Cmd + Z（路线 C）~~ → 已完成。
-5. **Wealth 模块统一验收** — 当前下一步。
-6. 浮窗与投资记录关联（路线 D）— 后续。
+5. ~~统一验收缺陷修复~~ → 已完成。
+6. **P0｜统一记录入口重构设计** — 当前下一步。跨 Time Debt + Wealth 架构。
+7. P2｜行情 K 线历史本地缓存 — 后续。
+8. 浮窗与投资记录关联（路线 D）— 后续。
 
 ## 7. 手动验收方式
 
