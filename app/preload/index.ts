@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { GrowthTreeApi } from '@shared/contracts'
 
 const timeDebtOpenQuickFloatChannel = 'time-debt:open-quick-float'
+const wealthOpenQuickFloatChannel = 'wealth:open-quick-float'
 
 const api: GrowthTreeApi = {
   reviews: {
@@ -38,6 +39,13 @@ const api: GrowthTreeApi = {
       const handler = () => callback()
       ipcRenderer.on(timeDebtOpenQuickFloatChannel, handler)
       return () => ipcRenderer.removeListener(timeDebtOpenQuickFloatChannel, handler)
+    }
+  },
+  wealth: {
+    onOpenQuickFloat: (callback) => {
+      const handler = () => callback()
+      ipcRenderer.on(wealthOpenQuickFloatChannel, handler)
+      return () => ipcRenderer.removeListener(wealthOpenQuickFloatChannel, handler)
     }
   },
   market: {

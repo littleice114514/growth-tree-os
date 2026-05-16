@@ -60,6 +60,12 @@ export function WealthQuickRecordFloat() {
     saveIsOpen(isOpen)
   }, [isOpen])
 
+  useEffect(() => {
+    return window.growthTree.wealth.onOpenQuickFloat(() => {
+      setIsOpen((prev) => !prev)
+    })
+  }, [])
+
   const patch = (partial: Partial<FormState>) => {
     setForm((current) => ({ ...current, ...partial }))
     if (message) setMessage('')

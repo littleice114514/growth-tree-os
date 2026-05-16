@@ -244,6 +244,9 @@ export interface GrowthTreeApi {
   timeDebt: {
     onOpenQuickFloat(callback: () => void): () => void
   }
+  wealth: {
+    onOpenQuickFloat(callback: () => void): () => void
+  }
   market: {
     hasApiKey(): Promise<boolean>
     fetchQuote(symbol: string): Promise<FinnhubQuoteResult>

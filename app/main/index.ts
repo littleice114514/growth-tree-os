@@ -8,8 +8,12 @@ const timeDebtOpenQuickFloatChannel = 'time-debt:open-quick-float'
 const preferredTimeDebtShortcut = 'CommandOrControl+Alt+T'
 const fallbackTimeDebtShortcut = 'CommandOrControl+Shift+L'
 
+const wealthOpenQuickFloatChannel = 'wealth:open-quick-float'
+const preferredWealthShortcut = 'CommandOrControl+Alt+Z'
+
 let mainWindow: BrowserWindow | null = null
 let registeredTimeDebtShortcuts: string[] = []
+let registeredWealthShortcuts: string[] = []
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -98,12 +102,61 @@ function registerTimeDebtShortcut() {
   }
 }
 
+function openWealthQuickFloat() {
+  if (!mainWindow) {
+    createWindow()
+  }
+
+  if (!mainWindow) {
+    console.warn('[wealth] failed to open quick float: main window unavailable')
+    return
+  }
+
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore()
+  }
+
+  mainWindow.show()
+  mainWindow.focus()
+  sendWealthQuickFloat(mainWindow)
+}
+
+function sendWealthQuickFloat(targetWindow: BrowserWindow) {
+  const sendEvent = () => {
+    if (!targetWindow.isDestroyed()) {
+      targetWindow.webContents.send(wealthOpenQuickFloatChannel)
+    }
+  }
+
+  if (targetWindow.webContents.isLoading()) {
+    targetWindow.webContents.once('did-finish-load', sendEvent)
+    return
+  }
+
+  sendEvent()
+}
+
+function registerWealthShortcut() {
+  if (registeredWealthShortcuts.length > 0) {
+    return
+  }
+
+  const registered = globalShortcut.register(preferredWealthShortcut, openWealthQuickFloat)
+  if (registered) {
+    registeredWealthShortcuts = [preferredWealthShortcut]
+    console.info(`[wealth] registered global shortcut: ${preferredWealthShortcut}`)
+  } else {
+    console.warn('[wealth] quick record shortcut registration failed')
+  }
+}
+
 app.whenReady().then(() => {
   const appPaths = ensureAppPaths()
   const db = new GrowthTreeDatabase(appPaths.sqlitePath, appPaths.reviewsDir)
   registerIpc(db, appPaths)
   createWindow()
   registerTimeDebtShortcut()
+  registerWealthShortcut()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

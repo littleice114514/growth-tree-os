@@ -54,13 +54,20 @@
   - 持续出血：选择周期（每天/每周/每月/每年），写入 ongoing_cost + meta.cycle。
   - 完全复用现有 appendWealthRecord，不新建记录系统。
   - 最小校验：名称非空、金额>0、持续出血必选周期。
+- **Wealth 全局快捷键完成（路线 C）**：
+  - 快捷键：`CommandOrControl+Alt+Z`（Mac: Option + Command + Z）。
+  - 完全复用 Time Debt 快捷键架构：main → IPC → preload → renderer。
+  - 触发后切换浮窗展开/收起。
+  - 注册失败时安全输出日志，不崩溃。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/wealth/WealthQuickRecordFloat.tsx`（新增：财富快捷记录浮窗组件）
-- `app/renderer/src/features/wealth/WealthDashboard.tsx`（修改：挂载 WealthQuickRecordFloat）
+- `app/main/index.ts`（修改：新增 Wealth 全局快捷键注册 + IPC 通道）
+- `app/preload/index.ts`（修改：新增 wealth.onOpenQuickFloat 暴露）
+- `app/shared/contracts.ts`（修改：新增 wealth 命名空间类型）
+- `app/renderer/src/features/wealth/WealthQuickRecordFloat.tsx`（修改：新增快捷键监听）
 - `docs/handoff/CLAUDE_WEALTH_NEXT_ACTION.md`（更新本轮记录）
-- `docs/dev-log/2026-05/2026-05-16/claude-wealth-quick-record-float.md`（新增：开发记录）
+- `docs/dev-log/2026-05/2026-05-16/claude-wealth-global-shortcut.md`（新增：开发记录）
 
 ## 4. 未做事项
 
@@ -71,7 +78,7 @@
 - ~~未做收入来源饼图~~ → 已完成。
 - ~~行情 K 线绑定 bug~~ → 已修复。
 - ~~Wealth App 内快捷浮窗~~ → 已完成。
-- 未做系统快捷键浮窗（路线 C，当前下一步）。
+- ~~系统快捷键浮窗~~ → 已完成。
 - 未做浮窗与投资记录关联（路线 D，待定）。
 
 ## 5. 与 Codex 的文件边界
@@ -88,7 +95,9 @@
 1. ~~修复行情 K 线绑定 bug~~ → 已完成。
 2. ~~收入来源结构图（路线 A）~~ → 已完成。
 3. ~~Wealth App 内快捷浮窗（路线 B）~~ → 已完成。
-4. **系统快捷键 Option + Cmd + Z（路线 C）** — 当前下一步。
+4. ~~系统快捷键 Option + Cmd + Z（路线 C）~~ → 已完成。
+5. **Wealth 模块统一验收** — 当前下一步。
+6. 浮窗与投资记录关联（路线 D）— 后续。
 
 ## 7. 手动验收方式
 
