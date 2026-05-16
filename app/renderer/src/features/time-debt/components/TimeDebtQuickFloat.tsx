@@ -2,12 +2,10 @@ import { useEffect, useState } from 'react'
 import { loadActiveTimeDebtTimer, type ActiveTimeDebtTimer } from '../timeDebtActiveTimerStorage'
 import { finishQuickTimeDebtTimer, startQuickTimeDebtTimer } from '../timeDebtQuickTimer'
 import { loadTimeDebtLogs, timeDebtLogsChangeEvent } from '../timeDebtStorage'
+import { TimeDebtQuickRecordForm, formatElapsedTime, formatMinutes, normalizePrimaryCategory } from './TimeDebtQuickRecordForm'
 
 const floatingUiStorageKey = 'growth-tree-os:time-debt-floating-ui:v1'
 const recentTaskLimit = 3
-const primaryCategoryOptions = ['工作', '学习', '休息', '生活', '其他'] as const
-const defaultPrimaryCategory = '学习'
-const fallbackPrimaryCategory = '其他'
 
 type FloatingUiState = {
   isOpen: boolean
@@ -23,7 +21,7 @@ type RecentTaskOption = {
 export function TimeDebtQuickFloat() {
   const [uiState, setUiState] = useState<FloatingUiState>(() => loadFloatingUiState())
   const [taskTitle, setTaskTitle] = useState('')
-  const [primaryCategory, setPrimaryCategory] = useState(defaultPrimaryCategory)
+  const [primaryCategory, setPrimaryCategory] = useState(normalizePrimaryCategory(undefined))
   const [activeTimer, setActiveTimer] = useState<ActiveTimeDebtTimer | null>(() => loadActiveTimeDebtTimer())
   const [timerNow, setTimerNow] = useState(() => Date.now())
   const [message, setMessage] = useState('')
@@ -108,101 +106,30 @@ export function TimeDebtQuickFloat() {
             </button>
           </div>
 
-          {activeTimer ? (
-            <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-3">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-accent-green">当前计时</div>
-              <div className="mt-2 break-words text-sm font-semibold leading-5">正在记录：{activeTimer.title}</div>
-              <div className="mt-2 grid gap-1 text-xs text-[color:var(--text-secondary)]">
-                <div>分类：{normalizePrimaryCategory(activeTimer.primaryCategory)}</div>
-                <div>开始：{formatTimeOnly(activeTimer.actualStart)}</div>
-                <div>
-                  已用时：
-                  <span className="ml-1 text-lg font-semibold tabular-nums text-[color:var(--text-primary)]">
-                    {formatElapsedTime(timerNow - activeTimer.startTimestampMs)}
-                  </span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleFinish}
-                className="mt-3 w-full rounded-2xl bg-[var(--button-bg)] px-4 py-2 text-sm font-semibold text-[color:var(--button-text)] transition hover:bg-[var(--button-hover)]"
-              >
-                结束计时
-              </button>
-            </div>
-          ) : (
-            <div className="mt-4 grid gap-3">
-              <label className="grid gap-1.5 text-sm">
-                <span className="text-xs text-[color:var(--text-secondary)]">任务名称</span>
-                <input
-                  value={taskTitle}
-                  onChange={(event) => {
-                    setTaskTitle(event.target.value)
-                    if (message) {
-                      setMessage('')
-                    }
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      handleStart()
-                    }
-                  }}
-                  placeholder="这次在做什么"
-                  className="w-full rounded-2xl border border-[color:var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none transition placeholder:text-[color:var(--text-muted)] focus:border-[color:var(--node-selected-border)] focus:bg-[var(--control-hover)]"
-                />
-              </label>
-              <label className="grid gap-1.5 text-sm">
-                <span className="text-xs text-[color:var(--text-secondary)]">一级分类</span>
-                <select
-                  value={primaryCategory}
-                  onChange={(event) => {
-                    setPrimaryCategory(normalizePrimaryCategory(event.target.value))
-                    if (message) {
-                      setMessage('')
-                    }
-                  }}
-                  className="w-full rounded-2xl border border-[color:var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none transition focus:border-[color:var(--node-selected-border)] focus:bg-[var(--control-hover)]"
-                >
-                  {primaryCategoryOptions.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {recentTasks.length > 0 ? (
-                <div className="grid gap-2">
-                  <div className="text-xs text-[color:var(--text-secondary)]">最近任务</div>
-                  <div className="flex flex-wrap gap-2">
-                    {recentTasks.map((task) => (
-                      <button
-                        key={`${task.title}-${task.lastUsedAt}`}
-                        type="button"
-                        onClick={() => {
-                          setTaskTitle(task.title)
-                          setPrimaryCategory(task.primaryCategory)
-                          setMessage('')
-                        }}
-                        className="max-w-full truncate rounded-full border border-[color:var(--panel-border)] bg-[var(--control-bg)] px-3 py-1.5 text-xs text-[color:var(--text-secondary)] transition hover:bg-[var(--control-hover)] hover:text-[color:var(--text-primary)]"
-                        title={`${task.title} / ${task.primaryCategory}`}
-                      >
-                        {task.title}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              <button
-                type="button"
-                onClick={handleStart}
-                className="rounded-2xl bg-[var(--button-bg)] px-4 py-2 text-sm font-semibold text-[color:var(--button-text)] transition hover:bg-[var(--button-hover)]"
-              >
-                开始计时
-              </button>
-            </div>
-          )}
+          <TimeDebtQuickRecordForm
+            taskTitle={taskTitle}
+            onTaskTitleChange={setTaskTitle}
+            primaryCategory={primaryCategory}
+            onPrimaryCategoryChange={setPrimaryCategory}
+            activeTimer={activeTimer ? {
+              title: activeTimer.title,
+              primaryCategory: activeTimer.primaryCategory,
+              actualStart: activeTimer.actualStart,
+              startTimestampMs: activeTimer.startTimestampMs
+            } : null}
+            timerNow={timerNow}
+            message={message}
+            onMessageClear={() => setMessage('')}
+            recentTasks={recentTasks}
+            onStart={handleStart}
+            onStop={handleFinish}
+            onSelectRecentTask={(task) => {
+              setTaskTitle(task.title)
+              setPrimaryCategory(task.primaryCategory)
+              setMessage('')
+            }}
+          />
 
-          {message ? <div className="mt-3 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] px-3 py-2 text-xs text-[color:var(--text-secondary)]">{message}</div> : null}
           {lastRecordFeedback ? (
             <div className="mt-3 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-xs text-[color:var(--text-secondary)]">
               {lastRecordFeedback}
@@ -268,34 +195,4 @@ function loadRecentTaskOptions(): RecentTaskOption[] {
   return Array.from(byTitle.values())
     .sort((left, right) => right.lastUsedAt.localeCompare(left.lastUsedAt))
     .slice(0, recentTaskLimit)
-}
-
-function formatElapsedTime(milliseconds: number): string {
-  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000))
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-  return `${padDatePart(hours)}:${padDatePart(minutes)}:${padDatePart(seconds)}`
-}
-
-function formatTimeOnly(value: string): string {
-  return value ? value.slice(11, 16) : '--:--'
-}
-
-function formatMinutes(minutes: number): string {
-  return `${Math.round(minutes)} 分钟`
-}
-
-function padDatePart(value: number): string {
-  return String(value).padStart(2, '0')
-}
-
-function normalizePrimaryCategory(value: string | undefined): string {
-  const normalized = value?.trim()
-  if (!normalized) {
-    return fallbackPrimaryCategory
-  }
-  return primaryCategoryOptions.includes(normalized as (typeof primaryCategoryOptions)[number])
-    ? normalized
-    : fallbackPrimaryCategory
 }
