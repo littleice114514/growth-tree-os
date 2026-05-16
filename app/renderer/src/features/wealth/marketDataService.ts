@@ -97,6 +97,7 @@ function generateMockCandles(symbol: string, days: number = 30, basePriceOverrid
 
   const candles: MarketCandle[] = []
   let lastClose = basePrice
+  const precision = symbol.endsWith('-USD') ? 2 : symbol === '005827' ? 4 : 2
 
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date()
@@ -110,8 +111,6 @@ function generateMockCandles(symbol: string, days: number = 30, basePriceOverrid
     const low = Math.min(open, close) - rand() * volatility * 0.5
     const volume = Math.round(rand() * 1000000 + 500000)
 
-    const precision = symbol.endsWith('-USD') ? 2 : symbol === '005827' ? 4 : 2
-
     candles.push({
       time: dateStr,
       open: +open.toFixed(precision),
@@ -122,6 +121,14 @@ function generateMockCandles(symbol: string, days: number = 30, basePriceOverrid
     })
 
     lastClose = close
+  }
+
+  // Anchor the last candle's close to the quote price so the chart matches the top price card
+  if (basePriceOverride != null && candles.length > 0) {
+    const last = candles[candles.length - 1]
+    last.close = +basePriceOverride.toFixed(precision)
+    last.high = +Math.max(last.high, last.open, last.close).toFixed(precision)
+    last.low = +Math.min(last.low, last.open, last.close).toFixed(precision)
   }
 
   return candles
