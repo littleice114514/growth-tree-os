@@ -71,6 +71,8 @@
 - `app/renderer/src/features/wealth/WealthQuickRecordForm.tsx`（新增：从浮窗拆出的表单组件）
 - `app/renderer/src/features/wealth/WealthQuickRecordFloat.tsx`（重构：保留浮窗外壳 + 状态 + 保存逻辑，表单委托给 WealthQuickRecordForm）
 - `docs/handoff/CLAUDE_WEALTH_NEXT_ACTION.md`（更新本轮记录）
+- `app/renderer/src/features/quick-record/UnifiedQuickRecordFloat.tsx`（新增：统一记录入口外壳）
+- `docs/dev-log/2026-05/2026-05-16/claude-unified-quick-record-p0c-shell.md`（新增：P0-C 开发记录）
 - `docs/dev-log/2026-05/2026-05-16/claude-wealth-validation-fixes.md`（新增：开发记录）
 - **统一验收缺陷修复完成**：
   - 修复收入来源饼图不显示：根因是 baseConfig.date 被旧日期覆盖。
@@ -94,7 +96,8 @@
   - 阶段拆分：P0-A 设计 → P0-B 组件解耦 → P0-C 统一外壳 → P0-D 主工作区挂载 → P0-E 统一快捷键 → P0-F 旧入口收口。
   - **P0-B 第一步完成**：已从 TimeDebtQuickFloat 拆出 TimeDebtQuickRecordForm，UI 行为不变。
   - **P0-B 第二步完成**：已从 WealthQuickRecordFloat 拆出 WealthQuickRecordForm，UI 行为不变。
-  - 下一步：P0-C，构建统一记录入口外壳 UnifiedQuickRecordFloat。
+  - **P0-C 完成**：新增 UnifiedQuickRecordFloat 统一入口外壳，含类型切换 + 复用两个 Form 组件。原型组件，暂未挂载。
+  - 下一步：P0-D，将统一入口挂载到主工作区。
 - **P2｜行情 K 线历史本地缓存**（后续）：保存已拉取/生成的日 K 数据到本地，支持超过 30 天的长期趋势观察。
 - 未做浮窗与投资记录关联（路线 D，待定）。
 
@@ -117,9 +120,10 @@
 6. ~~P0-A｜统一记录入口设计沉淀~~ → 已完成。
 7. ~~P0-B 第一步｜拆出 TimeDebtQuickRecordForm~~ → 已完成。
 8. ~~P0-B 第二步｜拆出 WealthQuickRecordForm~~ → 已完成。
-9. **P0-C｜构建统一记录入口外壳 UnifiedQuickRecordFloat** — 当前下一步。
-10. P2｜行情 K 线历史本地缓存 — 后续。
-11. 浮窗与投资记录关联（路线 D）— 后续。
+9. ~~P0-C｜构建统一记录入口外壳 UnifiedQuickRecordFloat~~ → 已完成。
+10. **P0-D｜主工作区挂载统一入口** — 当前下一步。
+11. P2｜行情 K 线历史本地缓存 — 后续。
+12. 浮窗与投资记录关联（路线 D）— 后续。
 
 ## 7. 手动验收方式
 
