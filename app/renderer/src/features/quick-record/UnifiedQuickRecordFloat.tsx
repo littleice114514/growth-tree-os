@@ -70,6 +70,18 @@ export function UnifiedQuickRecordFloat() {
     saveFloatingUiState(uiState)
   }, [uiState])
 
+  // Listen for global shortcut events
+  useEffect(() => {
+    return window.growthTree.quickRecord.onOpenQuickRecord((mode) => {
+      setUiState((current) => ({
+        ...current,
+        isOpen: true,
+        selectedType: mode === 'time' || mode === 'wealth' ? mode : current.selectedType
+      }))
+      setTimerNow(Date.now())
+    })
+  }, [])
+
   // Time Debt: timer tick + reload
   useEffect(() => {
     const reloadActiveTimer = () => setActiveTimer(loadActiveTimeDebtTimer())

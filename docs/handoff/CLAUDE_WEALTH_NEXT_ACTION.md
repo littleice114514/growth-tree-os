@@ -62,25 +62,19 @@
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/wealth/wealthConfigStorage.ts`（修改：强制 loadWealthBaseConfig 用当前本地日期）
-- `app/renderer/src/features/wealth/WealthDashboard.tsx`（修改：today 本地日期 + RecordsTab 折叠/展开）
-- `app/renderer/src/features/wealth/WealthQuickRecordFloat.tsx`（修改：today 本地日期）
-- `app/renderer/src/features/wealth/wealthRecordInsights.ts`（修改：getDateRange 日期偏移用本地日期）
-- `app/renderer/src/features/wealth/overdraftTracker.ts`（修改：shiftDate/buildDateRange 用本地日期）
-- `app/renderer/src/features/wealth/marketDataService.ts`（修改：mock candle 日期用本地日期）
 - `app/renderer/src/features/wealth/WealthQuickRecordForm.tsx`（新增：从浮窗拆出的表单组件）
 - `app/renderer/src/features/wealth/WealthQuickRecordFloat.tsx`（重构：保留浮窗外壳 + 状态 + 保存逻辑，表单委托给 WealthQuickRecordForm）
-- `docs/handoff/CLAUDE_WEALTH_NEXT_ACTION.md`（更新本轮记录）
-- `app/renderer/src/features/quick-record/UnifiedQuickRecordFloat.tsx`（新增：统一记录入口外壳）
-- `docs/dev-log/2026-05/2026-05-16/claude-unified-quick-record-p0c-shell.md`（新增：P0-C 开发记录）
+- `app/renderer/src/features/quick-record/UnifiedQuickRecordFloat.tsx`（新增：统一记录入口外壳 + 快捷键监听）
 - `app/renderer/src/pages/MainWorkspacePage.tsx`（修改：替换 TimeDebtQuickFloat 为 UnifiedQuickRecordFloat）
 - `app/renderer/src/features/wealth/WealthDashboard.tsx`（修改：移除 WealthQuickRecordFloat 挂载）
+- `app/main/index.ts`（修改：新增 quick-record:open IPC + Cmd+Alt+R 快捷键 + 旧快捷键重定向）
+- `app/preload/index.ts`（修改：新增 quickRecord.onOpenQuickRecord）
+- `app/shared/contracts.ts`（修改：新增 quickRecord 类型定义）
+- `docs/handoff/CLAUDE_WEALTH_NEXT_ACTION.md`（更新本轮记录）
+- `docs/dev-log/2026-05/2026-05-16/claude-unified-quick-record-p0b-wealth-form.md`（新增：P0-B 第二步开发记录）
+- `docs/dev-log/2026-05/2026-05-16/claude-unified-quick-record-p0c-shell.md`（新增：P0-C 开发记录）
 - `docs/dev-log/2026-05/2026-05-16/claude-unified-quick-record-p0d-mount.md`（新增：P0-D 开发记录）
-- `docs/dev-log/2026-05/2026-05-16/claude-wealth-validation-fixes.md`（新增：开发记录）
-- **统一验收缺陷修复完成**：
-  - 修复收入来源饼图不显示：根因是 baseConfig.date 被旧日期覆盖。
-  - 修复"今日"日期错误：所有 toISOString().slice(0,10) 改为本地日期计算。
-  - 修复全部财富记录过长：RecordsTab 支持折叠/展开，默认显示前 5 条。
+- `docs/dev-log/2026-05/2026-05-16/claude-unified-quick-record-p0d-p0e.md`（新增：P0-D+P0-E 开发记录）
 
 ## 4. 未做事项
 
@@ -99,9 +93,10 @@
   - 阶段拆分：P0-A 设计 → P0-B 组件解耦 → P0-C 统一外壳 → P0-D 主工作区挂载 → P0-E 统一快捷键 → P0-F 旧入口收口。
   - **P0-B 第一步完成**：已从 TimeDebtQuickFloat 拆出 TimeDebtQuickRecordForm，UI 行为不变。
   - **P0-B 第二步完成**：已从 WealthQuickRecordFloat 拆出 WealthQuickRecordForm，UI 行为不变。
-  - **P0-C 完成**：新增 UnifiedQuickRecordFloat 统一入口外壳，含类型切换 + 复用两个 Form 组件。原型组件，暂未挂载。
-  - **P0-D 完成**：统一入口已挂载到 MainWorkspacePage。移除旧 TimeDebtQuickFloat 和 WealthQuickRecordFloat 的页面挂载（源码保留）。旧快捷键暂时失效，P0-E 处理。
-  - 下一步：P0-E，统一快捷键。
+  - **P0-C 完成**：新增 UnifiedQuickRecordFloat 统一入口外壳，含类型切换 + 复用两个 Form 组件。
+  - **P0-D 完成**：统一入口已挂载到 MainWorkspacePage。移除旧 TimeDebtQuickFloat 和 WealthQuickRecordFloat 的页面挂载（源码保留）。
+  - **P0-E 完成**：新增统一快捷键 `CommandOrControl+Alt+R`（choose mode）。旧快捷键兼容：Time Debt 快捷键 → 统一入口 + 默认记录时间；Wealth 快捷键 → 统一入口 + 默认记录财富。IPC 通道 `quick-record:open`。
+  - 下一步：统一验收。
 - **P2｜行情 K 线历史本地缓存**（后续）：保存已拉取/生成的日 K 数据到本地，支持超过 30 天的长期趋势观察。
 - 未做浮窗与投资记录关联（路线 D，待定）。
 
@@ -126,9 +121,10 @@
 8. ~~P0-B 第二步｜拆出 WealthQuickRecordForm~~ → 已完成。
 9. ~~P0-C｜构建统一记录入口外壳 UnifiedQuickRecordFloat~~ → 已完成。
 10. ~~P0-D｜主工作区挂载统一入口~~ → 已完成。
-11. **P0-E｜统一快捷键 CommandOrControl+Alt+R** — 当前下一步。
-12. P2｜行情 K 线历史本地缓存 — 后续。
-12. 浮窗与投资记录关联（路线 D）— 后续。
+11. ~~P0-E｜统一快捷键 CommandOrControl+Alt+R~~ → 已完成。
+12. **统一验收** — 当前下一步。
+13. P2｜行情 K 线历史本地缓存 — 后续。
+14. 浮窗与投资记录关联（路线 D）— 后续。
 
 ## 7. 手动验收方式
 

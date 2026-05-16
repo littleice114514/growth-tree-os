@@ -247,6 +247,9 @@ export interface GrowthTreeApi {
   wealth: {
     onOpenQuickFloat(callback: () => void): () => void
   }
+  quickRecord: {
+    onOpenQuickRecord(callback: (mode: 'choose' | 'time' | 'wealth') => void): () => void
+  }
   market: {
     hasApiKey(): Promise<boolean>
     fetchQuote(symbol: string): Promise<FinnhubQuoteResult>

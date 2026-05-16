@@ -11,9 +11,13 @@ const fallbackTimeDebtShortcut = 'CommandOrControl+Shift+L'
 const wealthOpenQuickFloatChannel = 'wealth:open-quick-float'
 const preferredWealthShortcut = 'CommandOrControl+Alt+Z'
 
+const quickRecordOpenChannel = 'quick-record:open'
+const preferredQuickRecordShortcut = 'CommandOrControl+Alt+R'
+
 let mainWindow: BrowserWindow | null = null
 let registeredTimeDebtShortcuts: string[] = []
 let registeredWealthShortcuts: string[] = []
+let registeredQuickRecordShortcuts: string[] = []
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -63,7 +67,7 @@ function openTimeDebtQuickFloat() {
 
   mainWindow.show()
   mainWindow.focus()
-  sendOpenTimeDebtQuickFloat(mainWindow)
+  sendQuickRecordOpen(mainWindow, 'time')
 }
 
 function sendOpenTimeDebtQuickFloat(targetWindow: BrowserWindow) {
@@ -118,7 +122,7 @@ function openWealthQuickFloat() {
 
   mainWindow.show()
   mainWindow.focus()
-  sendWealthQuickFloat(mainWindow)
+  sendQuickRecordOpen(mainWindow, 'wealth')
 }
 
 function sendWealthQuickFloat(targetWindow: BrowserWindow) {
@@ -134,6 +138,54 @@ function sendWealthQuickFloat(targetWindow: BrowserWindow) {
   }
 
   sendEvent()
+}
+
+function sendQuickRecordOpen(targetWindow: BrowserWindow, mode: 'choose' | 'time' | 'wealth') {
+  const sendEvent = () => {
+    if (!targetWindow.isDestroyed()) {
+      targetWindow.webContents.send(quickRecordOpenChannel, mode)
+    }
+  }
+
+  if (targetWindow.webContents.isLoading()) {
+    targetWindow.webContents.once('did-finish-load', sendEvent)
+    return
+  }
+
+  sendEvent()
+}
+
+function openQuickRecordChoose() {
+  if (!mainWindow) {
+    createWindow()
+  }
+
+  if (!mainWindow) {
+    console.warn('[quick-record] failed to open: main window unavailable')
+    return
+  }
+
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore()
+  }
+
+  mainWindow.show()
+  mainWindow.focus()
+  sendQuickRecordOpen(mainWindow, 'choose')
+}
+
+function registerQuickRecordShortcut() {
+  if (registeredQuickRecordShortcuts.length > 0) {
+    return
+  }
+
+  const registered = globalShortcut.register(preferredQuickRecordShortcut, openQuickRecordChoose)
+  if (registered) {
+    registeredQuickRecordShortcuts = [preferredQuickRecordShortcut]
+    console.info(`[quick-record] registered global shortcut: ${preferredQuickRecordShortcut}`)
+  } else {
+    console.warn('[quick-record] failed to register global shortcut')
+  }
 }
 
 function registerWealthShortcut() {
@@ -157,6 +209,7 @@ app.whenReady().then(() => {
   createWindow()
   registerTimeDebtShortcut()
   registerWealthShortcut()
+  registerQuickRecordShortcut()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

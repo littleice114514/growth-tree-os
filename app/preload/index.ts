@@ -3,6 +3,7 @@ import type { GrowthTreeApi } from '@shared/contracts'
 
 const timeDebtOpenQuickFloatChannel = 'time-debt:open-quick-float'
 const wealthOpenQuickFloatChannel = 'wealth:open-quick-float'
+const quickRecordOpenChannel = 'quick-record:open'
 
 const api: GrowthTreeApi = {
   reviews: {
@@ -46,6 +47,15 @@ const api: GrowthTreeApi = {
       const handler = () => callback()
       ipcRenderer.on(wealthOpenQuickFloatChannel, handler)
       return () => ipcRenderer.removeListener(wealthOpenQuickFloatChannel, handler)
+    }
+  },
+  quickRecord: {
+    onOpenQuickRecord: (callback) => {
+      const handler = (_event: unknown, mode: string) => {
+        callback(mode === 'time' || mode === 'wealth' ? mode : 'choose')
+      }
+      ipcRenderer.on(quickRecordOpenChannel, handler)
+      return () => ipcRenderer.removeListener(quickRecordOpenChannel, handler)
     }
   },
   market: {
