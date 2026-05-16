@@ -75,6 +75,89 @@ export function groupRecords(records: WealthRecord[], mode: GroupMode): RecordGr
   return groups
 }
 
+/* ── Income Breakdown (for pie chart) ── */
+
+const incomeTypes: WealthRecordType[] = ['real_income', 'passive_income', 'system_income', 'stable_finance']
+const isIncomeType = (type: WealthRecordType) => incomeTypes.includes(type)
+
+export function getIncomeSource(record: WealthRecord): string {
+  if (record.source) return record.source
+  return wealthRecordTypeLabels[record.type] ?? '其他收入'
+}
+
+export type IncomeSlice = {
+  source: string
+  amount: number
+  ratio: number
+  isStable: boolean
+  isPassive: boolean
+}
+
+export type IncomeBreakdown = {
+  slices: IncomeSlice[]
+  total: number
+  maxSource: string
+  stableRatio: number
+  passiveRatio: number
+}
+
+export function calculateIncomeBreakdown(
+  records: WealthRecord[],
+  period: InsightPeriod,
+  referenceDate: string
+): IncomeBreakdown {
+  const { start, end } = getDateRange(period, referenceDate)
+
+  const incomes = records.filter((r) => {
+    if (r.date < start || r.date > end) return false
+    if (isIncomeType(r.type)) return true
+    if (r.type === 'asset_change' && r.meta?.direction === 'increase') return true
+    return false
+  })
+
+  if (incomes.length === 0) {
+    return { slices: [], total: 0, maxSource: '', stableRatio: 0, passiveRatio: 0 }
+  }
+
+  const sourceMap = new Map<string, { amount: number; isStable: boolean; isPassive: boolean }>()
+  for (const r of incomes) {
+    const src = getIncomeSource(r)
+    const existing = sourceMap.get(src)
+    const isStable = r.type === 'stable_finance'
+    const isPassive = r.type === 'passive_income'
+    if (existing) {
+      existing.amount += r.amount
+      existing.isStable = existing.isStable || isStable
+      existing.isPassive = existing.isPassive || isPassive
+    } else {
+      sourceMap.set(src, { amount: r.amount, isStable, isPassive })
+    }
+  }
+
+  const total = Array.from(sourceMap.values()).reduce((sum, v) => sum + v.amount, 0)
+  const slices: IncomeSlice[] = []
+
+  let stableTotal = 0
+  let passiveTotal = 0
+
+  for (const [source, { amount, isStable, isPassive }] of sourceMap) {
+    slices.push({ source, amount, ratio: total > 0 ? amount / total : 0, isStable, isPassive })
+    if (isStable) stableTotal += amount
+    if (isPassive) passiveTotal += amount
+  }
+
+  slices.sort((a, b) => b.amount - a.amount)
+  const maxSource = slices[0]?.source ?? ''
+
+  return {
+    slices,
+    total,
+    maxSource,
+    stableRatio: total > 0 ? stableTotal / total : 0,
+    passiveRatio: total > 0 ? passiveTotal / total : 0
+  }
+}
+
 /* ── Expense Breakdown (for pie chart) ── */
 
 export type ExpenseSlice = {

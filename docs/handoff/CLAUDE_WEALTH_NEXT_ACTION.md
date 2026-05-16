@@ -39,13 +39,22 @@
   - 无支出数据时显示空状态引导。
   - 新增 utility 文件 `wealthRecordInsights.ts`：搜索、分组、支出分类聚合。
   - 新增组件文件 `ExpenseBreakdownPie.tsx`：ECharts PieChart 支出占比饼图。
+- **行情 K 线价格锚定修复完成**：mock candle 最后一根 close 锚定 quote.price。
+- **收入来源结构图完成（路线 A）**：
+  - 新增 `IncomeBreakdownPie.tsx`，ECharts 环形饼图。
+  - 放在 Wealth 总览页，现金流趋势和周期透支之间。
+  - 统计口径：real_income / passive_income / system_income / stable_finance / asset_change(increase)。
+  - 指标：收入总额、最大来源、稳定收入占比、睡后收入占比。
+  - 支持今天/近7天/近30天切换。
 
 ## 3. 本轮修改文件
 
-- `app/renderer/src/features/wealth/wealthRecordInsights.ts`（新增：搜索/分组/支出聚合 utility）
-- `app/renderer/src/features/wealth/ExpenseBreakdownPie.tsx`（新增：ECharts 支出占比饼图组件）
-- `app/renderer/src/features/wealth/WealthDashboard.tsx`（修改：RecordsTab 增加搜索/分组/饼图）
+- `app/renderer/src/features/wealth/marketDataService.ts`（修改：mock candle 最后一根 close 锚定 quote.price）
+- `app/renderer/src/features/wealth/wealthRecordInsights.ts`（修改：新增 income breakdown 计算函数）
+- `app/renderer/src/features/wealth/IncomeBreakdownPie.tsx`（新增：ECharts 收入来源饼图组件）
+- `app/renderer/src/features/wealth/WealthDashboard.tsx`（修改：OverviewTab 集成收入来源饼图）
 - `docs/handoff/CLAUDE_WEALTH_NEXT_ACTION.md`（更新本轮记录）
+- `docs/dev-log/2026-05/2026-05-16/claude-wealth-income-source-pie.md`（新增：开发记录）
 
 ## 4. 未做事项
 
@@ -53,11 +62,11 @@
 - 未做 emergency_cost 记录类型。
 - 未做全局货币系统（当前默认 ¥）。
 - 未做投资模块（已有路线设计，见 `WEALTH_INVESTMENT_MODE.md`）。
-- 未做收入来源饼图（路线 A，已规划）。
-- 未做 Wealth App 内快捷浮窗（路线 B，已规划）。
-- 未做系统快捷键浮窗（路线 C，已规划）。
+- ~~未做收入来源饼图~~ → 已完成。
+- ~~行情 K 线绑定 bug~~ → 已修复。
+- 未做 Wealth App 内快捷浮窗（路线 B，当前下一步）。
+- 未做系统快捷键浮窗（路线 C）。
 - 未做浮窗与投资记录关联（路线 D，待定）。
-- 行情 K 线绑定 bug 未修（当前最高优先级）。
 
 ## 5. 与 Codex 的文件边界
 
@@ -70,9 +79,9 @@
 详见 `docs/project-map/WEALTH_QUICK_RECORD_MODE.md`。
 
 按优先级：
-1. **修复行情 K 线绑定 bug** — 当前最优先。
-2. **收入来源结构图（路线 A）** — 饼图展示收入来源占比，放在 Wealth 总览中。
-3. **Wealth App 内快捷浮窗（路线 B）** — 支持收入/支出/持续出血三类快速记录。
+1. ~~修复行情 K 线绑定 bug~~ → 已完成。
+2. ~~收入来源结构图（路线 A）~~ → 已完成。
+3. **Wealth App 内快捷浮窗（路线 B）** — 支持收入/支出/持续出血三类快速记录。当前下一步。
 4. **系统快捷键 Option + Cmd + Z（路线 C）** — 浮窗稳定后再做。
 
 ## 7. 手动验收方式
