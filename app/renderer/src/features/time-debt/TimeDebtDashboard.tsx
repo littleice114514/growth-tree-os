@@ -60,6 +60,7 @@ import {
 } from '@/features/reminders/timePlanReminderStorage'
 import { timeDebtFieldConfigs, timeDebtReservedFieldTypes, timeDebtSupportedFieldTypes } from './timeDebtFieldConfig'
 import { buildDailyTimeUsageStats, type DailyTimeUsageStats, type TimeUsageCategoryId } from './timeDebtUsageStats'
+import { TimeDebtTodayUsagePie } from './components/TimeDebtTodayUsagePie'
 import { CalendarViewShell } from './calendar/CalendarViewShell'
 import type { CalendarBlock, CalendarViewMode } from './calendar/calendarTypes'
 import { layoutOverlappingEvents } from './calendar/calendarOverlapLayoutUtils'
@@ -571,6 +572,7 @@ export function TimeDebtDashboard() {
         </header>
 
         <DailyUsageDashboard stats={dailyUsageStats} />
+        <TimeDebtTodayUsagePie logs={todayLogs} now={new Date(timerNow)} />
 
         <nav className="flex flex-wrap gap-2">
           {(Object.keys(viewLabels) as TimeDebtView[]).map((view) => (
