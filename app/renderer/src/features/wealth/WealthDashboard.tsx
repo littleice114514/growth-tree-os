@@ -22,6 +22,7 @@ import {
 import { calculateOverdraftStreak, calculatePeriodOverdraftStreak, calculateCashflowTrend, periodLabels, type OverdraftStreak, type PeriodKey, type CashflowTrend } from './overdraftTracker'
 import { categoryPresets } from './wealthCategoryOptions'
 import { CashflowComboChart } from './CashflowComboChart'
+import { CashflowBreakdownDualPie } from './CashflowBreakdownDualPie'
 import { ExpenseBreakdownPie } from './ExpenseBreakdownPie'
 import { IncomeBreakdownPie } from './IncomeBreakdownPie'
 import { searchRecords, groupRecords, type GroupMode, type InsightPeriod } from './wealthRecordInsights'
@@ -101,6 +102,7 @@ export function WealthDashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>('last7')
   const [trendPeriod, setTrendPeriod] = useState<'last7' | 'last30'>('last7')
   const [incomePeriod, setIncomePeriod] = useState<InsightPeriod>('last30')
+  const [dualPiePeriod, setDualPiePeriod] = useState<InsightPeriod>('last30')
   const [isRecorderOpen, setIsRecorderOpen] = useState(false)
   const [draft, setDraft] = useState<RecordDraft>(() => createDraft())
   const [investmentRecords, setInvestmentRecords] = useState<InvestmentRecord[]>(() => loadInvestmentRecords())
@@ -217,10 +219,12 @@ export function WealthDashboard() {
             cashflowTrend={cashflowTrend}
             trendPeriod={trendPeriod}
             incomePeriod={incomePeriod}
+            dualPiePeriod={dualPiePeriod}
             referenceDate={baseConfig.date}
             onPeriodChange={setSelectedPeriod}
             onTrendPeriodChange={setTrendPeriod}
             onIncomePeriodChange={setIncomePeriod}
+            onDualPiePeriodChange={setDualPiePeriod}
             onDelete={removeRecord}
           />
         ) : null}
@@ -272,10 +276,12 @@ function OverviewTab({
   cashflowTrend,
   trendPeriod,
   incomePeriod,
+  dualPiePeriod,
   referenceDate,
   onPeriodChange,
   onTrendPeriodChange,
   onIncomePeriodChange,
+  onDualPiePeriodChange,
   onDelete
 }: {
   snapshot: DailyWealthSnapshot
@@ -288,10 +294,12 @@ function OverviewTab({
   cashflowTrend: CashflowTrend
   trendPeriod: 'last7' | 'last30'
   incomePeriod: InsightPeriod
+  dualPiePeriod: InsightPeriod
   referenceDate: string
   onPeriodChange: (period: PeriodKey) => void
   onTrendPeriodChange: (period: 'last7' | 'last30') => void
   onIncomePeriodChange: (period: InsightPeriod) => void
+  onDualPiePeriodChange: (period: InsightPeriod) => void
   onDelete: (recordId: string) => void
 }) {
   return (
@@ -302,12 +310,12 @@ function OverviewTab({
       {/* B. Cashflow Trend V2 (combo chart) */}
       <CashflowTrendPanel cashflowTrend={cashflowTrend} trendPeriod={trendPeriod} onTrendPeriodChange={onTrendPeriodChange} records={records} />
 
-      {/* B2. Income Source Breakdown */}
-      <IncomeBreakdownPie
+      {/* B2. Income/Expense Dual Pie */}
+      <CashflowBreakdownDualPie
         records={records}
         referenceDate={referenceDate}
-        period={incomePeriod}
-        onPeriodChange={onIncomePeriodChange}
+        period={dualPiePeriod}
+        onPeriodChange={onDualPiePeriodChange}
       />
 
       {/* C. Period Slicer (P2) */}

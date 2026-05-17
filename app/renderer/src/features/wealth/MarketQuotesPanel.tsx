@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { MarketWatchlistItem, MarketCandle } from './marketDataTypes'
-import { marketGroupOrder } from './marketDataTypes'
+import type { MarketWatchlistItem, MarketCandle, MarketType, MarketSource } from './marketDataTypes'
+import { marketGroupOrder, marketTypeLabels, marketSourceLabels } from './marketDataTypes'
 import { getMarketWatchlist, getMarketCandles } from './marketDataService'
 import { MarketKlineChart } from './MarketKlineChart'
+import { loadCustomWatchlist, addToWatchlist, removeFromWatchlist, type WatchlistItem } from './watchlistStorage'
+
+const defaultSymbols = new Set([
+  '000001', '000300', '600519', '005827',
+  'SPY', 'QQQ', 'NVDA', 'TSLA',
+  'BTC-USD', 'ETH-USD'
+])
 
 export function MarketQuotesPanel() {
   const [watchlist, setWatchlist] = useState<MarketWatchlistItem[]>([])
@@ -13,18 +20,27 @@ export function MarketQuotesPanel() {
   const [candles, setCandles] = useState<MarketCandle[]>([])
   const [candleSource, setCandleSource] = useState<'finnhub-live' | 'yahoo-live' | 'mock'>('mock')
   const [candlesLoading, setCandlesLoading] = useState(false)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [customSymbols, setCustomSymbols] = useState<WatchlistItem[]>(() => loadCustomWatchlist())
+
+  // Form state
+  const [newSymbol, setNewSymbol] = useState('')
+  const [newName, setNewName] = useState('')
+  const [newType, setNewType] = useState<MarketType>('us-stock')
+  const [newSource, setNewSource] = useState<MarketSource>('finnhub')
+
+  const reloadWatchlist = async () => {
+    const items = await getMarketWatchlist()
+    setWatchlist(items)
+    setLoading(false)
+    setApiKeyAvailable(items.some((i) => i.source === 'finnhub' && !i.isMock))
+  }
 
   // Load watchlist on mount
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const items = await getMarketWatchlist()
-      if (!cancelled) {
-        setWatchlist(items)
-        setLoading(false)
-        // Check if any finnhub item is using real data
-        setApiKeyAvailable(items.some((i) => i.source === 'finnhub' && !i.isMock))
-      }
+      await reloadWatchlist()
     })()
     return () => { cancelled = true }
   }, [])
@@ -63,22 +79,116 @@ export function MarketQuotesPanel() {
     }
   }
 
+  const handleAdd = () => {
+    const symbol = newSymbol.trim().toUpperCase()
+    const name = newName.trim()
+    if (!symbol || !name) return
+
+    const item: WatchlistItem = { symbol, name, marketType: newType, source: newSource }
+    addToWatchlist(item)
+    setCustomSymbols(loadCustomWatchlist())
+    setNewSymbol('')
+    setNewName('')
+    setShowAddForm(false)
+    reloadWatchlist()
+  }
+
+  const handleRemove = (symbol: string) => {
+    removeFromWatchlist(symbol)
+    setCustomSymbols(loadCustomWatchlist())
+    if (selectedSymbol === symbol) {
+      setSelectedSymbol(null)
+      setSelectedSource(null)
+    }
+    reloadWatchlist()
+  }
+
+  const isCustom = (symbol: string) => !defaultSymbols.has(symbol)
+
   return (
     <div className="flex flex-col gap-5">
       {/* Header */}
       <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
-        <div className="mb-4">
-          <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Market</div>
-          <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">行情观察</h3>
-          <p className="mt-1 text-xs text-[color:var(--text-muted)]">
-            固定标的行情快照 · 点击标的查看 30 日 K 线
-            {loading
-              ? ' · 加载中…'
-              : apiKeyAvailable
-                ? ' · 海外行情来自 Finnhub'
-                : ' · 未配置 Finnhub API Key，当前显示 mock 数据'}
-          </p>
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Market</div>
+            <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">行情观察</h3>
+            <p className="mt-1 text-xs text-[color:var(--text-muted)]">
+              点击标的查看 30 日 K 线
+              {loading
+                ? ' · 加载中…'
+                : apiKeyAvailable
+                  ? ' · 海外行情来自 Finnhub'
+                  : ' · 未配置 Finnhub API Key，当前显示 mock 数据'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAddForm((v) => !v)}
+            className="rounded-2xl border border-[color:var(--input-border)] bg-[var(--control-bg)] px-4 py-2 text-sm text-[color:var(--text-secondary)] transition hover:bg-[var(--control-hover)] hover:text-[color:var(--text-primary)]"
+          >
+            {showAddForm ? '取消' : '添加自选'}
+          </button>
         </div>
+
+        {/* Add custom symbol form */}
+        {showAddForm ? (
+          <div className="mb-4 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <label className="grid gap-1 text-xs">
+                <span className="text-[color:var(--text-muted)]">代码</span>
+                <input
+                  value={newSymbol}
+                  onChange={(e) => setNewSymbol(e.target.value)}
+                  placeholder="例：AAPL"
+                  className="rounded-xl border border-[color:var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none placeholder:text-[color:var(--text-muted)] focus:border-[color:var(--node-selected-border)]"
+                />
+              </label>
+              <label className="grid gap-1 text-xs">
+                <span className="text-[color:var(--text-muted)]">名称</span>
+                <input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="例：Apple Inc."
+                  className="rounded-xl border border-[color:var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none placeholder:text-[color:var(--text-muted)] focus:border-[color:var(--node-selected-border)]"
+                />
+              </label>
+              <label className="grid gap-1 text-xs">
+                <span className="text-[color:var(--text-muted)]">类型</span>
+                <select
+                  value={newType}
+                  onChange={(e) => setNewType(e.target.value as MarketType)}
+                  className="rounded-xl border border-[color:var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none focus:border-[color:var(--node-selected-border)]"
+                >
+                  {(Object.keys(marketTypeLabels) as MarketType[]).map((t) => (
+                    <option key={t} value={t}>{marketTypeLabels[t]}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="grid gap-1 text-xs">
+                <span className="text-[color:var(--text-muted)]">数据源</span>
+                <select
+                  value={newSource}
+                  onChange={(e) => setNewSource(e.target.value as MarketSource)}
+                  className="rounded-xl border border-[color:var(--input-border)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none focus:border-[color:var(--node-selected-border)]"
+                >
+                  <option value="finnhub">Finnhub</option>
+                  <option value="akshare">AKShare Mock</option>
+                </select>
+              </label>
+            </div>
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={handleAdd}
+                disabled={!newSymbol.trim() || !newName.trim()}
+                className="rounded-xl bg-[var(--button-bg)] px-4 py-2 text-sm font-semibold text-[color:var(--button-text)] transition hover:bg-[var(--button-hover)] disabled:opacity-40"
+              >
+                添加
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {loading ? (
           <div className="flex items-center justify-center py-8 text-sm text-[color:var(--text-muted)]">
@@ -100,7 +210,9 @@ export function MarketQuotesPanel() {
                       key={item.symbol}
                       item={item}
                       isSelected={selectedSymbol === item.symbol}
+                      isCustom={isCustom(item.symbol)}
                       onClick={() => toggleSymbol(item.symbol, item.source)}
+                      onRemove={() => handleRemove(item.symbol)}
                     />
                   ))}
                 </div>
@@ -159,11 +271,15 @@ export function MarketQuotesPanel() {
 function QuoteCard({
   item,
   isSelected,
-  onClick
+  isCustom,
+  onClick,
+  onRemove
 }: {
   item: MarketWatchlistItem
   isSelected: boolean
+  isCustom: boolean
   onClick: () => void
+  onRemove: () => void
 }) {
   const changeColor =
     item.changePercent >= 0 ? 'text-accent-green' : 'text-accent-rose'
@@ -175,12 +291,15 @@ function QuoteCard({
   const isLive = item.source === 'finnhub' && !item.isMock
 
   return (
-    <button type="button" onClick={onClick} className={cardClass}>
+    <div className={cardClass}>
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 text-left">
+        <button type="button" onClick={onClick} className="min-w-0 flex-1 text-left">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-[color:var(--text-primary)]">{item.name}</span>
             <span className="text-[10px] text-[color:var(--text-muted)]">{item.symbol}</span>
+            {isCustom ? (
+              <span className="rounded-md border border-violet-400/30 bg-violet-400/10 px-1.5 py-0.5 text-[10px] text-violet-400">自选</span>
+            ) : null}
           </div>
           <div className="mt-1 flex items-center gap-2 text-[10px] text-[color:var(--text-muted)]">
             <span className="rounded-md border border-[color:var(--input-border)] bg-[var(--control-bg)] px-1.5 py-0.5">
@@ -194,20 +313,31 @@ function QuoteCard({
               {item.sourceLabel}
             </span>
           </div>
-        </div>
-        <div className="shrink-0 text-right">
-          <div className="text-sm font-semibold text-[color:var(--text-primary)]">
-            {formatPrice(item.price, item.marketType)}
+        </button>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <div className="text-right">
+            <div className="text-sm font-semibold text-[color:var(--text-primary)]">
+              {formatPrice(item.price, item.marketType)}
+            </div>
+            <div className={`mt-0.5 text-xs font-medium ${changeColor}`}>
+              {changePrefix}{item.changePercent}%
+            </div>
           </div>
-          <div className={`mt-0.5 text-xs font-medium ${changeColor}`}>
-            {changePrefix}{item.changePercent}%
-          </div>
+          {isCustom ? (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onRemove() }}
+              className="rounded-lg border border-[color:var(--input-border)] px-1.5 py-0.5 text-[10px] text-[color:var(--text-muted)] transition hover:border-rose-400/40 hover:bg-rose-400/10 hover:text-accent-rose"
+            >
+              移除
+            </button>
+          ) : null}
         </div>
       </div>
       <div className="mt-2 text-[10px] text-[color:var(--text-muted)]">
         更新: {formatTime(item.updatedAt)}
       </div>
-    </button>
+    </div>
   )
 }
 

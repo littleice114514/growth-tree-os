@@ -8,10 +8,18 @@ export type InvestmentRecord = {
   id: string
   assetName: string
   assetType: InvestmentAssetType
+  marketSymbol?: string
   principal: number
+  quantity?: number
+  averageCost?: number
   currentValue: number
+  latestPrice?: number
+  firstBuyDate?: string
   recurringAmount: number
   recurringFrequency: RecurringFrequency
+  recurringStartDate?: string
+  recurringDay?: number
+  nextRecurringDate?: string
   status: InvestmentStatus
   note: string
   createdAt: string
@@ -21,10 +29,14 @@ export type InvestmentRecord = {
 export type InvestmentRecordDraft = {
   assetName: string
   assetType: InvestmentAssetType
+  marketSymbol: string
   principal: string
-  currentValue: string
+  quantity: string
   recurringAmount: string
   recurringFrequency: RecurringFrequency
+  recurringStartDate: string
+  recurringDay: string
+  firstBuyDate: string
   status: InvestmentStatus
   note: string
 }
@@ -57,10 +69,14 @@ export function createInvestmentDraft(): InvestmentRecordDraft {
   return {
     assetName: '',
     assetType: 'investment',
+    marketSymbol: '',
     principal: '',
-    currentValue: '',
+    quantity: '',
     recurringAmount: '',
     recurringFrequency: 'monthly',
+    recurringStartDate: '',
+    recurringDay: '',
+    firstBuyDate: '',
     status: 'active',
     note: ''
   }
@@ -127,4 +143,65 @@ function isInvestmentRecord(value: unknown): value is InvestmentRecord {
     typeof candidate.createdAt === 'string' &&
     typeof candidate.updatedAt === 'string'
   )
+}
+
+/** Compute currentValue from quantity * latestPrice, fallback to principal */
+export function computeCurrentValue(record: InvestmentRecord): {
+  value: number
+  isAutoValued: boolean
+  latestPrice?: number
+} {
+  if (record.quantity != null && record.latestPrice != null && record.quantity > 0 && record.latestPrice > 0) {
+    return {
+      value: record.quantity * record.latestPrice,
+      isAutoValued: true,
+      latestPrice: record.latestPrice
+    }
+  }
+  return {
+    value: record.currentValue ?? record.principal,
+    isAutoValued: false
+  }
+}
+
+/** Compute next recurring date from start date and frequency */
+export function computeNextRecurringDate(
+  startDate: string | undefined,
+  frequency: RecurringFrequency,
+  recurringDay?: number
+): string | undefined {
+  if (!startDate || frequency === 'none') return undefined
+
+  const start = new Date(startDate + 'T00:00:00')
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+  if (frequency === 'daily') {
+    return formatLocalDate(today)
+  }
+
+  if (frequency === 'weekly') {
+    const dayOfWeek = start.getDay()
+    const currentDay = today.getDay()
+    let daysUntil = dayOfWeek - currentDay
+    if (daysUntil <= 0) daysUntil += 7
+    const next = new Date(today)
+    next.setDate(next.getDate() + daysUntil)
+    return formatLocalDate(next)
+  }
+
+  if (frequency === 'monthly') {
+    const day = recurringDay ?? start.getDate()
+    let next = new Date(today.getFullYear(), today.getMonth(), day)
+    if (next <= today) {
+      next = new Date(today.getFullYear(), today.getMonth() + 1, day)
+    }
+    return formatLocalDate(next)
+  }
+
+  return undefined
+}
+
+function formatLocalDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }

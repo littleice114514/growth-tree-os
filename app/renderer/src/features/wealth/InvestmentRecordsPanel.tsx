@@ -11,8 +11,11 @@ import {
   createInvestmentDraft,
   appendInvestmentRecord,
   updateInvestmentRecord,
-  deleteInvestmentRecord
+  deleteInvestmentRecord,
+  computeCurrentValue,
+  computeNextRecurringDate
 } from './investmentStorage'
+import { PositionPieChart, PnlLineChart } from './InvestmentCharts'
 
 export function InvestmentRecordsPanel({
   records,
@@ -40,10 +43,14 @@ export function InvestmentRecordsPanel({
     setDraft({
       assetName: record.assetName,
       assetType: record.assetType,
+      marketSymbol: record.marketSymbol ?? '',
       principal: String(record.principal),
-      currentValue: String(record.currentValue),
+      quantity: record.quantity != null ? String(record.quantity) : '',
       recurringAmount: String(record.recurringAmount),
       recurringFrequency: record.recurringFrequency,
+      recurringStartDate: record.recurringStartDate ?? '',
+      recurringDay: record.recurringDay != null ? String(record.recurringDay) : '',
+      firstBuyDate: record.firstBuyDate ?? '',
       status: record.status,
       note: record.note
     })
@@ -52,43 +59,52 @@ export function InvestmentRecordsPanel({
 
   const handleSave = () => {
     const principal = Number(draft.principal) || 0
-    const currentValue = Number(draft.currentValue) || 0
+    const quantity = draft.quantity ? Number(draft.quantity) : undefined
     const recurringAmount = Number(draft.recurringAmount) || 0
     const assetName = draft.assetName.trim()
     if (!assetName) return
 
+    const marketSymbol = draft.marketSymbol.trim() || undefined
+    const averageCost = quantity && quantity > 0 ? principal / quantity : undefined
+    const recurringDay = draft.recurringDay ? Number(draft.recurringDay) : undefined
+    const nextRecurringDate = computeNextRecurringDate(
+      draft.recurringStartDate || undefined,
+      draft.recurringFrequency,
+      recurringDay
+    )
+
     const timestamp = new Date().toISOString()
+    const existingRecord = editingId ? records.find((r) => r.id === editingId) : undefined
+
+    // currentValue fallback: if no quantity/latestPrice, use existing or principal
+    const currentValue = existingRecord?.currentValue ?? principal
+
+    const base: InvestmentRecord = {
+      id: editingId ?? `inv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      assetName,
+      assetType: draft.assetType,
+      marketSymbol,
+      principal,
+      quantity,
+      averageCost,
+      currentValue,
+      latestPrice: existingRecord?.latestPrice,
+      firstBuyDate: draft.firstBuyDate || undefined,
+      recurringAmount,
+      recurringFrequency: draft.recurringFrequency,
+      recurringStartDate: draft.recurringStartDate || undefined,
+      recurringDay,
+      nextRecurringDate,
+      status: draft.status,
+      note: draft.note.trim(),
+      createdAt: existingRecord?.createdAt ?? timestamp,
+      updatedAt: timestamp
+    }
 
     if (editingId) {
-      const updated: InvestmentRecord = {
-        id: editingId,
-        assetName,
-        assetType: draft.assetType,
-        principal,
-        currentValue,
-        recurringAmount,
-        recurringFrequency: draft.recurringFrequency,
-        status: draft.status,
-        note: draft.note.trim(),
-        createdAt: records.find((r) => r.id === editingId)?.createdAt ?? timestamp,
-        updatedAt: timestamp
-      }
-      onRecordsChange(updateInvestmentRecord(updated))
+      onRecordsChange(updateInvestmentRecord(base))
     } else {
-      const record: InvestmentRecord = {
-        id: `inv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        assetName,
-        assetType: draft.assetType,
-        principal,
-        currentValue,
-        recurringAmount,
-        recurringFrequency: draft.recurringFrequency,
-        status: draft.status,
-        note: draft.note.trim(),
-        createdAt: timestamp,
-        updatedAt: timestamp
-      }
-      onRecordsChange(appendInvestmentRecord(record))
+      onRecordsChange(appendInvestmentRecord(base))
     }
 
     setIsDialogOpen(false)
@@ -101,7 +117,7 @@ export function InvestmentRecordsPanel({
 
   const summary = useMemo(() => {
     const totalPrincipal = records.reduce((sum, r) => sum + r.principal, 0)
-    const totalCurrentValue = records.reduce((sum, r) => sum + r.currentValue, 0)
+    const totalCurrentValue = records.reduce((sum, r) => sum + computeCurrentValue(r).value, 0)
     const floatingPnl = totalCurrentValue - totalPrincipal
     const floatingPnlRate = totalPrincipal > 0 ? floatingPnl / totalPrincipal : 0
     const assetCount = records.length
@@ -116,12 +132,13 @@ export function InvestmentRecordsPanel({
 
     const byType: Record<string, number> = {}
     for (const r of records) {
-      const base = r.currentValue > 0 ? r.currentValue : r.principal
+      const base = computeCurrentValue(r).value
       byType[r.assetType] = (byType[r.assetType] ?? 0) + base
     }
 
     const activeCount = records.filter((r) => r.status === 'active').length
     const pausedCount = records.filter((r) => r.status === 'paused').length
+    const autoValuedCount = records.filter((r) => computeCurrentValue(r).isAutoValued).length
 
     return {
       totalPrincipal,
@@ -133,7 +150,8 @@ export function InvestmentRecordsPanel({
       monthlyRecurring,
       byType,
       activeCount,
-      pausedCount
+      pausedCount,
+      autoValuedCount
     }
   }, [records])
 
@@ -241,6 +259,14 @@ export function InvestmentRecordsPanel({
       {/* Investment Structure Dashboard */}
       <InvestmentSummaryPanel summary={summary} />
 
+      {/* Position Pie + P&L Line */}
+      {records.length > 0 ? (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <PositionPieChart records={records} />
+          <PnlLineChart records={records} />
+        </div>
+      ) : null}
+
       {/* Investment Constraints */}
       <InvestmentConstraintPanel constraints={constraints} />
 
@@ -310,6 +336,7 @@ function InvestmentSummaryPanel({
     byType: Record<string, number>
     activeCount: number
     pausedCount: number
+    autoValuedCount: number
   }
 }) {
   if (summary.assetCount === 0) return null
@@ -319,43 +346,55 @@ function InvestmentSummaryPanel({
     .sort((a, b) => b[1] - a[1])
   const typeTotal = typeEntries.reduce((sum, [, v]) => sum + v, 0)
 
+  // Chinese market convention: red = profit, green = loss
+  const pnlColor = summary.floatingPnl >= 0 ? 'text-accent-rose' : 'text-accent-green'
+  const pnlSign = summary.floatingPnl >= 0 ? '+' : ''
+  const rateColor = summary.floatingPnlRate >= 0 ? 'text-accent-rose' : 'text-accent-green'
+
   return (
     <section className="rounded-[18px] border border-[color:var(--panel-border)] bg-[var(--panel-bg-strong)] p-4">
       <div className="mb-4">
-        <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Structure</div>
-        <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">投资结构看板</h3>
+        <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--text-muted)]">Dashboard</div>
+        <h3 className="mt-1 text-base font-semibold text-[color:var(--text-primary)]">投资收益看板</h3>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <SummaryMetric
-          label="当前估值"
-          value={formatMoney(summary.totalCurrentValue)}
-          className="text-[color:var(--text-primary)]"
-        />
-        <SummaryMetric
-          label="投入本金"
-          value={formatMoney(summary.totalPrincipal)}
-          className="text-[color:var(--text-secondary)]"
-        />
-        <SummaryMetric
-          label="浮动盈亏"
-          value={`${summary.floatingPnl >= 0 ? '+' : ''}${formatMoney(summary.floatingPnl)}`}
-          className={summary.floatingPnl >= 0 ? 'text-accent-green' : 'text-accent-rose'}
-        />
-        <SummaryMetric
-          label="盈亏率"
-          value={`${summary.floatingPnl >= 0 ? '+' : ''}${(summary.floatingPnlRate * 100).toFixed(1)}%`}
-          className={summary.floatingPnl >= 0 ? 'text-accent-green' : 'text-accent-rose'}
-        />
+      {/* Big P&L Numbers */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {/* Total P&L */}
+        <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-4">
+          <div className="text-xs text-[color:var(--text-muted)]">总收益 / 总亏损</div>
+          <div className={`mt-1 text-3xl font-bold ${pnlColor}`}>
+            {pnlSign}{formatMoney(summary.floatingPnl)}
+          </div>
+          <div className={`mt-1 text-sm font-medium ${rateColor}`}>
+            {pnlSign}{(summary.floatingPnlRate * 100).toFixed(2)}%
+          </div>
+        </div>
+
+        {/* Market Value & Principal */}
+        <div className="grid grid-cols-1 gap-3">
+          <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
+            <div className="text-[10px] text-[color:var(--text-muted)]">当前总市值</div>
+            <div className="mt-1 text-lg font-semibold text-[color:var(--text-primary)]">{formatMoney(summary.totalCurrentValue)}</div>
+          </div>
+          <div className="rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
+            <div className="text-[10px] text-[color:var(--text-muted)]">投入本金</div>
+            <div className="mt-1 text-lg font-semibold text-[color:var(--text-secondary)]">{formatMoney(summary.totalPrincipal)}</div>
+          </div>
+        </div>
       </div>
 
       {/* Secondary Metrics */}
       <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <SummaryMetric
-          label="资产数量"
+          label="持仓数量"
           value={`${summary.assetCount} 项`}
           className="text-[color:var(--text-primary)]"
+        />
+        <SummaryMetric
+          label="市价估值"
+          value={`${summary.autoValuedCount} / ${summary.assetCount}`}
+          className="text-accent-cyan"
         />
         <SummaryMetric
           label="进行中定投"
@@ -365,11 +404,6 @@ function InvestmentSummaryPanel({
         <SummaryMetric
           label="每月预计定投"
           value={summary.monthlyRecurring > 0 ? formatMoney(summary.monthlyRecurring) : '--'}
-          className="text-[color:var(--text-secondary)]"
-        />
-        <SummaryMetric
-          label="状态分布"
-          value={`${summary.activeCount} 进行 / ${summary.pausedCount} 暂停`}
           className="text-[color:var(--text-secondary)]"
         />
       </div>
@@ -410,7 +444,7 @@ function InvestmentSummaryPanel({
       {/* Safety Reminder */}
       <div className="mt-3 rounded-2xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] p-3">
         <p className="text-xs leading-5 text-[color:var(--text-muted)]">
-          投资记录用于观察资产结构和定投纪律，不提供买卖建议。如果投资金额持续挤压安全线，应优先保证现金流。
+          红色 = 收益增加，绿色 = 亏损。投资记录用于观察资产结构和定投纪律，不提供买卖建议。
         </p>
       </div>
     </section>
@@ -496,7 +530,8 @@ function InvestmentRecordCard({
   onEdit: () => void
   onDelete: () => void
 }) {
-  const pnl = record.currentValue - record.principal
+  const cv = computeCurrentValue(record)
+  const pnl = cv.value - record.principal
   const pnlPercent = record.principal > 0 ? ((pnl / record.principal) * 100).toFixed(1) : '0.0'
 
   return (
@@ -515,6 +550,16 @@ function InvestmentRecordCard({
             }`}>
               {investmentStatusLabels[record.status]}
             </span>
+            {cv.isAutoValued ? (
+              <span className="rounded-lg border border-cyan-400/25 bg-cyan-400/10 px-2 py-0.5 text-[10px] text-accent-cyan">
+                市价估值
+              </span>
+            ) : null}
+            {record.marketSymbol ? (
+              <span className="rounded-lg border border-[color:var(--input-border)] bg-[var(--control-bg)] px-2 py-0.5 text-[10px] text-[color:var(--text-muted)]">
+                {record.marketSymbol}
+              </span>
+            ) : null}
           </div>
           <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-4">
             <div>
@@ -522,8 +567,8 @@ function InvestmentRecordCard({
               <span className="text-[color:var(--text-secondary)]">{formatMoney(record.principal)}</span>
             </div>
             <div>
-              <span className="text-[color:var(--text-muted)]">估值 </span>
-              <span className="text-[color:var(--text-secondary)]">{formatMoney(record.currentValue)}</span>
+              <span className="text-[color:var(--text-muted)]">{cv.isAutoValued ? '市价估值' : '估值'} </span>
+              <span className="text-[color:var(--text-secondary)]">{formatMoney(cv.value)}</span>
             </div>
             <div>
               <span className="text-[color:var(--text-muted)]">盈亏 </span>
@@ -540,6 +585,18 @@ function InvestmentRecordCard({
               </div>
             ) : null}
           </div>
+          {record.quantity != null ? (
+            <div className="mt-1 text-[10px] text-[color:var(--text-muted)]">
+              持有 {record.quantity}
+              {record.averageCost != null ? ` · 均价 ${formatMoney(record.averageCost)}` : ''}
+              {cv.latestPrice != null ? ` · 市价 ${formatMoney(cv.latestPrice)}` : ''}
+            </div>
+          ) : null}
+          {record.nextRecurringDate && record.status === 'active' ? (
+            <div className="mt-1 text-[10px] text-accent-cyan">
+              下次定投：{record.nextRecurringDate}
+            </div>
+          ) : null}
           {record.note ? (
             <p className="mt-2 text-xs leading-5 text-[color:var(--text-muted)]">{record.note}</p>
           ) : null}
@@ -605,6 +662,15 @@ function InvestmentDialog({
             />
           </InvestField>
 
+          <InvestField label="市场代码">
+            <input
+              value={draft.marketSymbol}
+              onChange={(e) => onChange({ marketSymbol: e.target.value })}
+              placeholder="例：SPY、000300、BTC-USD"
+              className={inputClass}
+            />
+          </InvestField>
+
           <InvestField label="资产类型">
             <select
               value={draft.assetType}
@@ -628,13 +694,23 @@ function InvestmentDialog({
             />
           </InvestField>
 
-          <InvestField label="当前估值">
+          <InvestField label="持有数量">
             <input
-              value={draft.currentValue}
-              onChange={(e) => onChange({ currentValue: e.target.value })}
+              value={draft.quantity}
+              onChange={(e) => onChange({ quantity: e.target.value })}
               type="number"
               min="0"
-              placeholder="0"
+              step="any"
+              placeholder="选填，用于市价自动估值"
+              className={inputClass}
+            />
+          </InvestField>
+
+          <InvestField label="买入日期">
+            <input
+              value={draft.firstBuyDate}
+              onChange={(e) => onChange({ firstBuyDate: e.target.value })}
+              type="date"
               className={inputClass}
             />
           </InvestField>
@@ -661,6 +737,31 @@ function InvestmentDialog({
               ))}
             </select>
           </InvestField>
+
+          {draft.recurringFrequency !== 'none' ? (
+            <>
+              <InvestField label="定投开始日期">
+                <input
+                  value={draft.recurringStartDate}
+                  onChange={(e) => onChange({ recurringStartDate: e.target.value })}
+                  type="date"
+                  className={inputClass}
+                />
+              </InvestField>
+
+              <InvestField label="定投日">
+                <input
+                  value={draft.recurringDay}
+                  onChange={(e) => onChange({ recurringDay: e.target.value })}
+                  type="number"
+                  min="1"
+                  max="31"
+                  placeholder="选填，默认取开始日期"
+                  className={inputClass}
+                />
+              </InvestField>
+            </>
+          ) : null}
 
           <InvestField label="状态">
             <div className="flex gap-2">
@@ -690,6 +791,10 @@ function InvestmentDialog({
               className={inputClass}
             />
           </InvestField>
+        </div>
+
+        <div className="mt-3 rounded-xl border border-[color:var(--panel-border)] bg-[var(--inspector-section-bg)] px-3 py-2 text-[10px] text-[color:var(--text-muted)]">
+          当前估值由「持有数量 × 市场市价」自动计算。填写市场代码后，如果行情数据可用，估值会自动更新。
         </div>
 
         <div className="mt-5 flex justify-end gap-3">

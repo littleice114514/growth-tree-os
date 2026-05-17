@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { WealthRecord, WealthRecordType } from '@shared/wealth'
 import { loadActiveTimeDebtTimer, type ActiveTimeDebtTimer } from '../time-debt/timeDebtActiveTimerStorage'
 import { finishQuickTimeDebtTimer, startQuickTimeDebtTimer } from '../time-debt/timeDebtQuickTimer'
@@ -64,6 +64,44 @@ export function UnifiedQuickRecordFloat() {
   const isOpen = uiState.isOpen
   const selectedType = uiState.selectedType
   const lastRecordFeedback = uiState.lastRecordFeedback ?? ''
+  const isOpenRef = useRef(isOpen)
+  isOpenRef.current = isOpen
+
+  const selectType = useCallback((type: RecordType) => {
+    setUiState((current) => ({ ...current, selectedType: type }))
+  }, [])
+
+  const toggleOpen = useCallback(() => {
+    setUiState((current) => ({ ...current, isOpen: !current.isOpen }))
+    setTimerNow(Date.now())
+  }, [])
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpenRef.current) return
+
+      // Escape: close
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setUiState((current) => ({ ...current, isOpen: false }))
+        return
+      }
+
+      // Left/Right: switch type selector
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault()
+        setUiState((current) => ({
+          ...current,
+          selectedType: current.selectedType === 'time' ? 'wealth' : 'time'
+        }))
+        return
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   // Persist UI state
   useEffect(() => {
@@ -73,6 +111,11 @@ export function UnifiedQuickRecordFloat() {
   // Listen for global shortcut events
   useEffect(() => {
     return window.growthTree.quickRecord.onOpenQuickRecord((mode) => {
+      if (mode === 'toggle') {
+        setUiState((current) => ({ ...current, isOpen: !current.isOpen }))
+        setTimerNow(Date.now())
+        return
+      }
       setUiState((current) => ({
         ...current,
         isOpen: true,
@@ -208,10 +251,6 @@ export function UnifiedQuickRecordFloat() {
     setWealthSuccess('')
   }
 
-  const selectType = (type: RecordType) => {
-    setUiState((current) => ({ ...current, selectedType: type }))
-  }
-
   return (
     <div className="fixed bottom-5 right-5 z-50 flex max-w-[calc(100vw-40px)] flex-col items-end gap-3 text-[color:var(--text-primary)]">
       {isOpen ? (
@@ -302,10 +341,7 @@ export function UnifiedQuickRecordFloat() {
 
       <button
         type="button"
-        onClick={() => {
-          setUiState((current) => ({ ...current, isOpen: !current.isOpen }))
-          if (!isOpen) setTimerNow(Date.now())
-        }}
+        onClick={toggleOpen}
         className="max-w-[min(260px,calc(100vw-40px))] rounded-full border border-emerald-400/30 bg-emerald-400/95 px-5 py-3 text-sm font-semibold text-slate-950 shadow-panel transition hover:bg-emerald-300"
       >
         {activeTimer && selectedType === 'time'

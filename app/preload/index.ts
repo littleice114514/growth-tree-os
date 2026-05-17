@@ -52,7 +52,7 @@ const api: GrowthTreeApi = {
   quickRecord: {
     onOpenQuickRecord: (callback) => {
       const handler = (_event: unknown, mode: string) => {
-        callback(mode === 'time' || mode === 'wealth' ? mode : 'choose')
+        callback(mode === 'time' || mode === 'wealth' || mode === 'toggle' ? mode : 'choose')
       }
       ipcRenderer.on(quickRecordOpenChannel, handler)
       return () => ipcRenderer.removeListener(quickRecordOpenChannel, handler)

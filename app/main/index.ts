@@ -12,7 +12,7 @@ const wealthOpenQuickFloatChannel = 'wealth:open-quick-float'
 const preferredWealthShortcut = 'CommandOrControl+Alt+Z'
 
 const quickRecordOpenChannel = 'quick-record:open'
-const preferredQuickRecordShortcut = 'CommandOrControl+Alt+R'
+const preferredQuickRecordShortcut = 'CommandOrControl+P'
 
 let mainWindow: BrowserWindow | null = null
 let registeredTimeDebtShortcuts: string[] = []
@@ -140,7 +140,7 @@ function sendWealthQuickFloat(targetWindow: BrowserWindow) {
   sendEvent()
 }
 
-function sendQuickRecordOpen(targetWindow: BrowserWindow, mode: 'choose' | 'time' | 'wealth') {
+function sendQuickRecordOpen(targetWindow: BrowserWindow, mode: 'choose' | 'time' | 'wealth' | 'toggle') {
   const sendEvent = () => {
     if (!targetWindow.isDestroyed()) {
       targetWindow.webContents.send(quickRecordOpenChannel, mode)
@@ -171,7 +171,7 @@ function openQuickRecordChoose() {
 
   mainWindow.show()
   mainWindow.focus()
-  sendQuickRecordOpen(mainWindow, 'choose')
+  sendQuickRecordOpen(mainWindow, 'toggle')
 }
 
 function registerQuickRecordShortcut() {

@@ -248,7 +248,7 @@ export interface GrowthTreeApi {
     onOpenQuickFloat(callback: () => void): () => void
   }
   quickRecord: {
-    onOpenQuickRecord(callback: (mode: 'choose' | 'time' | 'wealth') => void): () => void
+    onOpenQuickRecord(callback: (mode: 'choose' | 'time' | 'wealth' | 'toggle') => void): () => void
   }
   market: {
     hasApiKey(): Promise<boolean>

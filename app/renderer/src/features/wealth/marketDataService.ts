@@ -1,5 +1,6 @@
 import type { MarketQuote, MarketCandle, MarketCandleResult, MarketWatchlistItem, MarketType, MarketSource } from './marketDataTypes'
 import { marketTypeLabels, marketSourceLabels } from './marketDataTypes'
+import { loadCustomWatchlist, type WatchlistItem } from './watchlistStorage'
 
 // ── Fixed watchlist ──
 
@@ -165,10 +166,26 @@ export async function getMarketWatchlist(): Promise<MarketWatchlistItem[]> {
     // IPC not available — fallback to mock
   }
 
+  // Merge default + custom watchlist
+  const customItems = loadCustomWatchlist()
+  const allDefs = [
+    ...watchlistDef,
+    ...customItems.map((c) => ({ ...c, isCustom: true }))
+  ]
+
+  // Deduplicate by symbol
+  const seen = new Set<string>()
+  const uniqueDefs = allDefs.filter((d) => {
+    const key = d.symbol.toUpperCase()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+
   let finnhubQuotes: Record<string, { price: number; changePercent: number; updatedAt: string }> = {}
 
   if (hasKey) {
-    const finnhubSymbols = watchlistDef.filter((d) => d.source === 'finnhub').map((d) => d.symbol)
+    const finnhubSymbols = uniqueDefs.filter((d) => d.source === 'finnhub').map((d) => d.symbol)
     try {
       const results = await window.growthTree.market.fetchQuotes(finnhubSymbols)
       for (const r of results) {
@@ -181,7 +198,7 @@ export async function getMarketWatchlist(): Promise<MarketWatchlistItem[]> {
     }
   }
 
-  return watchlistDef.map((def, i) => {
+  return uniqueDefs.map((def, i) => {
     let quote: MarketQuote
 
     if (def.source === 'finnhub' && finnhubQuotes[def.symbol]) {
