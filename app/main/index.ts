@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut } from 'electron'
+import { app, BrowserWindow, Menu, globalShortcut } from 'electron'
 import { join } from 'node:path'
 import { ensureAppPaths } from './storage'
 import { GrowthTreeDatabase } from './db'
@@ -207,6 +207,10 @@ app.whenReady().then(() => {
   const db = new GrowthTreeDatabase(appPaths.sqlitePath, appPaths.reviewsDir)
   registerIpc(db, appPaths)
   createWindow()
+
+  // Remove default macOS menu to prevent Cmd+P (Print) from intercepting our shortcut
+  Menu.setApplicationMenu(null)
+
   registerTimeDebtShortcut()
   registerWealthShortcut()
   registerQuickRecordShortcut()

@@ -23,8 +23,6 @@ import { calculateOverdraftStreak, calculatePeriodOverdraftStreak, calculateCash
 import { categoryPresets } from './wealthCategoryOptions'
 import { CashflowComboChart } from './CashflowComboChart'
 import { CashflowBreakdownDualPie } from './CashflowBreakdownDualPie'
-import { ExpenseBreakdownPie } from './ExpenseBreakdownPie'
-import { IncomeBreakdownPie } from './IncomeBreakdownPie'
 import { searchRecords, groupRecords, type GroupMode, type InsightPeriod } from './wealthRecordInsights'
 import { WealthDashboardPreview } from '@/features/dashboard-preview'
 import { loadInvestmentRecords, type InvestmentRecord } from './investmentStorage'
@@ -219,18 +217,16 @@ export function WealthDashboard() {
             cashflowTrend={cashflowTrend}
             trendPeriod={trendPeriod}
             incomePeriod={incomePeriod}
-            dualPiePeriod={dualPiePeriod}
             referenceDate={baseConfig.date}
             onPeriodChange={setSelectedPeriod}
             onTrendPeriodChange={setTrendPeriod}
             onIncomePeriodChange={setIncomePeriod}
-            onDualPiePeriodChange={setDualPiePeriod}
             onDelete={removeRecord}
           />
         ) : null}
 
         {currentTab === 'records' ? (
-          <RecordsTab records={records} onDelete={removeRecord} referenceDate={baseConfig.date} />
+          <RecordsTab records={records} onDelete={removeRecord} referenceDate={baseConfig.date} dualPiePeriod={dualPiePeriod} onDualPiePeriodChange={setDualPiePeriod} />
         ) : null}
 
         {currentTab === 'investment' ? (
@@ -276,12 +272,10 @@ function OverviewTab({
   cashflowTrend,
   trendPeriod,
   incomePeriod,
-  dualPiePeriod,
   referenceDate,
   onPeriodChange,
   onTrendPeriodChange,
   onIncomePeriodChange,
-  onDualPiePeriodChange,
   onDelete
 }: {
   snapshot: DailyWealthSnapshot
@@ -294,12 +288,10 @@ function OverviewTab({
   cashflowTrend: CashflowTrend
   trendPeriod: 'last7' | 'last30'
   incomePeriod: InsightPeriod
-  dualPiePeriod: InsightPeriod
   referenceDate: string
   onPeriodChange: (period: PeriodKey) => void
   onTrendPeriodChange: (period: 'last7' | 'last30') => void
   onIncomePeriodChange: (period: InsightPeriod) => void
-  onDualPiePeriodChange: (period: InsightPeriod) => void
   onDelete: (recordId: string) => void
 }) {
   return (
@@ -309,14 +301,6 @@ function OverviewTab({
 
       {/* B. Cashflow Trend V2 (combo chart) */}
       <CashflowTrendPanel cashflowTrend={cashflowTrend} trendPeriod={trendPeriod} onTrendPeriodChange={onTrendPeriodChange} records={records} />
-
-      {/* B2. Income/Expense Dual Pie */}
-      <CashflowBreakdownDualPie
-        records={records}
-        referenceDate={referenceDate}
-        period={dualPiePeriod}
-        onPeriodChange={onDualPiePeriodChange}
-      />
 
       {/* C. Period Slicer (P2) */}
       <PeriodSlicePanel
@@ -569,10 +553,9 @@ function CollapsiblePreviewPanel({ snapshot, summary }: { snapshot: DailyWealthS
 
 /* ── Records Tab ── */
 
-function RecordsTab({ records, onDelete, referenceDate }: { records: WealthRecord[]; onDelete: (id: string) => void; referenceDate: string }) {
+function RecordsTab({ records, onDelete, referenceDate, dualPiePeriod, onDualPiePeriodChange }: { records: WealthRecord[]; onDelete: (id: string) => void; referenceDate: string; dualPiePeriod: InsightPeriod; onDualPiePeriodChange: (period: InsightPeriod) => void }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [groupMode, setGroupMode] = useState<GroupMode>('date')
-  const [insightPeriod, setInsightPeriod] = useState<InsightPeriod>('last7')
   const [recordsExpanded, setRecordsExpanded] = useState(false)
 
   const filteredRecords = useMemo(() => searchRecords(records, searchQuery), [records, searchQuery])
@@ -601,12 +584,12 @@ function RecordsTab({ records, onDelete, referenceDate }: { records: WealthRecor
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Expense Breakdown Pie */}
-      <ExpenseBreakdownPie
+      {/* Income/Expense Dual Pie */}
+      <CashflowBreakdownDualPie
         records={records}
         referenceDate={referenceDate}
-        period={insightPeriod}
-        onPeriodChange={setInsightPeriod}
+        period={dualPiePeriod}
+        onPeriodChange={onDualPiePeriodChange}
       />
 
       {/* Records List */}

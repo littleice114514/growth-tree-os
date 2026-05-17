@@ -76,9 +76,17 @@ export function UnifiedQuickRecordFloat() {
     setTimerNow(Date.now())
   }, [])
 
-  // Keyboard navigation
+  // Keyboard navigation + Cmd/Ctrl+P fallback
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl+P: toggle open/close (renderer fallback in case globalShortcut is intercepted)
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') {
+        e.preventDefault()
+        setUiState((current) => ({ ...current, isOpen: !current.isOpen }))
+        setTimerNow(Date.now())
+        return
+      }
+
       if (!isOpenRef.current) return
 
       // Escape: close
