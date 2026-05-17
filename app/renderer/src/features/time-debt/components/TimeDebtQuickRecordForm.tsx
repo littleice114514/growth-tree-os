@@ -1,6 +1,7 @@
-const primaryCategoryOptions = ['工作', '学习', '休息', '生活', '其他'] as const
+import { getPrimaryCategories, normalizeTimeDebtPrimaryCategory } from '../timeDebtTaskCatalog'
+
+const primaryCategoryOptions = getPrimaryCategories()
 const defaultPrimaryCategory = '学习'
-const fallbackPrimaryCategory = '其他'
 
 type RecentTaskOption = {
   title: string
@@ -162,11 +163,5 @@ function padDatePart(value: number): string {
 }
 
 export function normalizePrimaryCategory(value: string | undefined): string {
-  const normalized = value?.trim()
-  if (!normalized) {
-    return fallbackPrimaryCategory
-  }
-  return primaryCategoryOptions.includes(normalized as (typeof primaryCategoryOptions)[number])
-    ? normalized
-    : fallbackPrimaryCategory
+  return normalizeTimeDebtPrimaryCategory(value)
 }

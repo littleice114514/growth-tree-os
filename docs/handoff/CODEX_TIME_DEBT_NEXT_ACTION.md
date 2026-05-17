@@ -1,5 +1,29 @@
 # Codex Time Debt 下一步操作卡
 
+## 0. 2026-05-17 任务名与一级分类统一底座
+
+- 本轮目标：统一 Time Debt 正常记录与浮窗快速记录的任务名候选和一级分类来源，解决快速记录任务名不同步、需要重复输入的问题。
+- Skill 选择：已搜索本机已有 skill；未命中专门覆盖本轮 Time Debt catalog 同步的现成 skill。真实 Electron UI smoke 使用 Computer Use 能力；GitHub 保存遵循本地 git 精确提交/推送流程。
+- 工作流模板：工程代码修改 / 真实 Electron UI smoke / 文档交接 / GitHub Sync Gate / 双设备协同交接。
+- 记录来源诊断：
+  - 正常记录入口在 `TimeDebtDashboard.tsx` 的 `EntryModal`。
+  - 正常记录已有 `title` 和 `primaryCategory` 字段。
+  - 浮窗此前从 `loadTimeDebtLogs()` 自己组最近任务，分类常量在 `TimeDebtQuickRecordForm.tsx` 内部。
+  - 两边结束写入均共用 `appendTimeDebtLog()` 和正常 Time Debt logs。
+- 新增统一 helper：`app/renderer/src/features/time-debt/timeDebtTaskCatalog.ts`。
+- 一级分类统一为：工作 / 学习 / 休息 / 生活 / 其他。
+- 正常记录任务名候选和浮窗最近任务均改为复用 `getRecentTimeDebtTasks()`。
+- 浮窗最近任务点击后已能同时回填任务名和一级分类。
+- 浮窗开始计时会通过 `normalizeTimeDebtPrimaryCategory()` 保存一级分类；结束计时仍写入正常 Time Debt logs，不新建 quick-float logs。
+- 本轮 smoke 测试记录：`统一任务库测试 / 学习`，记录保留。
+- 验证结果：
+  - `pnpm typecheck`：通过。
+  - `pnpm build`：通过。
+  - `pnpm dev`：真实 Electron App 启动成功，快捷键注册日志正常。
+  - 真实 Electron UI smoke：通过，包含分类选项、开始计时、计时中显示、结束写入、最近任务回填、Time Debt 不白屏、Wealth 不白屏、`Cmd+Option+T` 展开浮窗。
+- 本轮不做：ECharts、首页饼图、桌面浮窗、always-on-top、结束补充框、AI 赋能占比、Settings、Wealth、main/preload/ipc、package.json、project-state 三件套。
+- 下一轮建议：在本轮 commit/push 后停止；下一轮若继续 Time Debt，可做结束计时补充框第一阶段，仍不要进入桌面浮窗或 Settings，除非用户明确要求。
+
 ## 0. 2026-05-15 浮窗一级分类第一阶段
 
 - 本轮目标：补做 Time Debt 浮窗字段增强第一阶段，让右下角浮窗真实出现 `一级分类` 控件。

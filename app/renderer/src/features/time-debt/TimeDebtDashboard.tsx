@@ -6,7 +6,6 @@ import {
   createTimeDebtLog,
   createTimeDebtParams,
   createWorkTimeStandard,
-  defaultProjectCategories,
   timeDebtStatusLabels,
   type DailyTimeDebtStats,
   type TimeDebtDiagnosis,
@@ -50,6 +49,7 @@ import {
   saveActiveTimeDebtTimer,
   timeDebtActiveTimerStorageKey
 } from './timeDebtActiveTimerStorage'
+import { getPrimaryCategories, getRecentTimeDebtTasks, normalizeTimeDebtPrimaryCategory, type TimeDebtTaskCatalogItem } from './timeDebtTaskCatalog'
 import {
   archiveTimePlanReminderBySource,
   consumeTimeDebtNavigationIntent,
@@ -115,15 +115,7 @@ type RunningTimer = {
   suggestedEndTime?: string
 }
 
-type TaskHistoryOption = {
-  title: string
-  primaryCategory: string
-  secondaryProject: string
-  tags?: string[]
-  aiEnableRatio?: number
-  lastUsedAt: string
-  useCount: number
-}
+type TaskHistoryOption = TimeDebtTaskCatalogItem
 
 const today = new Date().toISOString().slice(0, 10)
 const minVisualTimeBlockMinutes = 15
@@ -175,7 +167,7 @@ export function TimeDebtDashboard() {
   )
   const todayLogs = useMemo(() => logs.filter((log) => log.startTime.slice(0, 10) === selectedDate), [logs, selectedDate])
   const calendarBlocks = useMemo(() => buildCalendarBlocks(logs, plans, runningTimer, timerNow), [logs, plans, runningTimer, timerNow])
-  const taskHistoryOptions = useMemo(() => buildTaskHistoryOptions(logs, plans), [logs, plans])
+  const taskHistoryOptions = useMemo(() => getRecentTimeDebtTasks(logs, plans), [logs, plans])
   const dailyUsageStats = useMemo(() => buildDailyTimeUsageStats(logs, new Date(timerNow)), [logs, timerNow])
 
   useEffect(() => {
@@ -1945,8 +1937,8 @@ function CategoryFields({
   onSecondaryChange: (value: string) => void
   onCreateOption: (values: { category?: string; project?: string; tags?: string[]; distraction?: string }) => void
 }) {
-  const categoryOptions = Array.from(new Set([...options.categories, ...defaultProjectCategories.map((item) => item.primaryCategory)]))
-  const projectOptions = Array.from(new Set([...options.projects, ...defaultProjectCategories.map((item) => item.secondaryProject)]))
+  const categoryOptions = getPrimaryCategories()
+  const projectOptions = options.projects
   return (
     <>
       <SmartOptionInput
@@ -1954,7 +1946,7 @@ function CategoryFields({
         value={primaryCategory}
         options={categoryOptions}
         placeholder="例如：工作"
-        onChange={onPrimaryChange}
+        onChange={(category) => onPrimaryChange(normalizeTimeDebtPrimaryCategory(category))}
         onCreateOption={(category) => onCreateOption({ category })}
       />
       <SmartOptionInput
@@ -2285,70 +2277,6 @@ function buildCalendarBlocks(logs: TimeDebtLog[], plans: TimeDebtPlan[], running
       ]
     : []
   return layoutOverlappingEvents([...planned, ...activePlans, ...completed, ...active].sort((a, b) => a.startTime.localeCompare(b.startTime)))
-}
-
-function buildTaskHistoryOptions(logs: TimeDebtLog[], plans: TimeDebtPlan[]): TaskHistoryOption[] {
-  const byTitle = new Map<string, TaskHistoryOption>()
-  const remember = (input: {
-    title: string
-    primaryCategory: string
-    secondaryProject: string
-    tags?: string[]
-    aiEnableRatio?: number
-    usedAt: string
-  }) => {
-    const title = input.title.trim()
-    if (!title) return
-    const key = title.toLowerCase()
-    const current = byTitle.get(key)
-    if (!current) {
-      byTitle.set(key, {
-        title,
-        primaryCategory: input.primaryCategory,
-        secondaryProject: input.secondaryProject,
-        tags: input.tags,
-        aiEnableRatio: input.aiEnableRatio,
-        lastUsedAt: input.usedAt,
-        useCount: 1
-      })
-      return
-    }
-    const isNewer = input.usedAt.localeCompare(current.lastUsedAt) > 0
-    byTitle.set(key, {
-      title: isNewer ? title : current.title,
-      primaryCategory: isNewer ? input.primaryCategory : current.primaryCategory,
-      secondaryProject: isNewer ? input.secondaryProject : current.secondaryProject,
-      tags: isNewer ? input.tags : current.tags,
-      aiEnableRatio: typeof input.aiEnableRatio === 'number' ? input.aiEnableRatio : current.aiEnableRatio,
-      lastUsedAt: isNewer ? input.usedAt : current.lastUsedAt,
-      useCount: current.useCount + 1
-    })
-  }
-
-  for (const log of logs) {
-    remember({
-      title: log.title,
-      primaryCategory: log.primaryCategory,
-      secondaryProject: log.secondaryProject,
-      tags: log.tags,
-      aiEnableRatio: log.aiEnableRatio,
-      usedAt: log.endTime || log.startTime
-    })
-  }
-  for (const plan of plans) {
-    remember({
-      title: plan.title,
-      primaryCategory: plan.primaryCategory,
-      secondaryProject: plan.secondaryProject,
-      tags: plan.tags,
-      usedAt: plan.actualEndTime || plan.actualStartTime || plan.plannedStartTime
-    })
-  }
-
-  return Array.from(byTitle.values()).sort((first, second) => {
-    if (first.lastUsedAt !== second.lastUsedAt) return second.lastUsedAt.localeCompare(first.lastUsedAt)
-    return second.useCount - first.useCount
-  })
 }
 
 function blockDetail(block: CalendarBlock): string {

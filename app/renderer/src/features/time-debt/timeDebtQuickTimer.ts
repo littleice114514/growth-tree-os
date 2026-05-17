@@ -7,8 +7,8 @@ import {
   type ActiveTimeDebtTimer
 } from './timeDebtActiveTimerStorage'
 import { appendTimeDebtLog, loadTimeDebtParams } from './timeDebtStorage'
+import { normalizeTimeDebtPrimaryCategory } from './timeDebtTaskCatalog'
 
-const quickTimerFallbackPrimaryCategory = '其他'
 const quickTimerSecondaryProject = 'growth-tree-os'
 
 export type QuickTimeDebtTimerResult =
@@ -24,7 +24,7 @@ export function startQuickTimeDebtTimer(title: string, primaryCategory: string):
   if (!normalizedTitle) {
     return { ok: false, error: '先写一下这次在做什么' }
   }
-  const normalizedPrimaryCategory = primaryCategory.trim() || quickTimerFallbackPrimaryCategory
+  const normalizedPrimaryCategory = normalizeTimeDebtPrimaryCategory(primaryCategory)
 
   const currentTimer = loadActiveTimeDebtTimer()
   if (currentTimer) {

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { loadActiveTimeDebtTimer, type ActiveTimeDebtTimer } from '../timeDebtActiveTimerStorage'
 import { finishQuickTimeDebtTimer, startQuickTimeDebtTimer } from '../timeDebtQuickTimer'
 import { loadTimeDebtLogs, timeDebtLogsChangeEvent } from '../timeDebtStorage'
+import { getRecentTimeDebtTasks, type TimeDebtTaskCatalogItem } from '../timeDebtTaskCatalog'
 import { TimeDebtQuickRecordForm, formatElapsedTime, formatMinutes, normalizePrimaryCategory } from './TimeDebtQuickRecordForm'
 
 const floatingUiStorageKey = 'growth-tree-os:time-debt-floating-ui:v1'
@@ -12,11 +13,7 @@ type FloatingUiState = {
   lastRecordFeedback?: string
 }
 
-type RecentTaskOption = {
-  title: string
-  primaryCategory: string
-  lastUsedAt: string
-}
+type RecentTaskOption = Pick<TimeDebtTaskCatalogItem, 'title' | 'primaryCategory' | 'lastUsedAt'>
 
 export function TimeDebtQuickFloat() {
   const [uiState, setUiState] = useState<FloatingUiState>(() => loadFloatingUiState())
@@ -177,22 +174,5 @@ function saveFloatingUiState(state: FloatingUiState): void {
 }
 
 function loadRecentTaskOptions(): RecentTaskOption[] {
-  const byTitle = new Map<string, RecentTaskOption>()
-  for (const log of loadTimeDebtLogs()) {
-    const title = log.title.trim()
-    if (!title) {
-      continue
-    }
-    const lastUsedAt = log.endTime || log.startTime
-    const key = title.toLowerCase()
-    const primaryCategory = normalizePrimaryCategory(log.primaryCategory)
-    const current = byTitle.get(key)
-    if (!current || lastUsedAt.localeCompare(current.lastUsedAt) > 0) {
-      byTitle.set(key, { title, primaryCategory, lastUsedAt })
-    }
-  }
-
-  return Array.from(byTitle.values())
-    .sort((left, right) => right.lastUsedAt.localeCompare(left.lastUsedAt))
-    .slice(0, recentTaskLimit)
+  return getRecentTimeDebtTasks(loadTimeDebtLogs()).slice(0, recentTaskLimit)
 }
